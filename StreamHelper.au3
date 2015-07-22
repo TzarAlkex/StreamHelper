@@ -49,7 +49,8 @@ Global $sNew
 Global $asTwitch[1][$eMax]
 Global $asHitbox[1][$eMax]
 
-Global $iPID, $iLivestreamerInstalled
+Global $iPID
+Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
 
 AdlibRegister(PostLaunchInitializer)
 
@@ -95,7 +96,7 @@ Func _TwitchGet($sUsername)
 	$sQuotedUsername = URLEncode($sUsername)
 	$sBaseUrl = "https://api.twitch.tv/kraken/users/" & $sQuotedUsername & "/follows/channels"
 	While True
-		$sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT($iOffset, $iLimit)
+		$sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
 		$avTemp = FetchItems($sUrl, "follows")
 		If UBound($avTemp) = 0 Then ExitLoop
 
@@ -164,55 +165,9 @@ Func _TwitchGet($sUsername)
 	Return $avRet
 EndFunc
 
-Func FetchItems($sUrl, $sKey)
-	$oJSON = getJson($sUrl)
-
-;~ 	ConsoleWrite($sUrl & @CRLF)
-;~ 	ConsoleWrite(VarGetType($oJSON) & @CRLF)
-;~ 	ConsoleWrite($oJSON & @CRLF)
-
-;~ 	ConsoleWrite("bla" & @CRLF)
-	If VarGetType($oJSON) = "String" And $oJSON = "" Then Return ""
-;~ 	ConsoleWrite("pizza" & @CRLF)
-
-	$oFollows = Json_ObjGet($oJSON, $sKey)
-
-	If UBound($oFollows) > 0 Then
-		Return $oFollows
-	Else
-		Return ""
-	EndIf
-EndFunc
-
-Func getJson($sUrl)
-	$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
-
-	$oJSON = Json_Decode(BinaryToString($dJsonString))
-	Return $oJSON
-EndFunc
-
-Func OPTIONS_OFFSET_LIMIT($iOffset, $iLimit)
+Func OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
 	Return '?offset=' & $iOffset & '&limit=' & $iLimit
 EndFunc
-
-;From https://www.autoitscript.com/forum/topic/95850-url-encoding/?do=findComment&comment=689045
-Func URLEncode($urlText)
-	$url = ""
-	For $i = 1 To StringLen($urlText)
-		$acode = Asc(StringMid($urlText, $i, 1))
-		Select
-			Case ($acode >= 48 And $acode <= 57) Or _
-					($acode >= 65 And $acode <= 90) Or _
-					($acode >= 97 And $acode <= 122)
-				$url = $url & StringMid($urlText, $i, 1)
-			Case $acode = 32
-				$url = $url & "+"
-			Case Else
-				$url = $url & "%" & Hex($acode, 2)
-		EndSelect
-	Next
-	Return $url
-EndFunc   ;==>URLEncode
 #EndRegion TWITCH
 
 #Region HITBOX
@@ -319,7 +274,51 @@ EndFunc
 #EndRegion
 
 #Region COMMON
+Func FetchItems($sUrl, $sKey)
+	$oJSON = getJson($sUrl)
 
+;~ 	ConsoleWrite($sUrl & @CRLF)
+;~ 	ConsoleWrite(VarGetType($oJSON) & @CRLF)
+;~ 	ConsoleWrite($oJSON & @CRLF)
+
+;~ 	ConsoleWrite("bla" & @CRLF)
+	If VarGetType($oJSON) = "String" And $oJSON = "" Then Return ""
+;~ 	ConsoleWrite("pizza" & @CRLF)
+
+	$oFollows = Json_ObjGet($oJSON, $sKey)
+
+	If UBound($oFollows) > 0 Then
+		Return $oFollows
+	Else
+		Return ""
+	EndIf
+EndFunc
+
+Func getJson($sUrl)
+	$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
+
+	$oJSON = Json_Decode(BinaryToString($dJsonString))
+	Return $oJSON
+EndFunc
+
+;From https://www.autoitscript.com/forum/topic/95850-url-encoding/?do=findComment&comment=689045
+Func URLEncode($urlText)
+	$url = ""
+	For $i = 1 To StringLen($urlText)
+		$acode = Asc(StringMid($urlText, $i, 1))
+		Select
+			Case ($acode >= 48 And $acode <= 57) Or _
+					($acode >= 65 And $acode <= 90) Or _
+					($acode >= 97 And $acode <= 122)
+				$url = $url & StringMid($urlText, $i, 1)
+			Case $acode = 32
+				$url = $url & "+"
+			Case Else
+				$url = $url & "%" & Hex($acode, 2)
+		EndSelect
+	Next
+	Return $url
+EndFunc   ;==>URLEncode
 #EndRegion
 
 #Region GUI
@@ -360,6 +359,5 @@ EndFunc
 #Region INTENRAL INTERLECT
 Func PostLaunchInitializer()
 	AdlibUnRegister(PostLaunchInitializer)
-	$iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
 EndFunc
 #EndRegion
