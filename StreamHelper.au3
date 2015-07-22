@@ -49,7 +49,9 @@ Global $sNew
 Global $asTwitch[1][$eMax]
 Global $asHitbox[1][$eMax]
 
-Global $iPID
+Global $iPID, $iLivestreamerInstalled
+
+AdlibRegister(PostLaunchInitializer)
 
 While 1
 	Global $sNew = ""
@@ -316,6 +318,10 @@ Func OPTIONS_OFFSET_LIMIT_HITBOX($iOffset, $iLimit)
 EndFunc
 #EndRegion
 
+#Region COMMON
+
+#EndRegion
+
 #Region GUI
 Func _TrayStuff()
 	Switch @TRAY_ID
@@ -327,20 +333,33 @@ Func _TrayStuff()
 		Case $idExit
 			Exit
 		Case Else
+			Local $sUrl
 			Do
 				For $iX = 0 To UBound($asTwitch) -1
 					If $asTwitch[$iX][$eTrayId] = @TRAY_ID Then
-						$iPID = Run("livestreamer " & $asTwitch[$iX][$eUrl] & " best", "", @SW_HIDE)
+						$sUrl = $asTwitch[$iX][$eUrl]
 						ExitLoop 2
 					EndIf
 				Next
 				For $iX = 0 To UBound($asHitbox) -1
 					If $asHitbox[$iX][$eTrayId] = @TRAY_ID Then
-						$iPID = Run("livestreamer " & $asHitbox[$iX][$eUrl] & " best", "", @SW_HIDE)
+						$sUrl = $asHitbox[$iX][$eUrl]
 						ExitLoop 2
 					EndIf
 				Next
 			Until False
+			If $iLivestreamerInstalled Then
+				$iPID = Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
+			Else
+				ShellExecute($sUrl)
+			EndIf
 	EndSwitch
 EndFunc
 #EndRegion GUI
+
+#Region INTENRAL INTERLECT
+Func PostLaunchInitializer()
+	AdlibUnRegister(PostLaunchInitializer)
+	$iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
+EndFunc
+#EndRegion
