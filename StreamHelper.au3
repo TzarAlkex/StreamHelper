@@ -21,7 +21,7 @@ Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
 
 #include <AutoItConstants.au3>
-#include "JSMN.au3"
+#include "Json.au3"
 #include <Array.au3>
 #include <InetConstants.au3>
 #include <Date.au3>
@@ -100,28 +100,28 @@ Func _TwitchGet($sUsername)
 		For $iX = 0 To UBound($avTemp) -1
 			ConsoleWrite($iX +1 & "/" & UBound($avTemp) & @CRLF)
 
-			$oChannel = Jsmn_ObjGet($avTemp[$iX], "channel")
-			$sName = Jsmn_ObjGet($oChannel, "name")
+			$oChannel = Json_ObjGet($avTemp[$iX], "channel")
+			$sName = Json_ObjGet($oChannel, "name")
 			$sOptions = '?channel=' & ',' & $sName
 			$sUrl = "https://api.twitch.tv/kraken/" & "streams" & $sOptions
 			$oChannel = FetchItems($sUrl, "streams")
 
 			If IsArray($oChannel) Then
 
-				$oChannel2 = Jsmn_ObjGet($oChannel[0], "channel")
-				$sUrl = Jsmn_ObjGet($oChannel2, "url")
-				If $sUrl = "" Then $sUrl = "http://www.twitch.tv/" & Jsmn_ObjGet($oChannel2, "name")
+				$oChannel2 = Json_ObjGet($oChannel[0], "channel")
+				$sUrl = Json_ObjGet($oChannel2, "url")
+				If $sUrl = "" Then $sUrl = "http://www.twitch.tv/" & Json_ObjGet($oChannel2, "name")
 
-				$sDisplayName = Jsmn_ObjGet($oChannel2, "display_name")
+				$sDisplayName = Json_ObjGet($oChannel2, "display_name")
 
-				$sStatus = Jsmn_ObjGet($oChannel2, "status")
+				$sStatus = Json_ObjGet($oChannel2, "status")
 
-				$oPreview = Jsmn_ObjGet($oChannel[0], "preview")
-				$sMedium = Jsmn_ObjGet($oPreview, "medium")
+				$oPreview = Json_ObjGet($oChannel[0], "preview")
+				$sMedium = Json_ObjGet($oPreview, "medium")
 
-				$sGame = Jsmn_ObjGet($oChannel[0], "game")
+				$sGame = Json_ObjGet($oChannel[0], "game")
 
-				$sCreated = Jsmn_ObjGet($oChannel[0], "created_at")
+				$sCreated = Json_ObjGet($oChannel[0], "created_at")
 
 				$asSplit = StringSplit($sCreated, "T")
 				$asDate = StringSplit($asSplit[1], "-")
@@ -173,7 +173,7 @@ Func FetchItems($sUrl, $sKey)
 	If VarGetType($oJSON) = "String" And $oJSON = "" Then Return ""
 ;~ 	ConsoleWrite("pizza" & @CRLF)
 
-	$oFollows = Jsmn_ObjGet($oJSON, $sKey)
+	$oFollows = Json_ObjGet($oJSON, $sKey)
 
 	If UBound($oFollows) > 0 Then
 		Return $oFollows
@@ -185,7 +185,7 @@ EndFunc
 Func getJson($sUrl)
 	$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
 
-	$oJSON = Jsmn_Decode(BinaryToString($dJsonString))
+	$oJSON = Json_Decode(BinaryToString($dJsonString))
 	Return $oJSON
 EndFunc
 
@@ -249,7 +249,7 @@ Func _HitboxGet($sUsername)
 		For $iX = 0 To UBound($avTemp) -1
 			ConsoleWrite($iX +1 & "/" & UBound($avTemp) & @CRLF)
 
-			$sUserName = Jsmn_ObjGet($avTemp[$iX], "user_name")
+			$sUserName = Json_ObjGet($avTemp[$iX], "user_name")
 			$sUrl = "https://api.hitbox.tv/media/live/" & $sUserName
 ;~ 		ConsoleWrite("hej" & @CRLF)
 			$oLivestream = FetchItems($sUrl, "livestream")
@@ -257,20 +257,20 @@ Func _HitboxGet($sUsername)
 
 			If UBound($oLivestream) = 0 Then ContinueLoop
 
-			If Jsmn_ObjGet($oLivestream[0], "media_is_live") = 1 Then
+			If Json_ObjGet($oLivestream[0], "media_is_live") = 1 Then
 
-				$oChannel = Jsmn_ObjGet($oLivestream[0], "channel")
-				$sUrl = Jsmn_ObjGet($oChannel, "channel_link")
+				$oChannel = Json_ObjGet($oLivestream[0], "channel")
+				$sUrl = Json_ObjGet($oChannel, "channel_link")
 
-				$sDisplayName = Jsmn_ObjGet($oLivestream[0], "media_display_name")
+				$sDisplayName = Json_ObjGet($oLivestream[0], "media_display_name")
 
-				$sStatus = Jsmn_ObjGet($oLivestream[0], "media_status")
+				$sStatus = Json_ObjGet($oLivestream[0], "media_status")
 
-				$sThumbnail = Jsmn_ObjGet($oLivestream[0], "media_thumbnail")
+				$sThumbnail = Json_ObjGet($oLivestream[0], "media_thumbnail")
 
-				$sGame = Jsmn_ObjGet($oLivestream[0], "category_name")
+				$sGame = Json_ObjGet($oLivestream[0], "category_name")
 
-				$sCreated = Jsmn_ObjGet($oLivestream[0], "media_live_since")
+				$sCreated = Json_ObjGet($oLivestream[0], "media_live_since")
 
 				$asSplit = StringSplit($sCreated, " ")
 				$asDate = StringSplit($asSplit[1], "-")
