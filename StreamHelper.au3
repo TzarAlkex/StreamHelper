@@ -44,15 +44,12 @@ TrayCreateItem("")
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime
 
 Global $sNew
-Global $asTwitch[1][$eMax]
-Global $asHitbox[1][$eMax]
 Global $mTwitch[]
 Global $mHitbox[]
 
-Global $iPID
 Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
 
 AdlibRegister(PostLaunchInitializer)
@@ -74,36 +71,15 @@ WEnd
 #Region TWITCH
 Func _Twitch()
 	ConsoleWrite("Twitching" & @CRLF)
-	Local $asTwitchOld = $asTwitch
-	$asTwitch = _TwitchGet($sTwitchUsername)
-
-;~ 	If UBound($asTwitchOld, 0) = 2 Then
-;~ 		For $iX = 0 To UBound($asTwitchOld) -1
-;~ 			TrayItemDelete($asTwitchOld[$iX][$eTrayId])
-;~ 		Next
-;~ 	EndIf
-
-;~ 	For $iX = 0 To UBound($asTwitch) -1
-;~ 		$asTwitch[$iX][$eTrayId] = TrayCreateItem($asTwitch[$iX][$eDisplayName] & " | " & $asTwitch[$iX][$eGame], $idTwitch)
-;~ 		TrayItemSetOnEvent( -1, _TrayStuff)
-
-;~ 		_ArraySearch($asTwitchOld, $asTwitch[$iX][$eDisplayName])
-;~ 		If @error = 6 Then $sNew &= $asTwitch[$iX][$eDisplayName] & " | " & $asTwitch[$iX][$eGame] & @CRLF
-;~ 	Next
+	_TwitchGet($sTwitchUsername)
 
 	Local $aMapKeys = MapKeys($mTwitch)
-;~ 	_ArrayDisplay($aMapKeys)
-;~ 	ConsoleWrite(VarGetType($mTwitch["xChocoBARS"].Name) & @CRLF)
-;~ 	ConsoleWrite(UBound($mTwitch) & @CRLF)
 	For $iX = 0 To UBound($aMapKeys) -1
-;~ 		ConsoleWrite(VarGetType($mTwitch[$iX]) & @CRLF)
-;~ 		ConsoleWrite(String($mTwitch[$iX])+1 & @CRLF)
-;~ 		ConsoleWrite($mTwitch[$aMapKeys[$iX]].Url & @CRLF)
-;~ 		ConsoleWrite($aMapKeys[$iX] & @CRLF)
+		ConsoleWrite($aMapKeys[$iX] & @CRLF)
+
 		If $mTwitch[$aMapKeys[$iX]].Online = True Then
 			If $mTwitch[$aMapKeys[$iX]].TrayId = 0 Then
 				$mTwitch[$aMapKeys[$iX]].TrayId = TrayCreateItem($aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game, $idTwitch)
-;~ 				$mTwitch[$aMapKeys[$iX]].Online = False
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
 				$sNew &= $aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game & @CRLF
@@ -116,11 +92,9 @@ Func _Twitch()
 			EndIf
 		EndIf
 	Next
-;~ 	Exit
 EndFunc
 
 Func _TwitchGet($sUsername)
-	Local $avRet[0][$eMax]
 	$iLimit = 100
 	$iOffset = 0
 	$sQuotedUsername = URLEncode($sUsername)
@@ -179,15 +153,6 @@ Func _TwitchGet($sUsername)
 
 				ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
 
-				ReDim $avRet[UBound($avRet, 1) +1][UBound($avRet, 2)]
-				$avRet[UBound($avRet) -1][$eDisplayName] = $sDisplayName
-				$avRet[UBound($avRet) -1][$eUrl] = $sUrl
-				$avRet[UBound($avRet) -1][$ePreview] = $sMedium
-				$avRet[UBound($avRet) -1][$eGame] = $sGame
-				$avRet[UBound($avRet) -1][$eCreated] = $sCreated
-				$avRet[UBound($avRet) -1][$eTime] = $sTime
-				$avRet[UBound($avRet) -1][$eStatus] = $sStatus
-
 				If MapExists($mTwitch, $sDisplayName) Then
 					$mTwitch[$sDisplayName].Game = $sGame
 					$mTwitch[$sDisplayName].Created = $sCreated
@@ -196,7 +161,6 @@ Func _TwitchGet($sUsername)
 					$mTwitch[$sDisplayName].Online = True
 				Else
 					Local $mInternal[]
-;~ 					$mInternal.Name = $sDisplayName
 					$mInternal.Url = $sUrl
 					$mInternal.Preview = $sMedium
 					$mInternal.Game = $sGame
@@ -209,14 +173,12 @@ Func _TwitchGet($sUsername)
 					$mTwitch[$sDisplayName] = $mInternal
 				EndIf
 
-;~ 				ConsoleWrite(VarGetType($mTwitch[$sDisplayName]) & @CRLF)
-;~ 				ExitLoop
 			EndIf
 		Next
 
 		$iOffset += $iLimit
 	WEnd
-	Return $avRet
+	Return "Potato on a Stick"
 EndFunc
 
 Func OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
@@ -227,43 +189,22 @@ EndFunc
 #Region HITBOX
 Func _Hitbox()
 	ConsoleWrite("Hitboxing" & @CRLF)
-	Local $asHitboxOld = $asHitbox
-	$asHitbox = _HitboxGet($sHitboxUsername)
-
-;~ 	If UBound($asHitboxOld, 0) = 2 Then
-;~ 		For $iX = 0 To UBound($asHitboxOld) -1
-;~ 			TrayItemDelete($asHitboxOld[$iX][$eTrayId])
-;~ 		Next
-;~ 	EndIf
-
-;~ 	For $iX = 0 To UBound($asHitbox) -1
-;~ 		$asHitbox[$iX][$eTrayId] = TrayCreateItem($asHitbox[$iX][$eDisplayName] & " | " & $asHitbox[$iX][$eGame], $idHitbox)
-;~ 		TrayItemSetOnEvent( -1, _TrayStuff)
-
-;~ 		_ArraySearch($asHitboxOld, $asHitbox[$iX][$eDisplayName])
-;~ 		If @error = 6 Then $sNew &= $asHitbox[$iX][$eDisplayName] & " | " & $asHitbox[$iX][$eGame] & @CRLF
-;~ 	Next
+	_HitboxGet($sHitboxUsername)
 
 	Local $aMapKeys = MapKeys($mHitbox)
 	For $iX = 0 To UBound($aMapKeys) -1
 		ConsoleWrite($aMapKeys[$iX] & @CRLF)
+
 		If $mHitbox[$aMapKeys[$iX]].Online = True Then
-			ConsoleWrite(" is online" & @CRLF)
-;~ 			ConsoleWrite($mHitbox[$aMapKeys[$iX]].Online & @CRLF)
 			If $mHitbox[$aMapKeys[$iX]].TrayId = 0 Then
-				ConsoleWrite(" is created on tray" & @CRLF)
 				$mHitbox[$aMapKeys[$iX]].TrayId = TrayCreateItem($aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game, $idHitbox)
-;~ 				$mHitbox[$aMapKeys[$iX]].Online = False
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
 				$sNew &= $aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game & @CRLF
 			EndIf
 			$mHitbox[$aMapKeys[$iX]].Online = False
-;~ 			ConsoleWrite($mHitbox[$aMapKeys[$iX]].Online & @CRLF)
 		Else
-			ConsoleWrite(" is offline" & @CRLF)
 			If $mHitbox[$aMapKeys[$iX]].TrayId <> 0 Then
-				ConsoleWrite(" is deleted from tray" & @CRLF)
 				TrayItemDelete($mHitbox[$aMapKeys[$iX]].TrayId)
 				$mHitbox[$aMapKeys[$iX]].TrayId = 0
 			EndIf
@@ -272,7 +213,6 @@ Func _Hitbox()
 EndFunc
 
 Func _HitboxGet($sUsername)
-	Local $avRet[0][$eMax]
 	$iLimit = 100
 	$iOffset = 0
 	$sQuotedUsername = URLEncode($sUsername)
@@ -288,17 +228,11 @@ Func _HitboxGet($sUsername)
 
 			$sUserName = Json_ObjGet($avTemp[$iX], "user_name")
 			$sUrl = "https://api.hitbox.tv/media/live/" & $sUserName
-;~ 		ConsoleWrite("hej" & @CRLF)
 			$oLivestream = FetchItems($sUrl, "livestream")
-;~ 		ConsoleWrite("då" & @CRLF)
 
-;~ 			ConsoleWrite($sUserName & @CRLF)
 			If UBound($oLivestream) = 0 Then ContinueLoop
-;~ 			ConsoleWrite("tomato" & @CRLF)
 
 			If Json_ObjGet($oLivestream[0], "media_is_live") = 1 Then
-;~ 				ConsoleWrite("hej" & @CRLF)
-
 				$oChannel = Json_ObjGet($oLivestream[0], "channel")
 				$sUrl = Json_ObjGet($oChannel, "channel_link")
 
@@ -335,15 +269,6 @@ Func _HitboxGet($sUsername)
 
 				ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
 
-				ReDim $avRet[UBound($avRet, 1) +1][UBound($avRet, 2)]
-				$avRet[UBound($avRet) -1][$eDisplayName] = $sDisplayName
-				$avRet[UBound($avRet) -1][$eUrl] = $sUrl
-				$avRet[UBound($avRet) -1][$ePreview] = $sThumbnail
-				$avRet[UBound($avRet) -1][$eGame] = $sGame
-				$avRet[UBound($avRet) -1][$eCreated] = $sCreated
-				$avRet[UBound($avRet) -1][$eTime] = $sTime
-				$avRet[UBound($avRet) -1][$eStatus] = $sStatus
-
 				If MapExists($mHitbox, $sDisplayName) Then
 					$mHitbox[$sDisplayName].Game = $sGame
 					$mHitbox[$sDisplayName].Created = $sCreated
@@ -352,7 +277,6 @@ Func _HitboxGet($sUsername)
 					$mHitbox[$sDisplayName].Online = True
 				Else
 					Local $mInternal[]
-;~ 					$mInternal.Name = $sDisplayName
 					$mInternal.Url = $sUrl
 					$mInternal.Preview = $sThumbnail
 					$mInternal.Game = $sGame
@@ -360,27 +284,17 @@ Func _HitboxGet($sUsername)
 					$mInternal.Time = $sTime
 					$mInternal.Status = $sStatus
 					$mInternal.Online = True
-;~ 				ConsoleWrite(VarGetType($mHitbox[$sDisplayName]) & @CRLF)
-;~ 				If IsObj($mHitbox[$sDisplayName]) And IsNumber($mHitbox[$sDisplayName].TrayId) Then
-;~ 					ConsoleWrite("tittut" & @CRLF)
 					$mInternal.TrayId = 0
 
 					$mHitbox[$sDisplayName] = $mInternal
 				EndIf
 
-;~ 				If VarGetType($mHitbox[$sDisplayName]) = "Keyword" Then
-;~ 					$mInternal.TrayId = 0
-;~ 				ElseIf VarGetType($mHitbox[$sDisplayName]) = "Map" Then
-;~ 					If $mInternal.TrayId = 0 Then $mHitbox[$sDisplayName].TrayId
-;~ 				EndIf
-
-;~ 				$mHitbox[$sDisplayName] = $mInternal
 			EndIf
 		Next
 
 		$iOffset += $iLimit
 	WEnd
-	Return $avRet
+	Return "Potato on a Stick"
 EndFunc
 
 Func OPTIONS_OFFSET_LIMIT_HITBOX($iOffset, $iLimit)
@@ -392,13 +306,7 @@ EndFunc
 Func FetchItems($sUrl, $sKey)
 	$oJSON = getJson($sUrl)
 
-;~ 	ConsoleWrite($sUrl & @CRLF)
-;~ 	ConsoleWrite(VarGetType($oJSON) & @CRLF)
-;~ 	ConsoleWrite($oJSON & @CRLF)
-
-;~ 	ConsoleWrite("bla" & @CRLF)
 	If VarGetType($oJSON) = "String" And $oJSON = "" Then Return ""
-;~ 	ConsoleWrite("pizza" & @CRLF)
 
 	$oFollows = Json_ObjGet($oJSON, $sKey)
 
@@ -449,18 +357,6 @@ Func _TrayStuff()
 		Case Else
 			Local $sUrl
 			Do
-;~ 				For $iX = 0 To UBound($asTwitch) -1
-;~ 					If $asTwitch[$iX][$eTrayId] = @TRAY_ID Then
-;~ 						$sUrl = $asTwitch[$iX][$eUrl]
-;~ 						ExitLoop 2
-;~ 					EndIf
-;~ 				Next
-;~ 				For $iX = 0 To UBound($asHitbox) -1
-;~ 					If $asHitbox[$iX][$eTrayId] = @TRAY_ID Then
-;~ 						$sUrl = $asHitbox[$iX][$eUrl]
-;~ 						ExitLoop 2
-;~ 					EndIf
-;~ 				Next
 				Local $aMapKeys = MapKeys($mTwitch)
 				For $iX = 0 To UBound($aMapKeys) -1
 					If $mTwitch[$aMapKeys[$iX]].TrayId = @TRAY_ID Then
@@ -473,12 +369,11 @@ Func _TrayStuff()
 					If $mHitbox[$aMapKeys[$iX]].TrayId = @TRAY_ID Then
 						$sUrl = $mHitbox[$aMapKeys[$iX]].Url
 						ExitLoop 2
-;~ 						ContinueCase
 					EndIf
 				Next
 			Until False
 			If $iLivestreamerInstalled Then
-				$iPID = Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
+				Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
 			Else
 				ShellExecute($sUrl)
 			EndIf
