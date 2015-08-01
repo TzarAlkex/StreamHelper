@@ -83,6 +83,8 @@ Func _Twitch()
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
 				$sNew &= $aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game & @CRLF
+			Else
+				TrayItemSetText($mTwitch[$aMapKeys[$iX]].TrayId, $aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game)
 			EndIf
 			$mTwitch[$aMapKeys[$iX]].Online = False
 		Else
@@ -201,6 +203,8 @@ Func _Hitbox()
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
 				$sNew &= $aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game & @CRLF
+			Else
+				TrayItemSetText($mHitbox[$aMapKeys[$iX]].TrayId, $aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game)
 			EndIf
 			$mHitbox[$aMapKeys[$iX]].Online = False
 		Else
