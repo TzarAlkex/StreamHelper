@@ -310,7 +310,7 @@ EndFunc
 Func FetchItems($sUrl, $sKey)
 	$oJSON = getJson($sUrl)
 
-	If VarGetType($oJSON) = "String" And $oJSON = "" Then Return ""
+	If IsObj($oJSON) = False Then Return ""
 
 	$oFollows = Json_ObjGet($oJSON, $sKey)
 
