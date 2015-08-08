@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Version=Beta
 #AutoIt3Wrapper_UseX64=n
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.13
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.14
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #cs ----------------------------------------------------------------------------
@@ -26,6 +26,9 @@ Opt("TrayOnEventMode", 1)
 #include <Array.au3>
 #include <InetConstants.au3>
 #include <Date.au3>
+#include <GDIPlus.au3>
+#include <WinAPIShellEx.au3>
+#include <WindowsConstants.au3>
 
 Local $idTwitch = TrayCreateMenu("Twitch")
 TrayCreateItem("")
@@ -52,12 +55,26 @@ Global $mHitbox[]
 
 Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
 
+Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
+Global Const $AUT_NOTIFY_ICON_ID = 1 ; Application.h
+
+AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the second")
+Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
+
+_GDIPlus_Startup()
+
+Global $hBitmap, $hImage, $hGraphic
+$hBitmap = _WinAPI_CreateSolidBitmap(0, 0xFFFFFF, 16, 16)
+$hImage = _GDIPlus_BitmapCreateFromHBITMAP($hBitmap)
+$hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
+
 AdlibRegister(PostLaunchInitializer)
 
 While 1
 	Global $sNew = ""
 	If $sTwitchUsername <> "" Then _Twitch()
 	If $sHitboxUsername <> "" Then _Hitbox()
+	TraySetIcon()
 
 	If $sNew <> "" Then TrayTip("Now streaming", $sNew, 10)
 
@@ -71,6 +88,8 @@ WEnd
 #Region TWITCH
 Func _Twitch()
 	ConsoleWrite("Twitching" & @CRLF)
+	_ProgressSpecific("0%")
+
 	_TwitchGet($sTwitchUsername)
 
 	Local $aMapKeys = MapKeys($mTwitch)
@@ -108,6 +127,7 @@ Func _TwitchGet($sUsername)
 
 		For $iX = 0 To UBound($avTemp) -1
 			ConsoleWrite($iX +1 & "/" & UBound($avTemp) & @CRLF)
+			_ProgressSpecific(Int((($iX +1)/UBound($avTemp))*100) & "%")
 
 			$oChannel = Json_ObjGet($avTemp[$iX], "channel")
 			$sName = Json_ObjGet($oChannel, "name")
@@ -191,6 +211,8 @@ EndFunc
 #Region HITBOX
 Func _Hitbox()
 	ConsoleWrite("Hitboxing" & @CRLF)
+	_ProgressSpecific("0%")
+
 	_HitboxGet($sHitboxUsername)
 
 	Local $aMapKeys = MapKeys($mHitbox)
@@ -229,6 +251,7 @@ Func _HitboxGet($sUsername)
 
 		For $iX = 0 To UBound($avTemp) -1
 			ConsoleWrite($iX +1 & "/" & UBound($avTemp) & @CRLF)
+			_ProgressSpecific(Int((($iX +1)/UBound($avTemp))*100) & "%")
 
 			$sUserName = Json_ObjGet($avTemp[$iX], "user_name")
 			$sUrl = "https://api.hitbox.tv/media/live/" & $sUserName
@@ -382,6 +405,51 @@ Func _TrayStuff()
 				ShellExecute($sUrl)
 			EndIf
 	EndSwitch
+EndFunc
+
+;Based on https://www.autoitscript.com/forum/topic/115222-set-the-tray-icon-as-a-hicon/
+Func _TraySet($sText)
+	_GDIPlus_GraphicsClear($hGraphic, 0xFFFFFFFF)
+
+	$hFamily = _GDIPlus_FontFamilyCreate('Arial')
+	$hFont = _GDIPlus_FontCreate($hFamily, 9, 1, 2)
+	$tLayout = _GDIPlus_RectFCreate(0, 0, 0, 0)
+	$hFormat = _GDIPlus_StringFormatCreate()
+	$hBrush = _GDIPlus_BrushCreateSolid(0xFF000000)
+	$aData = _GDIPlus_GraphicsMeasureString($hGraphic, $sText, $hFont, $tLayout, $hFormat)
+	$tLayout = $aData[0]
+	DllStructSetData($tLayout, 1, (_GDIPlus_ImageGetWidth($hImage) - DllStructGetData($tLayout, 3)) / 2)
+	DllStructSetData($tLayout, 2, (_GDIPlus_ImageGetHeight($hImage) - DllStructGetData($tLayout, 4)) / 2)
+	_GDIPlus_GraphicsDrawStringEx($hGraphic, $sText, $hFont, $aData[0], $hFormat, $hBrush)
+	_GDIPlus_StringFormatDispose($hFormat)
+	_GDIPlus_FontFamilyDispose($hFamily)
+	_GDIPlus_FontDispose($hFont)
+	_GDIPlus_BrushDispose($hBrush)
+
+	$hIcon = _GDIPlus_HICONCreateFromBitmap($hImage)
+
+	Local $tNOTIFY = DllStructCreate($tagNOTIFYICONDATA)
+	$tNOTIFY.Size = DllStructGetSize($tNOTIFY)
+	$tNOTIFY.hWnd = $TRAY_ICON_GUI
+	$tNOTIFY.ID = $AUT_NOTIFY_ICON_ID
+	$tNOTIFY.hIcon = $hIcon
+	$tNOTIFY.Flags = BitOR($NIF_ICON, $NIF_MESSAGE)
+	$tNOTIFY.CallbackMessage = $AUT_WM_NOTIFYICON
+
+	_WinAPI_ShellNotifyIcon($NIM_MODIFY, $tNOTIFY)
+	_WinAPI_DestroyIcon($hIcon)
+EndFunc
+
+Func __ProgressLoop()
+	Static Local $sAnimation = "|\–/"
+	$sNow = StringRight($sAnimation, 1)
+	_TraySet($sNow)
+	$sAnimation = $sNow & StringTrimRight($sAnimation, 1)
+EndFunc
+
+Func _ProgressSpecific($sText)
+	AdlibUnRegister(__ProgressLoop)
+	_TraySet($sText)
 EndFunc
 #EndRegion GUI
 
