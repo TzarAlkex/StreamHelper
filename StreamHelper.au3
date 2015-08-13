@@ -450,6 +450,7 @@ EndFunc
 
 Func _ProgressSpecific($sText)
 	AdlibUnRegister(__ProgressLoop)
+	If $sText = "100%" Then $sText = "fin"
 	_TraySet($sText)
 EndFunc
 #EndRegion GUI
