@@ -40,11 +40,11 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eMax
+Global Enum $eTwitch, $eHitbox
 
 Global $sNew
-Global $aTwitch[0][$eMax]
-Global $aHitbox[0][$eMax]
+Global $aStreams[0][$eMax]
 
 Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
 
@@ -61,12 +61,11 @@ $hBitmap = _WinAPI_CreateSolidBitmap(0, 0xFFFFFF, 16, 16)
 $hImage = _GDIPlus_BitmapCreateFromHBITMAP($hBitmap)
 $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
 
-AdlibRegister(PostLaunchInitializer)
-
 While 1
-	Global $sNew = ""
+	Global $sNew = "", $iTrayRefresh = False
 	If $sTwitchUsername <> "" Then _Twitch()
 	If $sHitboxUsername <> "" Then _Hitbox()
+	If $iTrayRefresh Then _TrayRefresh()
 	TraySetIcon()
 
 	If $sNew <> "" Then
@@ -91,26 +90,7 @@ Func _Twitch()
 
 	_TwitchGet($sTwitchUsername)
 
-	For $iX = 0 To UBound($aTwitch) -1
-		ConsoleWrite($aTwitch[$iX][$eDisplayName] & @CRLF)
-
-		If $aTwitch[$iX][$eOnline] = True Then
-			If $aTwitch[$iX][$eTrayId] = 0 Then
-				$aTwitch[$iX][$eTrayId] = TrayCreateItem($aTwitch[$iX][$eDisplayName] & " | " & $aTwitch[$iX][$eGame], -1, 0)
-				TrayItemSetOnEvent( -1, _TrayStuff)
-
-				$sNew &= $aTwitch[$iX][$eDisplayName] & " | " & $aTwitch[$iX][$eGame] & @CRLF
-			Else
-				TrayItemSetText($aTwitch[$iX][$eTrayId], $aTwitch[$iX][$eDisplayName] & " | " & $aTwitch[$iX][$eGame])
-			EndIf
-			$aTwitch[$iX][$eOnline] = False
-		Else
-			If $aTwitch[$iX][$eTrayId] <> 0 Then
-				TrayItemDelete($aTwitch[$iX][$eTrayId])
-				$aTwitch[$iX][$eTrayId] = 0
-			EndIf
-		EndIf
-	Next
+	$iTrayRefresh = True
 EndFunc
 
 Func _TwitchGet($sUsername)
@@ -171,23 +151,7 @@ Func _TwitchGet($sUsername)
 
 				$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-				ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
-
-				For $iIndex = 0 To UBound($aTwitch) -1
-					If $aTwitch[$iIndex][$eDisplayName] = $sDisplayName Then ExitLoop
-				Next
-				If $iIndex = UBound($aTwitch) Then
-					ReDim $aTwitch[$iIndex +1][$eMax]
-				EndIf
-
-				$aTwitch[$iIndex][$eDisplayName] = $sDisplayName
-                $aTwitch[$iIndex][$eUrl] = $sUrl
-                $aTwitch[$iIndex][$ePreview] = $sMedium
-                $aTwitch[$iIndex][$eGame] = $sGame
-                $aTwitch[$iIndex][$eCreated] = $sCreated
-                $aTwitch[$iIndex][$eTime] = $sTime
-                $aTwitch[$iIndex][$eStatus] = $sStatus
-                $aTwitch[$iIndex][$eOnline] = True
+				_StreamSet($sDisplayName, $sUrl, $sMedium, $sGame, $sCreated, $sTime, $sStatus, $eTwitch)
 
 			EndIf
 		Next
@@ -209,26 +173,7 @@ Func _Hitbox()
 
 	_HitboxGet($sHitboxUsername)
 
-	For $iX = 0 To UBound($aHitbox) -1
-		ConsoleWrite($aHitbox[$iX][$eDisplayName] & @CRLF)
-
-		If $aHitbox[$iX][$eOnline] = True Then
-			If $aHitbox[$iX][$eTrayId] = 0 Then
-				$aHitbox[$iX][$eTrayId] = TrayCreateItem($aHitbox[$iX][$eDisplayName] & " | " & $aHitbox[$iX][$eGame], -1, 0)
-				TrayItemSetOnEvent( -1, _TrayStuff)
-
-				$sNew &= $aHitbox[$iX][$eDisplayName] & " | " & $aHitbox[$iX][$eGame] & @CRLF
-			Else
-				TrayItemSetText($aHitbox[$iX][$eTrayId], $aHitbox[$iX][$eDisplayName] & " | " & $aHitbox[$iX][$eGame])
-			EndIf
-			$aHitbox[$iX][$eOnline] = False
-		Else
-			If $aHitbox[$iX][$eTrayId] <> 0 Then
-				TrayItemDelete($aHitbox[$iX][$eTrayId])
-				$aHitbox[$iX][$eTrayId] = 0
-			EndIf
-		EndIf
-	Next
+	$iTrayRefresh = True
 EndFunc
 
 Func _HitboxGet($sUsername)
@@ -287,23 +232,7 @@ Func _HitboxGet($sUsername)
 
 				$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-				ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
-
-				For $iIndex = 0 To UBound($aHitbox) -1
-					If $aHitbox[$iIndex][$eDisplayName] = $sDisplayName Then ExitLoop
-				Next
-				If $iIndex = UBound($aHitbox) Then
-					ReDim $aHitbox[$iIndex +1][$eMax]
-				EndIf
-
-				$aHitbox[$iIndex][$eDisplayName] = $sDisplayName
-                $aHitbox[$iIndex][$eUrl] = $sUrl
-                $aHitbox[$iIndex][$ePreview] = $sThumbnail
-                $aHitbox[$iIndex][$eGame] = $sGame
-                $aHitbox[$iIndex][$eCreated] = $sCreated
-                $aHitbox[$iIndex][$eTime] = $sTime
-                $aHitbox[$iIndex][$eStatus] = $sStatus
-                $aHitbox[$iIndex][$eOnline] = True
+				_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eHitbox)
 
 			EndIf
 		Next
@@ -361,6 +290,31 @@ EndFunc   ;==>URLEncode
 #EndRegion
 
 #Region GUI
+Func _TrayRefresh()
+	_ArraySort($aStreams, 1)
+
+	For $iX = 0 To UBound($aStreams) -1
+		ConsoleWrite($aStreams[$iX][$eDisplayName] & @CRLF)
+
+		If $aStreams[$iX][$eOnline] = True Then
+			If $aStreams[$iX][$eTrayId] = 0 Then
+				$aStreams[$iX][$eTrayId] = TrayCreateItem($aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame], -1, 0)
+				TrayItemSetOnEvent( -1, _TrayStuff)
+
+				$sNew &= $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame] & @CRLF
+			Else
+				TrayItemSetText($aStreams[$iX][$eTrayId], $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame])
+			EndIf
+			$aStreams[$iX][$eOnline] = False
+		Else
+			If $aStreams[$iX][$eTrayId] <> 0 Then
+				TrayItemDelete($aStreams[$iX][$eTrayId])
+				$aStreams[$iX][$eTrayId] = 0
+			EndIf
+		EndIf
+	Next
+EndFunc
+
 Func _TrayStuff()
 	Switch @TRAY_ID
 		Case $idAbout
@@ -373,23 +327,14 @@ Func _TrayStuff()
 			Exit
 		Case Else
 			Local $sUrl
-			Do
-				For $iX = 0 To UBound($aTwitch) -1
-					If $aTwitch[$iX][$eTrayId] = @TRAY_ID Then
-						$sUrl = $aTwitch[$iX][$eUrl]
-						ExitLoop 2
-					EndIf
-				Next
 
-				For $iX = 0 To UBound($aHitbox) -1
-					If $aHitbox[$iX][$eTrayId] = @TRAY_ID Then
-						$sUrl = $aHitbox[$iX][$eUrl]
-						ExitLoop 2
-					EndIf
-				Next
+			For $iX = 0 To UBound($aStreams) -1
+				If $aStreams[$iX][$eTrayId] = @TRAY_ID Then
+					$sUrl = $aStreams[$iX][$eUrl]
+					ExitLoop
+				EndIf
+			Next
 
-				ExitLoop
-			Until False
 			If $iLivestreamerInstalled Then
 				Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
 			Else
@@ -431,21 +376,30 @@ Func _TraySet($sText)
 	_WinAPI_DestroyIcon($hIcon)
 EndFunc
 
-Func __ProgressLoop()
-	Static Local $sAnimation = "|\–/"
-	$sNow = StringRight($sAnimation, 1)
-	_TraySet($sNow)
-	$sAnimation = $sNow & StringTrimRight($sAnimation, 1)
-EndFunc
-
 Func _ProgressSpecific($sText)
-	AdlibUnRegister(__ProgressLoop)
 	_TraySet($sText)
 EndFunc
 #EndRegion GUI
 
 #Region INTENRAL INTERLECT
-Func PostLaunchInitializer()
-	AdlibUnRegister(PostLaunchInitializer)
+Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService)
+	ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
+
+	For $iIndex = 0 To UBound($aStreams) -1
+		If $aStreams[$iIndex][$eUrl] = $sUrl Then ExitLoop
+	Next
+	If $iIndex = UBound($aStreams) Then
+		ReDim $aStreams[$iIndex +1][$eMax]
+	EndIf
+
+	$aStreams[$iIndex][$eDisplayName] = $sDisplayName
+	$aStreams[$iIndex][$eUrl] = $sUrl
+	$aStreams[$iIndex][$ePreview] = $sThumbnail
+	$aStreams[$iIndex][$eGame] = $sGame
+	$aStreams[$iIndex][$eCreated] = $sCreated
+	$aStreams[$iIndex][$eTime] = $sTime
+	$aStreams[$iIndex][$eStatus] = $sStatus
+	$aStreams[$iIndex][$eOnline] = True
+	$aStreams[$iIndex][$eService] = $iService
 EndFunc
 #EndRegion
