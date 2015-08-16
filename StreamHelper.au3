@@ -76,7 +76,13 @@ While 1
 	If $sHitboxUsername <> "" Then _Hitbox()
 	TraySetIcon()
 
-	If $sNew <> "" Then TrayTip("Now streaming", $sNew, 10)
+	If $sNew <> "" Then
+		If StringLen > 255 Then
+			TrayTip("Now streaming", StringLeft($sNew, 252) & "...", 10)
+		Else
+			TrayTip("Now streaming", $sNew, 10)
+		EndIf
+	EndIf
 
 	Global $iTimer = TimerInit()
 
