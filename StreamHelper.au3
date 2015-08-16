@@ -30,19 +30,13 @@ Opt("TrayOnEventMode", 1)
 #include <WinAPIShellEx.au3>
 #include <WindowsConstants.au3>
 
-Local $idTwitch = TrayCreateMenu("Twitch")
 TrayCreateItem("")
-
-Local $idHitbox = TrayCreateMenu("Hitbox")
-TrayCreateItem("")
-
-Local $idRefresh = TrayCreateItem("Manual Refresh")
+Local $idRefresh = TrayCreateItem("Refresh")
 TrayItemSetOnEvent( -1, _TrayStuff)
-TrayCreateItem("")
 
+TrayCreateItem("")
 Local $idAbout = TrayCreateItem("About")
 TrayItemSetOnEvent( -1, _TrayStuff)
-TrayCreateItem("")
 
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
@@ -104,7 +98,7 @@ Func _Twitch()
 
 		If $mTwitch[$aMapKeys[$iX]].Online = True Then
 			If $mTwitch[$aMapKeys[$iX]].TrayId = 0 Then
-				$mTwitch[$aMapKeys[$iX]].TrayId = TrayCreateItem($aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game, $idTwitch)
+				$mTwitch[$aMapKeys[$iX]].TrayId = TrayCreateItem($aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game, -1, 0)
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
 				$sNew &= $aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game & @CRLF
@@ -227,7 +221,7 @@ Func _Hitbox()
 
 		If $mHitbox[$aMapKeys[$iX]].Online = True Then
 			If $mHitbox[$aMapKeys[$iX]].TrayId = 0 Then
-				$mHitbox[$aMapKeys[$iX]].TrayId = TrayCreateItem($aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game, $idHitbox)
+				$mHitbox[$aMapKeys[$iX]].TrayId = TrayCreateItem($aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game, -1, 0)
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
 				$sNew &= $aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game & @CRLF
