@@ -1,12 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Version=Beta
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Fileversion=0.0.0.14
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #cs ----------------------------------------------------------------------------
 
- AutoIt Version: SOME VERSION WITH MAPS (Beta)
+ AutoIt Version: 3.3.12.0 (Stable)
  Author:         Alexander Samuelsson AKA AdmiralAlkex
 
  Script Function:
@@ -41,11 +40,11 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eMax
 
 Global $sNew
-Global $mTwitch[]
-Global $mHitbox[]
+Global $aTwitch[0][$eMax]
+Global $aHitbox[0][$eMax]
 
 Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
 
@@ -92,24 +91,23 @@ Func _Twitch()
 
 	_TwitchGet($sTwitchUsername)
 
-	Local $aMapKeys = MapKeys($mTwitch)
-	For $iX = 0 To UBound($aMapKeys) -1
-		ConsoleWrite($aMapKeys[$iX] & @CRLF)
+	For $iX = 0 To UBound($aTwitch) -1
+		ConsoleWrite($aTwitch[$iX][$eDisplayName] & @CRLF)
 
-		If $mTwitch[$aMapKeys[$iX]].Online = True Then
-			If $mTwitch[$aMapKeys[$iX]].TrayId = 0 Then
-				$mTwitch[$aMapKeys[$iX]].TrayId = TrayCreateItem($aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game, -1, 0)
+		If $aTwitch[$iX][$eOnline] = True Then
+			If $aTwitch[$iX][$eTrayId] = 0 Then
+				$aTwitch[$iX][$eTrayId] = TrayCreateItem($aTwitch[$iX][$eDisplayName] & " | " & $aTwitch[$iX][$eGame], -1, 0)
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
-				$sNew &= $aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game & @CRLF
+				$sNew &= $aTwitch[$iX][$eDisplayName] & " | " & $aTwitch[$iX][$eGame] & @CRLF
 			Else
-				TrayItemSetText($mTwitch[$aMapKeys[$iX]].TrayId, $aMapKeys[$iX] & " | " & $mTwitch[$aMapKeys[$iX]].Game)
+				TrayItemSetText($aTwitch[$iX][$eTrayId], $aTwitch[$iX][$eDisplayName] & " | " & $aTwitch[$iX][$eGame])
 			EndIf
-			$mTwitch[$aMapKeys[$iX]].Online = False
+			$aTwitch[$iX][$eOnline] = False
 		Else
-			If $mTwitch[$aMapKeys[$iX]].TrayId <> 0 Then
-				TrayItemDelete($mTwitch[$aMapKeys[$iX]].TrayId)
-				$mTwitch[$aMapKeys[$iX]].TrayId = 0
+			If $aTwitch[$iX][$eTrayId] <> 0 Then
+				TrayItemDelete($aTwitch[$iX][$eTrayId])
+				$aTwitch[$iX][$eTrayId] = 0
 			EndIf
 		EndIf
 	Next
@@ -175,25 +173,21 @@ Func _TwitchGet($sUsername)
 
 				ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
 
-				If MapExists($mTwitch, $sDisplayName) Then
-					$mTwitch[$sDisplayName].Game = $sGame
-					$mTwitch[$sDisplayName].Created = $sCreated
-					$mTwitch[$sDisplayName].Time = $sTime
-					$mTwitch[$sDisplayName].Status = $sStatus
-					$mTwitch[$sDisplayName].Online = True
-				Else
-					Local $mInternal[]
-					$mInternal.Url = $sUrl
-					$mInternal.Preview = $sMedium
-					$mInternal.Game = $sGame
-					$mInternal.Created = $sCreated
-					$mInternal.Time = $sTime
-					$mInternal.Status = $sStatus
-					$mInternal.Online = True
-					$mInternal.TrayId = 0
-
-					$mTwitch[$sDisplayName] = $mInternal
+				For $iIndex = 0 To UBound($aTwitch) -1
+					If $aTwitch[$iIndex][$eDisplayName] = $sDisplayName Then ExitLoop
+				Next
+				If $iIndex = UBound($aTwitch) Then
+					ReDim $aTwitch[$iIndex +1][$eMax]
 				EndIf
+
+				$aTwitch[$iIndex][$eDisplayName] = $sDisplayName
+                $aTwitch[$iIndex][$eUrl] = $sUrl
+                $aTwitch[$iIndex][$ePreview] = $sMedium
+                $aTwitch[$iIndex][$eGame] = $sGame
+                $aTwitch[$iIndex][$eCreated] = $sCreated
+                $aTwitch[$iIndex][$eTime] = $sTime
+                $aTwitch[$iIndex][$eStatus] = $sStatus
+                $aTwitch[$iIndex][$eOnline] = True
 
 			EndIf
 		Next
@@ -215,24 +209,23 @@ Func _Hitbox()
 
 	_HitboxGet($sHitboxUsername)
 
-	Local $aMapKeys = MapKeys($mHitbox)
-	For $iX = 0 To UBound($aMapKeys) -1
-		ConsoleWrite($aMapKeys[$iX] & @CRLF)
+	For $iX = 0 To UBound($aHitbox) -1
+		ConsoleWrite($aHitbox[$iX][$eDisplayName] & @CRLF)
 
-		If $mHitbox[$aMapKeys[$iX]].Online = True Then
-			If $mHitbox[$aMapKeys[$iX]].TrayId = 0 Then
-				$mHitbox[$aMapKeys[$iX]].TrayId = TrayCreateItem($aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game, -1, 0)
+		If $aHitbox[$iX][$eOnline] = True Then
+			If $aHitbox[$iX][$eTrayId] = 0 Then
+				$aHitbox[$iX][$eTrayId] = TrayCreateItem($aHitbox[$iX][$eDisplayName] & " | " & $aHitbox[$iX][$eGame], -1, 0)
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
-				$sNew &= $aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game & @CRLF
+				$sNew &= $aHitbox[$iX][$eDisplayName] & " | " & $aHitbox[$iX][$eGame] & @CRLF
 			Else
-				TrayItemSetText($mHitbox[$aMapKeys[$iX]].TrayId, $aMapKeys[$iX] & " | " & $mHitbox[$aMapKeys[$iX]].Game)
+				TrayItemSetText($aHitbox[$iX][$eTrayId], $aHitbox[$iX][$eDisplayName] & " | " & $aHitbox[$iX][$eGame])
 			EndIf
-			$mHitbox[$aMapKeys[$iX]].Online = False
+			$aHitbox[$iX][$eOnline] = False
 		Else
-			If $mHitbox[$aMapKeys[$iX]].TrayId <> 0 Then
-				TrayItemDelete($mHitbox[$aMapKeys[$iX]].TrayId)
-				$mHitbox[$aMapKeys[$iX]].TrayId = 0
+			If $aHitbox[$iX][$eTrayId] <> 0 Then
+				TrayItemDelete($aHitbox[$iX][$eTrayId])
+				$aHitbox[$iX][$eTrayId] = 0
 			EndIf
 		EndIf
 	Next
@@ -296,25 +289,21 @@ Func _HitboxGet($sUsername)
 
 				ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
 
-				If MapExists($mHitbox, $sDisplayName) Then
-					$mHitbox[$sDisplayName].Game = $sGame
-					$mHitbox[$sDisplayName].Created = $sCreated
-					$mHitbox[$sDisplayName].Time = $sTime
-					$mHitbox[$sDisplayName].Status = $sStatus
-					$mHitbox[$sDisplayName].Online = True
-				Else
-					Local $mInternal[]
-					$mInternal.Url = $sUrl
-					$mInternal.Preview = $sThumbnail
-					$mInternal.Game = $sGame
-					$mInternal.Created = $sCreated
-					$mInternal.Time = $sTime
-					$mInternal.Status = $sStatus
-					$mInternal.Online = True
-					$mInternal.TrayId = 0
-
-					$mHitbox[$sDisplayName] = $mInternal
+				For $iIndex = 0 To UBound($aHitbox) -1
+					If $aHitbox[$iIndex][$eDisplayName] = $sDisplayName Then ExitLoop
+				Next
+				If $iIndex = UBound($aHitbox) Then
+					ReDim $aHitbox[$iIndex +1][$eMax]
 				EndIf
+
+				$aHitbox[$iIndex][$eDisplayName] = $sDisplayName
+                $aHitbox[$iIndex][$eUrl] = $sUrl
+                $aHitbox[$iIndex][$ePreview] = $sThumbnail
+                $aHitbox[$iIndex][$eGame] = $sGame
+                $aHitbox[$iIndex][$eCreated] = $sCreated
+                $aHitbox[$iIndex][$eTime] = $sTime
+                $aHitbox[$iIndex][$eStatus] = $sStatus
+                $aHitbox[$iIndex][$eOnline] = True
 
 			EndIf
 		Next
@@ -385,20 +374,21 @@ Func _TrayStuff()
 		Case Else
 			Local $sUrl
 			Do
-				Local $aMapKeys = MapKeys($mTwitch)
-				For $iX = 0 To UBound($aMapKeys) -1
-					If $mTwitch[$aMapKeys[$iX]].TrayId = @TRAY_ID Then
-						$sUrl = $mTwitch[$aMapKeys[$iX]].Url
+				For $iX = 0 To UBound($aTwitch) -1
+					If $aTwitch[$iX][$eTrayId] = @TRAY_ID Then
+						$sUrl = $aTwitch[$iX][$eUrl]
 						ExitLoop 2
 					EndIf
 				Next
-				Local $aMapKeys = MapKeys($mHitbox)
-				For $iX = 0 To UBound($aMapKeys) -1
-					If $mHitbox[$aMapKeys[$iX]].TrayId = @TRAY_ID Then
-						$sUrl = $mHitbox[$aMapKeys[$iX]].Url
+
+				For $iX = 0 To UBound($aHitbox) -1
+					If $aHitbox[$iX][$eTrayId] = @TRAY_ID Then
+						$sUrl = $aHitbox[$iX][$eUrl]
 						ExitLoop 2
 					EndIf
 				Next
+
+				ExitLoop
 			Until False
 			If $iLivestreamerInstalled Then
 				Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
