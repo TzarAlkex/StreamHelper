@@ -127,7 +127,7 @@ Func _TwitchGet($sUsername)
 
 		For $iX = 0 To UBound($avTemp) -1
 			ConsoleWrite($iX +1 & "/" & UBound($avTemp) & @CRLF)
-			_ProgressSpecific(Int((($iX +1)/UBound($avTemp))*100) & "%")
+			_ProgressSpecific(Int((($iX)/UBound($avTemp))*100) & "%")
 
 			$oChannel = Json_ObjGet($avTemp[$iX], "channel")
 			$sName = Json_ObjGet($oChannel, "name")
@@ -251,7 +251,7 @@ Func _HitboxGet($sUsername)
 
 		For $iX = 0 To UBound($avTemp) -1
 			ConsoleWrite($iX +1 & "/" & UBound($avTemp) & @CRLF)
-			_ProgressSpecific(Int((($iX +1)/UBound($avTemp))*100) & "%")
+			_ProgressSpecific(Int((($iX)/UBound($avTemp))*100) & "%")
 
 			$sUserName = Json_ObjGet($avTemp[$iX], "user_name")
 			$sUrl = "https://api.hitbox.tv/media/live/" & $sUserName
@@ -450,7 +450,6 @@ EndFunc
 
 Func _ProgressSpecific($sText)
 	AdlibUnRegister(__ProgressLoop)
-	If $sText = "100%" Then $sText = "fin"
 	_TraySet($sText)
 EndFunc
 #EndRegion GUI
