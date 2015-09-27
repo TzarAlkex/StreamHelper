@@ -16,6 +16,7 @@
 $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
 $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
 $iMinRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 5)   ;HOW MANY MINUTES BETWEEN EVERY CHECK FOR NEW STREAMS
+$iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "")   ;PRINT ON JSON
 
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
@@ -86,7 +87,6 @@ WEnd
 #Region TWITCH
 Func _Twitch()
 	ConsoleWrite("Twitching" & @CRLF)
-	_ProgressSpecific("0%")
 
 	_TwitchGet($sTwitchUsername)
 
@@ -98,62 +98,61 @@ Func _TwitchGet($sUsername)
 	$iOffset = 0
 	$sQuotedUsername = URLEncode($sUsername)
 	$sBaseUrl = "https://api.twitch.tv/kraken/users/" & $sQuotedUsername & "/follows/channels"
+
 	While True
 		$sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
 		$avTemp = FetchItems($sUrl, "follows")
 		If UBound($avTemp) = 0 Then ExitLoop
 
+		Local $sOptions
 		For $iX = 0 To UBound($avTemp) -1
-			ConsoleWrite($iX +1 & "/" & UBound($avTemp) & @CRLF)
-			_ProgressSpecific(Int((($iX)/UBound($avTemp))*100) & "%")
-
 			$oChannel = Json_ObjGet($avTemp[$iX], "channel")
 			$sName = Json_ObjGet($oChannel, "name")
-			$sOptions = '?channel=' & ',' & $sName
-			$sUrl = "https://api.twitch.tv/kraken/" & "streams" & $sOptions
-			$oChannel = FetchItems($sUrl, "streams")
+			$sOptions &= $sName & ','
+		Next
 
-			If IsArray($oChannel) Then
+		$sOptions = StringTrimRight($sOptions, 1)
+		$sUrl = 'https://api.twitch.tv/kraken/streams?channel=' & $sOptions & '&limit=' & $iLimit
+		$oChannel = FetchItems($sUrl, "streams")
 
-				$oChannel2 = Json_ObjGet($oChannel[0], "channel")
-				$sUrl = Json_ObjGet($oChannel2, "url")
-				If $sUrl = "" Then $sUrl = "http://www.twitch.tv/" & Json_ObjGet($oChannel2, "name")
+		For $iX = 0 To UBound($oChannel) -1
+			$oChannel2 = Json_ObjGet($oChannel[$iX], "channel")
+			$sUrl = Json_ObjGet($oChannel2, "url")
+			If $sUrl = "" Then $sUrl = "http://www.twitch.tv/" & Json_ObjGet($oChannel2, "name")
 
-				$sDisplayName = Json_ObjGet($oChannel2, "display_name")
+			$sDisplayName = Json_ObjGet($oChannel2, "display_name")
 
-				$sStatus = Json_ObjGet($oChannel2, "status")
+			$sStatus = Json_ObjGet($oChannel2, "status")
 
-				$oPreview = Json_ObjGet($oChannel[0], "preview")
-				$sMedium = Json_ObjGet($oPreview, "medium")
+			$oPreview = Json_ObjGet($oChannel[$iX], "preview")
+			$sMedium = Json_ObjGet($oPreview, "medium")
 
-				$sGame = Json_ObjGet($oChannel[0], "game")
+			$sGame = Json_ObjGet($oChannel[$iX], "game")
 
-				$sCreated = Json_ObjGet($oChannel[0], "created_at")
+			$sCreated = Json_ObjGet($oChannel[$iX], "created_at")
 
-				$asSplit = StringSplit($sCreated, "T")
-				$asDate = StringSplit($asSplit[1], "-")
-				$asTime = StringSplit(StringTrimRight($asSplit[2], 1), ":")
+			$asSplit = StringSplit($sCreated, "T")
+			$asDate = StringSplit($asSplit[1], "-")
+			$asTime = StringSplit(StringTrimRight($asSplit[2], 1), ":")
 
-				$tSystemTime = DllStructCreate($tagSYSTEMTIME)
-				$tSystemTime.Year = $asDate[1]
-				$tSystemTime.Month = $asDate[2]
-				$tSystemTime.Day = $asDate[3]
-				$tSystemTime.Hour = $asTime[1]
-				$tSystemTime.Minute = $asTime[2]
-				$tSystemTime.Second = $asTime[3]
+			$tSystemTime = DllStructCreate($tagSYSTEMTIME)
+			$tSystemTime.Year = $asDate[1]
+			$tSystemTime.Month = $asDate[2]
+			$tSystemTime.Day = $asDate[3]
+			$tSystemTime.Hour = $asTime[1]
+			$tSystemTime.Minute = $asTime[2]
+			$tSystemTime.Second = $asTime[3]
 
-				$tFileTime = _Date_Time_SystemTimeToFileTime($tSystemTime)
-				$tLocalTime = _Date_Time_FileTimeToLocalFileTime($tFileTime)
-				$sTime = _Date_Time_FileTimeToStr($tLocalTime, 1)
-				$iHours = _DateDiff("h", $sTime, _NowCalc())
-				$iMinutes = _DateDiff("n", $sTime, _NowCalc())
-				$iMinutes -= $iHours * 60
+			$tFileTime = _Date_Time_SystemTimeToFileTime($tSystemTime)
+			$tLocalTime = _Date_Time_FileTimeToLocalFileTime($tFileTime)
+			$sTime = _Date_Time_FileTimeToStr($tLocalTime, 1)
+			$iHours = _DateDiff("h", $sTime, _NowCalc())
+			$iMinutes = _DateDiff("n", $sTime, _NowCalc())
+			$iMinutes -= $iHours * 60
 
-				$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
+			$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-				_StreamSet($sDisplayName, $sUrl, $sMedium, $sGame, $sCreated, $sTime, $sStatus, $eTwitch)
-
-			EndIf
+			_StreamSet($sDisplayName, $sUrl, $sMedium, $sGame, $sCreated, $sTime, $sStatus, $eTwitch)
 		Next
 
 		$iOffset += $iLimit
@@ -265,6 +264,8 @@ EndFunc
 Func getJson($sUrl)
 	$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
 
+	If $iPrintJSON Then ConsoleWrite(BinaryToString($dJsonString) & @CRLF)
+
 	$oJSON = Json_Decode(BinaryToString($dJsonString))
 	Return $oJSON
 EndFunc
@@ -294,8 +295,6 @@ Func _TrayRefresh()
 	_ArraySort($aStreams, 1)
 
 	For $iX = 0 To UBound($aStreams) -1
-		ConsoleWrite($aStreams[$iX][$eDisplayName] & @CRLF)
-
 		If $aStreams[$iX][$eOnline] = True Then
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				$aStreams[$iX][$eTrayId] = TrayCreateItem($aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame], -1, 0)
