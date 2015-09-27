@@ -15,7 +15,7 @@
 
 $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
 $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
-$iMinRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 5)   ;HOW MANY MINUTES BETWEEN EVERY CHECK FOR NEW STREAMS
+$iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 5) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "")   ;PRINT ON JSON
 
 Opt("TrayMenuMode", 3)
@@ -62,29 +62,10 @@ $hBitmap = _WinAPI_CreateSolidBitmap(0, 0xFFFFFF, 16, 16)
 $hImage = _GDIPlus_BitmapCreateFromHBITMAP($hBitmap)
 $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
 
+_MAIN()
+
 While 1
-	Global $sNew = "", $iTrayRefresh = False
-	If $sTwitchUsername <> "" Then _Twitch()
-	If $sHitboxUsername <> "" Then _Hitbox()
-	If $iTrayRefresh Then
-		ConsoleWrite("Getters done" & @CRLF)
-		_TrayRefresh()
-	EndIf
-	TraySetIcon()
-
-	If $sNew <> "" Then
-		If StringLen > 255 Then
-			TrayTip("Now streaming", StringLeft($sNew, 252) & "...", 10)
-		Else
-			TrayTip("Now streaming", $sNew, 10)
-		EndIf
-	EndIf
-
-	Global $iTimer = TimerInit()
-
-	Do
-		Sleep(2000)
-	Until TimerDiff($iTimer) > $iMinRefresh * 60000
+	Sleep(3600000)
 WEnd
 
 #Region TWITCH
@@ -317,7 +298,7 @@ Func _TrayStuff()
 			$iRandom = Random(0, UBound($asText) -1, 1)
 			MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
 		Case $idRefresh
-			$iTimer = 0
+			_MAIN()
 		Case $idExit
 			Exit
 		Case Else
@@ -373,6 +354,26 @@ EndFunc
 
 Func _ProgressSpecific($sText)
 	_TraySet($sText)
+EndFunc
+
+Func _MAIN()
+	AdlibUnRegister(_MAIN)
+
+	Global $sNew = ""
+	If $sTwitchUsername <> "" Then _Twitch()
+	If $sHitboxUsername <> "" Then _Hitbox()
+	ConsoleWrite("Getters done" & @CRLF)
+	_TrayRefresh()
+
+	If $sNew <> "" Then
+		If StringLen > 255 Then
+			TrayTip("Now streaming", StringLeft($sNew, 252) & "...", 10)
+		Else
+			TrayTip("Now streaming", $sNew, 10)
+		EndIf
+	EndIf
+
+	AdlibRegister(_MAIN, $iRefresh)
 EndFunc
 #EndRegion GUI
 
