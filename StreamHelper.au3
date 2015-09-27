@@ -104,7 +104,7 @@ Func _TwitchGet($sUsername)
 
 	While True
 		$sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
-		$avTemp = FetchArray($sUrl, "follows")
+		$avTemp = FetchItems($sUrl, "follows")
 		If UBound($avTemp) = 0 Then ExitLoop
 
 		Local $sOptions
@@ -116,7 +116,7 @@ Func _TwitchGet($sUsername)
 
 		$sOptions = StringTrimRight($sOptions, 1)
 		$sUrl = 'https://api.twitch.tv/kraken/streams?channel=' & $sOptions & '&limit=' & $iLimit
-		$oChannel = FetchArray($sUrl, "streams")
+		$oChannel = FetchItems($sUrl, "streams")
 
 		For $iX = 0 To UBound($oChannel) -1
 			$oChannel2 = Json_ObjGet($oChannel[$iX], "channel")
@@ -185,11 +185,12 @@ Func _HitboxGet($sUsername)
 	$sQuotedUsername = URLEncode($sUsername)
 
 	$sUserUrl = "https://api.hitbox.tv/user/" & $sQuotedUsername
-	$iUserID = FetchString($sUserUrl, "user_id")
+	FetchItems($sUserUrl, "", "user_id")
+	$iUserID = @extended
 	If $iUserID = "" Then Return
 
 	$sUrl = "https://api.hitbox.tv/media/live/list?follower_id=" & $iUserID
-	$oLivestream = FetchArray($sUrl, "livestream")
+	$oLivestream = FetchItems($sUrl, "livestream")
 	If UBound($oLivestream) = 0 Then Return
 
 	For $iX = 0 To UBound($oLivestream) -1
@@ -239,29 +240,18 @@ EndFunc
 #EndRegion
 
 #Region COMMON
-Func FetchArray($sUrl, $sKey)
+Func FetchItems($sUrl, $sKey, $sExtendedKey = Null)
 	$oJSON = getJson($sUrl)
 
 	If IsObj($oJSON) = False Then Return ""
 
-	$oFollows = Json_ObjGet($oJSON, $sKey)
-
-	If UBound($oFollows) > 0 Then
-		Return $oFollows
-	Else
-		Return ""
+	If IsString($sExtendedKey) Then
+		SetExtended(Json_ObjGet($oJSON, $sExtendedKey))
 	EndIf
-EndFunc
 
-Func FetchString($sUrl, $sKey)
-	$oJSON = getJson($sUrl)
-
-	If IsObj($oJSON) = False Then Return ""
-
-	$sText = Json_ObjGet($oJSON, $sKey)
-
-	If StringLen($sText) > 0 Then
-		Return $sText
+	$aFollows = Json_ObjGet($oJSON, $sKey)
+	If UBound($aFollows) > 0 Then
+		Return $aFollows
 	Else
 		Return ""
 	EndIf
