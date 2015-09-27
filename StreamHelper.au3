@@ -158,6 +158,8 @@ Func _TwitchGet($sUsername)
 			_StreamSet($sDisplayName, $sUrl, $sMedium, $sGame, $sCreated, $sTime, $sStatus, $eTwitch)
 		Next
 
+		If UBound($oChannel) <= 100 Then ExitLoop
+
 		$iOffset += $iLimit
 	WEnd
 	Return "Potato on a Stick"
