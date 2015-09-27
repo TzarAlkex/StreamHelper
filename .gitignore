@@ -1,3 +1,4 @@
 *.ini
 log.txt
 *.zip
+*.py

@@ -66,7 +66,10 @@ While 1
 	Global $sNew = "", $iTrayRefresh = False
 	If $sTwitchUsername <> "" Then _Twitch()
 	If $sHitboxUsername <> "" Then _Hitbox()
-	If $iTrayRefresh Then _TrayRefresh()
+	If $iTrayRefresh Then
+		ConsoleWrite("Getters done" & @CRLF)
+		_TrayRefresh()
+	EndIf
 	TraySetIcon()
 
 	If $sNew <> "" Then
@@ -101,7 +104,7 @@ Func _TwitchGet($sUsername)
 
 	While True
 		$sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
-		$avTemp = FetchItems($sUrl, "follows")
+		$avTemp = FetchArray($sUrl, "follows")
 		If UBound($avTemp) = 0 Then ExitLoop
 
 		Local $sOptions
@@ -113,7 +116,7 @@ Func _TwitchGet($sUsername)
 
 		$sOptions = StringTrimRight($sOptions, 1)
 		$sUrl = 'https://api.twitch.tv/kraken/streams?channel=' & $sOptions & '&limit=' & $iLimit
-		$oChannel = FetchItems($sUrl, "streams")
+		$oChannel = FetchArray($sUrl, "streams")
 
 		For $iX = 0 To UBound($oChannel) -1
 			$oChannel2 = Json_ObjGet($oChannel[$iX], "channel")
@@ -168,7 +171,6 @@ EndFunc
 #Region HITBOX
 Func _Hitbox()
 	ConsoleWrite("Hitboxing" & @CRLF)
-	_ProgressSpecific("0%")
 
 	_HitboxGet($sHitboxUsername)
 
@@ -179,65 +181,53 @@ Func _HitboxGet($sUsername)
 	$iLimit = 100
 	$iOffset = 0
 	$sQuotedUsername = URLEncode($sUsername)
-	$sBaseUrl = "https://api.hitbox.tv/following/user?user_name=" & $sQuotedUsername
 
-	While True
-		$sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_HITBOX($iOffset, $iLimit)
-		$avTemp = FetchItems($sUrl, "following")
-		If UBound($avTemp) = 0 Then ExitLoop
+	$sUserUrl = "https://api.hitbox.tv/user/" & $sQuotedUsername
+	$iUserID = FetchString($sUserUrl, "user_id")
+	If $iUserID = "" Then Return
 
-		For $iX = 0 To UBound($avTemp) -1
-			ConsoleWrite($iX +1 & "/" & UBound($avTemp) & @CRLF)
-			_ProgressSpecific(Int((($iX)/UBound($avTemp))*100) & "%")
+	$sUrl = "https://api.hitbox.tv/media/live/list?follower_id=" & $iUserID
+	$oLivestream = FetchArray($sUrl, "livestream")
+	If UBound($oLivestream) = 0 Then Return
 
-			$sUserName = Json_ObjGet($avTemp[$iX], "user_name")
-			$sUrl = "https://api.hitbox.tv/media/live/" & $sUserName
-			$oLivestream = FetchItems($sUrl, "livestream")
+	For $iX = 0 To UBound($oLivestream) -1
+		$oChannel = Json_ObjGet($oLivestream[$iX], "channel")
+		$sUrl = Json_ObjGet($oChannel, "channel_link")
 
-			If UBound($oLivestream) = 0 Then ContinueLoop
+		$sDisplayName = Json_ObjGet($oLivestream[$iX], "media_display_name")
 
-			If Json_ObjGet($oLivestream[0], "media_is_live") = 1 Then
-				$oChannel = Json_ObjGet($oLivestream[0], "channel")
-				$sUrl = Json_ObjGet($oChannel, "channel_link")
+		$sStatus = Json_ObjGet($oLivestream[$iX], "media_status")
 
-				$sDisplayName = Json_ObjGet($oLivestream[0], "media_display_name")
+		$sThumbnail = Json_ObjGet($oLivestream[$iX], "media_thumbnail")
 
-				$sStatus = Json_ObjGet($oLivestream[0], "media_status")
+		$sGame = Json_ObjGet($oLivestream[$iX], "category_name")
 
-				$sThumbnail = Json_ObjGet($oLivestream[0], "media_thumbnail")
+		$sCreated = Json_ObjGet($oLivestream[$iX], "media_live_since")
 
-				$sGame = Json_ObjGet($oLivestream[0], "category_name")
+		$asSplit = StringSplit($sCreated, " ")
+		$asDate = StringSplit($asSplit[1], "-")
+		$asTime = StringSplit($asSplit[2], ":")
 
-				$sCreated = Json_ObjGet($oLivestream[0], "media_live_since")
+		$tSystemTime = DllStructCreate($tagSYSTEMTIME)
+		$tSystemTime.Year = $asDate[1]
+		$tSystemTime.Month = $asDate[2]
+		$tSystemTime.Day = $asDate[3]
+		$tSystemTime.Hour = $asTime[1]
+		$tSystemTime.Minute = $asTime[2]
+		$tSystemTime.Second = $asTime[3]
 
-				$asSplit = StringSplit($sCreated, " ")
-				$asDate = StringSplit($asSplit[1], "-")
-				$asTime = StringSplit($asSplit[2], ":")
+		$tFileTime = _Date_Time_SystemTimeToFileTime($tSystemTime)
+		$tLocalTime = _Date_Time_FileTimeToLocalFileTime($tFileTime)
+		$sTime = _Date_Time_FileTimeToStr($tLocalTime, 1)
+		$iHours = _DateDiff("h", $sTime, _NowCalc())
+		$iMinutes = _DateDiff("n", $sTime, _NowCalc())
+		$iMinutes -= $iHours * 60
 
-				$tSystemTime = DllStructCreate($tagSYSTEMTIME)
-				$tSystemTime.Year = $asDate[1]
-				$tSystemTime.Month = $asDate[2]
-				$tSystemTime.Day = $asDate[3]
-				$tSystemTime.Hour = $asTime[1]
-				$tSystemTime.Minute = $asTime[2]
-				$tSystemTime.Second = $asTime[3]
+		$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-				$tFileTime = _Date_Time_SystemTimeToFileTime($tSystemTime)
-				$tLocalTime = _Date_Time_FileTimeToLocalFileTime($tFileTime)
-				$sTime = _Date_Time_FileTimeToStr($tLocalTime, 1)
-				$iHours = _DateDiff("h", $sTime, _NowCalc())
-				$iMinutes = _DateDiff("n", $sTime, _NowCalc())
-				$iMinutes -= $iHours * 60
+		_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eHitbox)
+	Next
 
-				$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
-
-				_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eHitbox)
-
-			EndIf
-		Next
-
-		$iOffset += $iLimit
-	WEnd
 	Return "Potato on a Stick"
 EndFunc
 
@@ -247,7 +237,7 @@ EndFunc
 #EndRegion
 
 #Region COMMON
-Func FetchItems($sUrl, $sKey)
+Func FetchArray($sUrl, $sKey)
 	$oJSON = getJson($sUrl)
 
 	If IsObj($oJSON) = False Then Return ""
@@ -256,6 +246,20 @@ Func FetchItems($sUrl, $sKey)
 
 	If UBound($oFollows) > 0 Then
 		Return $oFollows
+	Else
+		Return ""
+	EndIf
+EndFunc
+
+Func FetchString($sUrl, $sKey)
+	$oJSON = getJson($sUrl)
+
+	If IsObj($oJSON) = False Then Return ""
+
+	$sText = Json_ObjGet($oJSON, $sKey)
+
+	If StringLen($sText) > 0 Then
+		Return $sText
 	Else
 		Return ""
 	EndIf
