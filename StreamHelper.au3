@@ -41,7 +41,7 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eMax
 Global Enum $eTwitch, $eHitbox
 
 Global $sNew
@@ -300,7 +300,6 @@ Func _TrayRefresh()
 	_ArraySort($aStreams, 1)
 
 	For $iX = 0 To UBound($aStreams) -1
-		ConsoleWrite($aStreams[$iX][$eDisplayName] & @CRLF)
 
 		If $aStreams[$iX][$eOnline] = True Then
 			If $aStreams[$iX][$eTrayId] = 0 Then
@@ -420,5 +419,31 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eStatus] = $sStatus
 	$aStreams[$iIndex][$eOnline] = True
 	$aStreams[$iIndex][$eService] = $iService
+
+	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
+		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
+	EndIf
+EndFunc
+
+Func _GetQualities($sUrl)
+	If $iLivestreamerInstalled = False Then Return ""
+
+	$iPID = Run("livestreamer " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
+	ProcessWaitClose($iPID)
+	Local $sOutput = StdoutRead($iPID)
+	$aSplitted = StringSplit($sOutput, @CRLF, $STR_ENTIRESPLIT)
+	$sStripped = StringReplace($aSplitted[2], "Available streams: ", "")
+	$sStripped = StringReplace($sStripped, "worst", "")
+	$sStripped = StringReplace($sStripped, "best", "")
+	$sStripped = StringReplace($sStripped, "(", "")
+	$sStripped = StringReplace($sStripped, ")", "")
+	$sStripped = StringReplace($sStripped, " ", "")
+	If StringRight($sStripped, 1) = "," Then $sStripped = StringTrimRight($sStripped, 1)
+
+	$aSplitted = StringSplit($sStripped, ",", $STR_NOCOUNT)
+	For $iX = 0 To UBound($aSplitted) -1
+		$aSplitted[$iX] = $aSplitted[$iX]
+	Next
+	Return $aSplitted
 EndFunc
 #EndRegion
