@@ -28,6 +28,7 @@ Opt("TrayOnEventMode", 1)
 #include <GDIPlus.au3>
 #include <WinAPIShellEx.au3>
 #include <WindowsConstants.au3>
+#include <WinAPISys.au3>
 
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
@@ -53,6 +54,11 @@ Global Const $AUT_NOTIFY_ICON_ID = 1 ; Application.h
 
 AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the second")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
+
+If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
+	_WinAPI_AddClipboardFormatListener(GUICreate("To infinity... and beyond!"))
+	GUIRegisterMsg($WM_CLIPBOARDUPDATE, _WM_CLIPBOARDUPDATE)
+EndIf
 
 _GDIPlus_Startup()
 
@@ -379,6 +385,19 @@ EndFunc
 Func _ProgressSpecific($sText)
 	_TraySet($sText)
 EndFunc
+
+Func _WM_CLIPBOARDUPDATE($hWnd, $iMsg, $wParam, $lParam)
+	#forceref $hWnd, $iMsg, $wParam, $lParam
+
+	$sClipboard = ClipGet()
+
+	If StringInStr($sClipboard, "twitch.tv/") Or StringInStr($sClipboard, "hitbox.tv/") Then
+		ConsoleWrite($sClipboard & @CRLF)
+	EndIf
+
+	Return 0
+EndFunc   ;==>WM_CLIPBOARDUPDATE
+
 #EndRegion GUI
 
 #Region INTENRAL INTERLECT
