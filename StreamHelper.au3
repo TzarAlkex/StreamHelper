@@ -163,12 +163,17 @@ EndFunc
 Func _HitboxGet($sUsername)
 	$iLimit = 100
 	$iOffset = 0
-	$sQuotedUsername = URLEncode($sUsername)
+	Static Local $iUserID = ""
 
-	$sUserUrl = "https://api.hitbox.tv/user/" & $sQuotedUsername
-	FetchItems($sUserUrl, "", "user_id")
-	$iUserID = @extended
-	If $iUserID = "" Then Return
+	If $iUserID = "" Then
+		ConsoleWrite(Random() & @CRLF)
+		$sQuotedUsername = URLEncode($sUsername)
+
+		$sUserUrl = "https://api.hitbox.tv/user/" & $sQuotedUsername
+		FetchItems($sUserUrl, "", "user_id")
+		$iUserID = @extended
+		If $iUserID = "" Then Return
+	EndIf
 
 	$sUrl = "https://api.hitbox.tv/media/live/list?follower_id=" & $iUserID
 	$oLivestream = FetchItems($sUrl, "livestream")
