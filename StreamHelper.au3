@@ -71,6 +71,7 @@ WEnd
 #Region TWITCH
 Func _Twitch()
 	ConsoleWrite("Twitching" & @CRLF)
+	_ProgressSpecific("T")
 
 	_TwitchGet($sTwitchUsername)
 
@@ -154,6 +155,7 @@ EndFunc
 #Region HITBOX
 Func _Hitbox()
 	ConsoleWrite("Hitboxing" & @CRLF)
+	_ProgressSpecific("H")
 
 	_HitboxGet($sHitboxUsername)
 
@@ -371,6 +373,7 @@ Func _MAIN()
 	If $sHitboxUsername <> "" Then _Hitbox()
 	ConsoleWrite("Getters done" & @CRLF)
 	_TrayRefresh()
+	TraySetIcon()
 
 	If $sNew <> "" Then
 		If StringLen > 255 Then
