@@ -222,19 +222,21 @@ EndFunc
 
 #Region COMMON
 Func FetchItems($sUrl, $sKey, $sExtendedKey = Null)
+	Local $sRetExtended
+
 	$oJSON = getJson($sUrl)
 
 	If IsObj($oJSON) = False Then Return ""
 
 	If IsString($sExtendedKey) Then
-		SetExtended(Json_ObjGet($oJSON, $sExtendedKey))
+		$sRetExtended = Json_ObjGet($oJSON, $sExtendedKey)
 	EndIf
 
 	$aFollows = Json_ObjGet($oJSON, $sKey)
 	If UBound($aFollows) > 0 Then
-		Return $aFollows
+		Return SetExtended($sRetExtended, $aFollows)
 	Else
-		Return ""
+		Return SetExtended($sRetExtended, "")
 	EndIf
 EndFunc
 
