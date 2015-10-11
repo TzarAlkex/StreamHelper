@@ -168,7 +168,6 @@ Func _HitboxGet($sUsername)
 	Static Local $iUserID = ""
 
 	If $iUserID = "" Then
-		ConsoleWrite(Random() & @CRLF)
 		$sQuotedUsername = URLEncode($sUsername)
 
 		$sUserUrl = "https://api.hitbox.tv/user/" & $sQuotedUsername
@@ -376,11 +375,17 @@ Func _MAIN()
 	TraySetIcon()
 
 	If $sNew <> "" Then
-		If StringLen > 255 Then
-			TrayTip("Now streaming", StringLeft($sNew, 252) & "...", 10)
-		Else
-			TrayTip("Now streaming", $sNew, 10)
+		$iSkipped = 0
+		While StringLen($sNew) > 240
+			$iPos = StringInStr($sNew, @CRLF, $STR_CASESENSE, -1)
+			$sNew = StringLeft($sNew, $iPos -1)
+			$iSkipped += 1
+		WEnd
+		If $iSkipped > 0 Then
+			$sNew &= @CRLF & "+" & $iSkipped & " more"
 		EndIf
+
+		TrayTip("Now streaming", $sNew, 10)
 	EndIf
 
 	AdlibRegister(_MAIN, $iRefresh)
