@@ -29,6 +29,7 @@ Opt("TrayOnEventMode", 1)
 #include <GDIPlus.au3>
 #include <WinAPIShellEx.au3>
 #include <WindowsConstants.au3>
+#include <WinAPIDiag.au3>
 
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
@@ -51,6 +52,7 @@ Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
 
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
 Global Const $AUT_NOTIFY_ICON_ID = 1 ; Application.h
+Global Const $PBT_APMRESUMEAUTOMATIC =  0x12
 
 AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the second")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
@@ -63,6 +65,8 @@ $hImage = _GDIPlus_BitmapCreateFromHBITMAP($hBitmap)
 $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
 
 _MAIN()
+
+GUIRegisterMsg($WM_POWERBROADCAST, "_PowerEvents")
 
 While 1
 	Sleep(3600000)
@@ -412,5 +416,22 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eStatus] = $sStatus
 	$aStreams[$iIndex][$eOnline] = True
 	$aStreams[$iIndex][$eService] = $iService
+EndFunc
+
+Func _PowerEvents($hWnd, $Msg, $wParam, $lParam)
+	Switch $wParam
+		Case $PBT_APMRESUMEAUTOMATIC
+			AdlibUnRegister(_MAIN)
+			AdlibRegister(_ComputerResumed)
+	EndSwitch
+
+	Return $GUI_RUNDEFMSG
+EndFunc   ;==>_PowerEvents
+
+Func _ComputerResumed()
+	If _WinAPI_IsInternetConnected() Then
+		AdlibUnRegister(_ComputerResumed)
+		_MAIN()
+	EndIf
 EndFunc
 #EndRegion
