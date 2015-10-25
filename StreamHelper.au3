@@ -17,6 +17,7 @@ $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", ""
 $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
 $iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 5) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "")   ;PRINT ON JSON
+$sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "")   ;JUST TYPE SOMETHING TO CHECK
 
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
@@ -35,6 +36,13 @@ Opt("TrayOnEventMode", 1)
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
 TrayItemSetOnEvent( -1, _TrayStuff)
+
+If $sCheckForUpdates <> "" Then
+	TrayCreateItem("")
+	Local $idUpdates = TrayCreateItem("No update")
+	Local $idUpdateDescription
+	TrayItemSetOnEvent( -1, _TrayStuff)
+EndIf
 
 TrayCreateItem("")
 Local $idAbout = TrayCreateItem("About")
@@ -307,6 +315,10 @@ EndFunc
 
 Func _TrayStuff()
 	Switch @TRAY_ID
+		Case $idUpdates, $idUpdateDescription
+			If $idUpdateDescription <> "" Then
+				ShellExecute("https://github.com/TzarAlkex/StreamHelper/releases")
+			EndIf
 		Case $idAbout
 			Local $asText[] = ["I am unfinished", "Ouch", "Quit poking me!", "Bewbs", "Pizza", "25W lightbulb (broken)", "Estrellas Salt & Vinäger chips är godast", "Vote Pewdiepie for King of Sweden", "Vote Robbaz for King of Sweden", "Vote Anderz for King of Sweden", "I'm sorry trancexx", "Vote Knugen for King of Sweden", '"Is it creepy that I follow you, should I stop doing it?" -Xandy', '"I can''t be expected to perform under pressure!" -jaberwacky', '"The square root of 76 is brown" -One F Jef', "42", '"THERE... ARE... FOUR LIGHTS!" - Picard']
 			$iRandom = Random(0, UBound($asText) -1, 1)
@@ -374,6 +386,7 @@ Func _MAIN()
 	AdlibUnRegister(_MAIN)
 
 	Global $sNew = ""
+	If $sCheckForUpdates <> "" Then _CheckUpdates()
 	If $sTwitchUsername <> "" Then _Twitch()
 	If $sHitboxUsername <> "" Then _Hitbox()
 	ConsoleWrite("Getters done" & @CRLF)
@@ -435,5 +448,22 @@ Func _ComputerResumed()
 		AdlibUnRegister(_ComputerResumed)
 		_MAIN()
 	EndIf
+EndFunc
+
+Func _CheckUpdates()
+	ConsoleWrite('"Updateing"' & @CRLF)
+	_ProgressSpecific("U")
+	$sCheckForUpdates = ""
+
+	Local $dData = InetRead("https://dl.dropboxusercontent.com/u/18344147/SoftwareUpdates/StreamHelper.txt", $INET_FORCERELOAD)
+	Local $sData = BinaryToString($dData)
+	$aRet = StringSplit($sData, "|")
+	If @error Then Return
+	If $aRet[0] <> 2 Then Return
+	If $aRet[1] <= 1 Then Return   ;Version
+
+	TrayItemSetText($idUpdates, "Update available, click to open website")
+	$idUpdateDescription = TrayCreateItem($aRet[2], -1, 4)
+	TrayItemSetOnEvent( -1, _TrayStuff)
 EndFunc
 #EndRegion
