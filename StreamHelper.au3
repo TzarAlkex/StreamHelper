@@ -30,6 +30,7 @@ Opt("TrayOnEventMode", 1)
 #include <WinAPIShellEx.au3>
 #include <WindowsConstants.au3>
 #include <WinAPIDiag.au3>
+#include <GUIConstantsEx.au3>
 
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
@@ -66,6 +67,7 @@ $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
 
 _MAIN()
 
+GUICreate("detect WM_POWERBROADCAST")
 GUIRegisterMsg($WM_POWERBROADCAST, "_PowerEvents")
 
 While 1
