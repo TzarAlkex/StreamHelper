@@ -37,10 +37,11 @@ TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
+Global $idUpdates = -1
+Global $idUpdateDescription = -1
 If $sCheckForUpdates <> "" Then
 	TrayCreateItem("")
-	Local $idUpdates = TrayCreateItem("No update")
-	Local $idUpdateDescription
+	$idUpdates = TrayCreateItem("No update")
 	TrayItemSetOnEvent( -1, _TrayStuff)
 EndIf
 
