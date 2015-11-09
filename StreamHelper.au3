@@ -32,11 +32,13 @@ Opt("TrayOnEventMode", 1)
 #include <WindowsConstants.au3>
 #include <WinAPIDiag.au3>
 #include <GUIConstantsEx.au3>
+#include <MsgBoxConstants.au3>
 
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
+Global $sAppName = "StreamHelper " & @AutoItVersion
 If $sCheckForUpdates = "-1" Then
 	If MsgBox($MB_YESNO, $sAppName, "Automatically check for updates?") = $IDYES Then
 		IniWrite(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "Tomato")
@@ -44,14 +46,7 @@ If $sCheckForUpdates = "-1" Then
 		IniWrite(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "")
 	EndIf
 EndIf
-
-Global $idUpdates = -1
-Global $idUpdateDescription = -1
-If $sCheckForUpdates <> "" Then
-	TrayCreateItem("")
-	$idUpdates = TrayCreateItem("No update")
-	TrayItemSetOnEvent( -1, _TrayStuff)
-EndIf
+$sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "-1")
 
 TrayCreateItem("")
 Local $idAbout = TrayCreateItem("About")
@@ -61,7 +56,7 @@ Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
 Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eMax
-Global Enum $eTwitch, $eHitbox
+Global Enum $eTwitch, $eHitbox, $eLink
 
 Global $sNew
 Global $aStreams[0][$eMax]
@@ -314,7 +309,7 @@ Func _TrayRefresh()
 			EndIf
 			$aStreams[$iX][$eOnline] = False
 		Else
-			If $aStreams[$iX][$eTrayId] <> 0 Then
+			If $aStreams[$iX][$eTrayId] <> 0 And $aStreams[$iX][$eService] <> $eLink Then
 				TrayItemDelete($aStreams[$iX][$eTrayId])
 				$aStreams[$iX][$eTrayId] = 0
 			EndIf
@@ -324,10 +319,6 @@ EndFunc
 
 Func _TrayStuff()
 	Switch @TRAY_ID
-		Case $idUpdates, $idUpdateDescription
-			If $idUpdateDescription <> "" Then
-				ShellExecute("https://github.com/TzarAlkex/StreamHelper/releases")
-			EndIf
 		Case $idAbout
 			Local $asText[] = ["I am unfinished", "Ouch", "Quit poking me!", "Bewbs", "Pizza", "25W lightbulb (broken)", "Estrellas Salt & Vinäger chips är godast", "Vote Pewdiepie for King of Sweden", "Vote Robbaz for King of Sweden", "Vote Anderz for King of Sweden", "I'm sorry trancexx", "Vote Knugen for King of Sweden", '"Is it creepy that I follow you, should I stop doing it?" -Xandy', '"I can''t be expected to perform under pressure!" -jaberwacky', '"The square root of 76 is brown" -One F Jef', "42", '"THERE... ARE... FOUR LIGHTS!" - Picard']
 			$iRandom = Random(0, UBound($asText) -1, 1)
@@ -337,7 +328,7 @@ Func _TrayStuff()
 		Case $idExit
 			Exit
 		Case Else
-			Local $sUrl
+			Local $sUrl   ;Remove this variable?
 
 			For $iX = 0 To UBound($aStreams) -1
 				If $aStreams[$iX][$eTrayId] = @TRAY_ID Then
@@ -346,7 +337,7 @@ Func _TrayStuff()
 				EndIf
 			Next
 
-			If $iLivestreamerInstalled Then
+			If $iLivestreamerInstalled And $aStreams[$iX][$eService] <> $eLink Then
 				Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
 			Else
 				ShellExecute($sUrl)
@@ -471,8 +462,6 @@ Func _CheckUpdates()
 	If $aRet[0] <> 2 Then Return
 	If $aRet[1] <= 1 Then Return   ;Version
 
-	TrayItemSetText($idUpdates, "Update available, click to open website")
-	$idUpdateDescription = TrayCreateItem($aRet[2], -1, 4)
-	TrayItemSetOnEvent( -1, _TrayStuff)
+	_StreamSet("Update found", "https://github.com/TzarAlkex/StreamHelper/releases", "", "Click to open website", "", "", "", $eLink)
 EndFunc
 #EndRegion
