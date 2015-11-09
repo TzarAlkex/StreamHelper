@@ -300,7 +300,11 @@ Func _TrayRefresh()
 	For $iX = 0 To UBound($aStreams) -1
 		If $aStreams[$iX][$eOnline] = True Then
 			If $aStreams[$iX][$eTrayId] = 0 Then
-				$aStreams[$iX][$eTrayId] = TrayCreateItem($aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame], -1, 0)
+				If $aStreams[$iX][$eGame] <> "" Then
+					$aStreams[$iX][$eTrayId] = TrayCreateItem($aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame], -1, 0)
+				Else
+					$aStreams[$iX][$eTrayId] = TrayCreateItem($aStreams[$iX][$eDisplayName], -1, 0)
+				EndIf
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
 				$sNew &= $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame] & @CRLF
@@ -462,6 +466,6 @@ Func _CheckUpdates()
 	If $aRet[0] <> 2 Then Return
 	If $aRet[1] <= 1 Then Return   ;Version
 
-	_StreamSet("Update found", "https://github.com/TzarAlkex/StreamHelper/releases", "", "Click to open website", "", "", "", $eLink)
+	_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", $eLink)
 EndFunc
 #EndRegion
