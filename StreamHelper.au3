@@ -15,7 +15,7 @@
 
 $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
 $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
-$iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 5) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
+$iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 10) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "")   ;PRINT ON JSON
 $sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "")   ;JUST TYPE SOMETHING TO CHECK
 
