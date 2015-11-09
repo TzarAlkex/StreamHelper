@@ -17,7 +17,7 @@ $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", ""
 $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
 $iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 10) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "")   ;PRINT ON JSON
-$sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "")   ;JUST TYPE SOMETHING TO CHECK
+$sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "-1")   ;JUST TYPE SOMETHING TO CHECK
 
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
@@ -36,6 +36,14 @@ Opt("TrayOnEventMode", 1)
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
 TrayItemSetOnEvent( -1, _TrayStuff)
+
+If $sCheckForUpdates = "-1" Then
+	If MsgBox($MB_YESNO, $sAppName, "Automatically check for updates?") = $IDYES Then
+		IniWrite(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "Tomato")
+	Else
+		IniWrite(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "")
+	EndIf
+EndIf
 
 Global $idUpdates = -1
 Global $idUpdateDescription = -1
