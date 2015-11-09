@@ -38,7 +38,7 @@ TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global $sAppName = "StreamHelper " & @AutoItVersion
+Global $sAppName = "StreamHelper v" & (@Compiled ? FileGetVersion(@ScriptFullPath) : "uncompiled")
 If $sCheckForUpdates = "-1" Then
 	If MsgBox($MB_YESNO, $sAppName, "Automatically check for updates?") = $IDYES Then
 		IniWrite(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "Tomato")
