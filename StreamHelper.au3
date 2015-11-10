@@ -302,12 +302,13 @@ Func _TrayRefresh()
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				If $aStreams[$iX][$eGame] <> "" Then
 					$aStreams[$iX][$eTrayId] = TrayCreateItem($aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame], -1, 0)
+					$sNew &= $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame] & @CRLF
 				Else
 					$aStreams[$iX][$eTrayId] = TrayCreateItem($aStreams[$iX][$eDisplayName], -1, 0)
+					$sNew &= $aStreams[$iX][$eDisplayName] & @CRLF
 				EndIf
 				TrayItemSetOnEvent( -1, _TrayStuff)
 
-				$sNew &= $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame] & @CRLF
 			Else
 				TrayItemSetText($aStreams[$iX][$eTrayId], $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame])
 			EndIf
