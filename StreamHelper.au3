@@ -1,4 +1,5 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Icon=Svartnos.ico
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Fileversion=1.0.0.0
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -12,6 +13,8 @@
 	Stuff
 
 #ce ----------------------------------------------------------------------------
+
+If (Not @Compiled) Then TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
 
 $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
 $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
@@ -396,7 +399,11 @@ Func _MAIN()
 	If $sHitboxUsername <> "" Then _Hitbox()
 	ConsoleWrite("Getters done" & @CRLF)
 	_TrayRefresh()
-	TraySetIcon()
+	If (Not @Compiled) Then
+		TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
+	Else
+		TraySetIcon()
+	EndIf
 
 	If $sNew <> "" Then
 		$iSkipped = 0
