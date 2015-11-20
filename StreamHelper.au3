@@ -209,7 +209,7 @@ Func _HitboxGet($sUsername)
 
 		$sStatus = Json_ObjGet($oLivestream[$iX], "media_status")
 
-		$sThumbnail = Json_ObjGet($oLivestream[$iX], "media_thumbnail")
+		$sThumbnail = "http://edge.sf.hitbox.tv" & Json_ObjGet($oLivestream[$iX], "media_thumbnail")
 
 		$sGame = Json_ObjGet($oLivestream[$iX], "category_name")
 
