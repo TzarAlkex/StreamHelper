@@ -24,6 +24,7 @@ $sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUp
 
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
+Opt("GUIOnEventMode", 1)
 
 #include <AutoItConstants.au3>
 #include "Json.au3"
@@ -37,6 +38,7 @@ Opt("TrayOnEventMode", 1)
 #include <GUIConstantsEx.au3>
 #include <MsgBoxConstants.au3>
 #include <WinAPISys.au3>
+#include <GuiComboBox.au3>
 
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
@@ -70,9 +72,32 @@ Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
 Global Const $AUT_NOTIFY_ICON_ID = 1 ; Application.h
 Global Const $PBT_APMRESUMEAUTOMATIC =  0x12
+Global Const $WA_INACTIVE = 0
 
 AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the second")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
+Global $hGuiClipboard
+Global $idLabel, $idQuality, $idPlay
+Global $sUrl
+
+If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
+	Local $iGuiWidth = 420, $iGuiHeight = 70
+;~ 	$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1, $WS_EX_TOOLWINDOW)
+	$hGuiClipboard = GUICreate("Copy Twitch/Hitbox link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1, $WS_EX_TOOLWINDOW)
+
+	$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
+	$idQuality = GUICtrlCreateCombo("", 70, 40, 250, 20)
+	$idPlay = GUICtrlCreateButton("Play", 330, 40, 80, 20)
+	GUICtrlSetOnEvent(-1, _GuiPlay)
+
+;~ 	GUISetState(@SW_SHOW, $hGuiClipboard)
+
+	GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
+
+	_WinAPI_AddClipboardFormatListener($hGuiClipboard)
+	GUIRegisterMsg($WM_CLIPBOARDUPDATE, _WM_CLIPBOARDUPDATE)
+	GUIRegisterMsg($WM_ACTIVATE, _WM_KILLFOCUS)
+EndIf
 
 If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
 	_WinAPI_AddClipboardFormatListener(GUICreate("To infinity... and beyond!"))
@@ -273,6 +298,15 @@ Func FetchItems($sUrl, $sKey, $sExtendedKey = Null)
 	EndIf
 EndFunc
 
+Func FetchItem($sUrl, $sKey)
+	$oJSON = getJson($sUrl)
+
+	If IsObj($oJSON) = False Then Return ""
+
+	$aFollows = Json_ObjGet($oJSON, $sKey)
+	Return $aFollows
+EndFunc
+
 Func getJson($sUrl)
 	$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
 
@@ -334,7 +368,7 @@ EndFunc
 Func _TrayStuff()
 	Switch @TRAY_ID
 		Case $idAbout
-			Local $asText[] = ["I am unfinished", "Ouch", "Quit poking me!", "Bewbs", "Pizza", "25W lightbulb (broken)", "Estrellas Salt & Vinäger chips är godast", "Vote Pewdiepie for King of Sweden", "Vote Robbaz for King of Sweden", "Vote Anderz for King of Sweden", "I'm sorry trancexx", "Vote Knugen for King of Sweden", '"Is it creepy that I follow you, should I stop doing it?" -Xandy', '"I can''t be expected to perform under pressure!" -jaberwacky', '"The square root of 76 is brown" -One F Jef', "42", '"THERE... ARE... FOUR LIGHTS!" - Picard', '"A. I was jogging, B. your cousin''s a liar, and C. some peacocks are poisonous" - Dennis Finch', '"If you ever take advice from a duck, remember: Don''t. Ducks can''t talk. You''re probably on drugs" - Pewdiepie', '"There''s always a story" - Richard Castle', '"It''s my pony. You can''t pet it" - Richard Castle', '"You kids get off my spawn!" - Generikb', '"I prefer tentacles" - TheRPGMinx', '"Learn to fall!" - Generikb''s dad to Generikb after he fell and broke his arm', '"Get out of the way planet, I''m gonna punch you in the dick!" - One F Jef']
+			Local $asText[] = ["I am unfinished", "Ouch", "Quit poking me!", "Bewbs", "Pizza", "25W lightbulb (broken)", "Estrellas Salt & Vinäger chips är godast", "Vote Pewdiepie for King of Sweden", "Vote Robbaz for King of Sweden", "Vote Anderz for King of Sweden", "I'm sorry trancexx", "Vote Knugen for King of Sweden", '"Is it creepy that I follow you, should I stop doing it?" -Xandy', '"I can''t be expected to perform under pressure!" -jaberwacky', '"The square root of 76 is brown" -One F Jef', "42", '"THERE... ARE... FOUR LIGHTS!" - Picard', '"A. I was jogging, B. your cousin''s a liar, and C. some peacocks are poisonous" - Dennis Finch', '"If you ever take advice from a duck, remember: Don''t. Ducks can''t talk. You''re probably on drugs" - Pewdiepie', '"There''s always a story" - Richard Castle', '"It''s my pony. You can''t pet it" - Richard Castle', '"You kids get off my spawn!" - Generikb', '"I prefer tentacles" - TheRPGMinx', '"Learn to fall!" - Generikb''s dad to Generikb after he fell and broke his arm', '"Get out of the way planet, I''m gonna punch you in the dick!" - One F Jef', '"Everything on the internet is a lie" - Abraham Lincoln... (One F Jef)']
 			$iRandom = Random(0, UBound($asText) -1, 1)
 			MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
 		Case $idRefresh
@@ -396,18 +430,6 @@ Func _ProgressSpecific($sText)
 	_TraySet($sText)
 EndFunc
 
-Func _WM_CLIPBOARDUPDATE($hWnd, $iMsg, $wParam, $lParam)
-	#forceref $hWnd, $iMsg, $wParam, $lParam
-
-	$sClipboard = ClipGet()
-
-	If StringInStr($sClipboard, "twitch.tv/") Or StringInStr($sClipboard, "hitbox.tv/") Then
-		ConsoleWrite($sClipboard & @CRLF)
-	EndIf
-
-	Return 0
-EndFunc   ;==>WM_CLIPBOARDUPDATE
-
 Func _MAIN()
 	AdlibUnRegister(_MAIN)
 
@@ -438,6 +460,83 @@ Func _MAIN()
 	EndIf
 
 	AdlibRegister(_MAIN, $iRefresh)
+EndFunc
+
+Func _GuiPlay()
+	$sQuality = GUICtrlRead($idQuality)
+	If $sQuality = "" Then $sQuality = "best"
+
+	ConsoleWrite("livestreamer " & $sUrl & " " & $sQuality & @CRLF)
+
+	Run("livestreamer " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+EndFunc
+
+Func _WM_CLIPBOARDUPDATE($hWnd, $iMsg, $wParam, $lParam)
+	#forceref $hWnd, $iMsg, $wParam, $lParam
+
+	Local $sClipboard = ClipGet()
+	Local $sTitle
+
+	If StringInStr($sClipboard, "twitch.tv/") Then
+		$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -2))
+		$sTemp = StringReplace($sTemp, "/", "")
+;~ 		MsgBox(0, "", $sTemp)
+;~ 		Exit
+		$sTitle = FetchItem("https://api.twitch.tv/kraken/videos/" & $sTemp, "title")
+;~ 		ConsoleWrite($sTitle & @CRLF)
+;~ 		Exit
+	ElseIf StringInStr($sClipboard, "hitbox.tv/video/") Then
+;~ 		ConsoleWrite("1" & @CRLF)
+		$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -1))
+		$oVideo = FetchItem("https://api.hitbox.tv/media/video/" & $sTemp, "video")
+;~ 		ConsoleWrite(VarGetType($oVideo) & @CRLF)
+		If UBound($oVideo) = 0 Then Return
+		$sTitle = Json_ObjGet($oVideo[0], "media_title")
+;~ 		ConsoleWrite($sTitle & @CRLF)
+;~ 		Exit
+	EndIf
+
+	If StringInStr($sClipboard, "twitch.tv/") Or StringInStr($sClipboard, "hitbox.tv/video/") Then
+		$sUrl = $sClipboard
+
+;~ 		ConsoleWrite($sClipboard & @CRLF)
+;~ 		For $item In _GetQualities($sClipboard)
+;~ 			ConsoleWrite($item & @CRLF)
+;~ 		Next
+
+		GUISetState(@SW_SHOW, $hGuiClipboard)
+		GUICtrlSetData($idLabel, $sTitle)
+		GUICtrlSetState($idQuality, $GUI_HIDE)
+		GUICtrlSetState($idPlay, $GUI_DISABLE)
+
+		_GUICtrlComboBox_ResetContent($idQuality)
+		$asQualities = _GetQualities($sClipboard)
+		GUICtrlSetData($idQuality, _ArrayToString($asQualities), $asQualities[UBound($asQualities) -1])
+		GUICtrlSetState($idQuality, $GUI_SHOW)
+		GUICtrlSetState($idPlay, $GUI_ENABLE)
+	EndIf
+
+	Return 0
+EndFunc   ;==>WM_CLIPBOARDUPDATE
+
+Func _WM_KILLFOCUS($hWnd, $iMsg, $wParam, $lParam)
+	#forceref $hWnd, $iMsg, $wParam, $lParam
+
+;~ 	ConsoleWrite(Random() & @CRLF)
+;~ 	ConsoleWrite(BitShift($wParam, 16) & @CRLF)
+;~ 	ConsoleWrite(BitAND($wParam, 0x0000FFFF) & @CRLF)
+
+;~ 	Local $WA_INACTIVE = 0
+
+	If _WinAPI_LoWord($wParam) = $WA_INACTIVE Then
+		GUISetState(@SW_HIDE, $hGuiClipboard)
+	EndIf
+
+;~ 	GUISetState(@SW_HIDE, $hGuiClipboard)
+EndFunc
+
+Func _Hide()
+	GUISetState(@SW_HIDE, $hGuiClipboard)
 EndFunc
 #EndRegion GUI
 
@@ -474,7 +573,17 @@ Func _GetQualities($sUrl)
 	ProcessWaitClose($iPID)
 	Local $sOutput = StdoutRead($iPID)
 	$aSplitted = StringSplit($sOutput, @CRLF, $STR_ENTIRESPLIT)
-	$sStripped = StringReplace($aSplitted[2], "Available streams: ", "")
+
+	Local $iIndex = -1, $asError[] = ["Error"]
+	For $iX = 1 To $aSplitted[0]
+		If StringLeft($aSplitted[$iX], 19) = "Available streams: " Then
+			$iIndex = $iX
+			ExitLoop
+		EndIf
+	Next
+	If $iIndex = -1 Then Return $asError
+
+	$sStripped = StringReplace($aSplitted[$iIndex], "Available streams: ", "")
 	$sStripped = StringReplace($sStripped, "worst", "")
 	$sStripped = StringReplace($sStripped, "best", "")
 	$sStripped = StringReplace($sStripped, "(", "")
@@ -484,7 +593,7 @@ Func _GetQualities($sUrl)
 
 	$aSplitted = StringSplit($sStripped, ",", $STR_NOCOUNT)
 	For $iX = 0 To UBound($aSplitted) -1
-		$aSplitted[$iX] = $aSplitted[$iX]
+		$aSplitted[$iX] = $aSplitted[$iX]   ;The hell is this part supposed to be doing?? //Future me
 	Next
 	Return $aSplitted
 EndFunc
