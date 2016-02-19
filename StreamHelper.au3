@@ -368,7 +368,34 @@ EndFunc
 Func _TrayStuff()
 	Switch @TRAY_ID
 		Case $idAbout
-			Local $asText[] = ["I am unfinished", "Ouch", "Quit poking me!", "Bewbs", "Pizza", "25W lightbulb (broken)", "Estrellas Salt & Vinäger chips är godast", "Vote Pewdiepie for King of Sweden", "Vote Robbaz for King of Sweden", "Vote Anderz for King of Sweden", "I'm sorry trancexx", "Vote Knugen for King of Sweden", '"Is it creepy that I follow you, should I stop doing it?" -Xandy', '"I can''t be expected to perform under pressure!" -jaberwacky', '"The square root of 76 is brown" -One F Jef', "42", '"THERE... ARE... FOUR LIGHTS!" - Picard', '"A. I was jogging, B. your cousin''s a liar, and C. some peacocks are poisonous" - Dennis Finch', '"If you ever take advice from a duck, remember: Don''t. Ducks can''t talk. You''re probably on drugs" - Pewdiepie', '"There''s always a story" - Richard Castle', '"It''s my pony. You can''t pet it" - Richard Castle', '"You kids get off my spawn!" - Generikb', '"I prefer tentacles" - TheRPGMinx', '"Learn to fall!" - Generikb''s dad to Generikb after he fell and broke his arm', '"Get out of the way planet, I''m gonna punch you in the dick!" - One F Jef', '"Everything on the internet is a lie" - Abraham Lincoln... (One F Jef)', '"If someone''s breathing fire on your eyes you should tell an adult immediately" - MattShea']
+			Local $asText[] = ["I am unfinished", _
+			"Ouch", _
+			"Quit poking me!", _
+			"Bewbs", _
+			"Pizza", _
+			"25W lightbulb (broken)", _
+			"Estrellas Salt & Vin?ger chips ?r godast", _
+			"Vote Pewdiepie for King of Sweden", _
+			"Vote Robbaz for King of Sweden", _
+			"Vote Anderz for King of Sweden", _
+			"I'm sorry trancexx", _
+			"Vote Knugen for King of Sweden", _
+			'"Is it creepy that I follow you, should I stop doing it?" -Xandy', _
+			'"I can''t be expected to perform under pressure!" -jaberwacky', _
+			'"The square root of 76 is brown" -One F Jef', _
+			"42", _
+			'"THERE... ARE... FOUR LIGHTS!" - Picard', _
+			'"A. I was jogging, B. your cousin''s a liar, and C. some peacocks are poisonous" - Dennis Finch', _
+			'"If you ever take advice from a duck, remember: Don''t. Ducks can''t talk. You''re probably on drugs" - Pewdiepie', _
+			'"There''s always a story" - Richard Castle', _
+			'"It''s my pony. You can''t pet it" - Richard Castle', _
+			'"You kids get off my spawn!" - Generikb', _
+			'"I prefer tentacles" - TheRPGMinx', _
+			'"Learn to fall!" - Generikb''s dad to Generikb after he fell and broke his arm', _
+			'"Get out of the way planet, I''m gonna punch you in the dick!" - One F Jef', _
+			'"Everything on the internet is a lie" - Abraham Lincoln... (One F Jef)', _
+			'"If someone''s breathing fire on your eyes you should tell an adult immediately" - MattShea']
+
 			$iRandom = Random(0, UBound($asText) -1, 1)
 			MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
 		Case $idRefresh
