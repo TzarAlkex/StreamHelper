@@ -394,7 +394,8 @@ Func _TrayStuff()
 			'"Learn to fall!" - Generikb''s dad to Generikb after he fell and broke his arm', _
 			'"Get out of the way planet, I''m gonna punch you in the dick!" - One F Jef', _
 			'"Everything on the internet is a lie" - Abraham Lincoln... (One F Jef)', _
-			'"If someone''s breathing fire on your eyes you should tell an adult immediately" - MattShea']
+			'"If someone''s breathing fire on your eyes you should tell an adult immediately" - MattShea', _
+			'"I didn''t realize who I was until I stopped being who I wasn''t" - Unknown']
 
 			$iRandom = Random(0, UBound($asText) -1, 1)
 			MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
