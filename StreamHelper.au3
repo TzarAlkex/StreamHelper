@@ -307,6 +307,14 @@ Func FetchItem($sUrl, $sKey)
 	Return $aFollows
 EndFunc
 
+Func Fetch($sUrl)
+	$oJSON = getJson($sUrl)
+
+	If IsObj($oJSON) = False Then Return ""
+
+	Return $oJSON
+EndFunc
+
 Func getJson($sUrl)
 	$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
 
@@ -511,47 +519,70 @@ Func _WM_CLIPBOARDUPDATE($hWnd, $iMsg, $wParam, $lParam)
 
 	Local $sClipboard = ClipGet()
 	Local $sTitle
+	Local $sQualities = "source"
 
-	If StringInStr($sClipboard, "twitch.tv/") Then
-		$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -2))
-		$sTemp = StringReplace($sTemp, "/", "")
-;~ 		MsgBox(0, "", $sTemp)
-;~ 		Exit
-		$sTitle = FetchItem("https://api.twitch.tv/kraken/videos/" & $sTemp, "title")
-;~ 		ConsoleWrite($sTitle & @CRLF)
-;~ 		Exit
-	ElseIf StringInStr($sClipboard, "hitbox.tv/video/") Then
-;~ 		ConsoleWrite("1" & @CRLF)
-		$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -1))
-		$oVideo = FetchItem("https://api.hitbox.tv/media/video/" & $sTemp, "video")
-;~ 		ConsoleWrite(VarGetType($oVideo) & @CRLF)
-		If UBound($oVideo) = 0 Then Return
-		$sTitle = Json_ObjGet($oVideo[0], "media_title")
-;~ 		ConsoleWrite($sTitle & @CRLF)
-;~ 		Exit
-	EndIf
+	Select
+		Case True
+			If StringInStr($sClipboard, "twitch.tv/") And StringInStr($sClipboard, "/v/") Then
+				ConsoleWrite(1 & @CRLF)
 
-	If StringInStr($sClipboard, "twitch.tv/") Or StringInStr($sClipboard, "hitbox.tv/video/") Then
-		$sUrl = $sClipboard
+				$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -2))
+				$sTemp = StringReplace($sTemp, "/", "")
 
-;~ 		ConsoleWrite($sClipboard & @CRLF)
-;~ 		For $item In _GetQualities($sClipboard)
-;~ 			ConsoleWrite($item & @CRLF)
-;~ 		Next
+				$oJSON = Fetch("https://api.twitch.tv/kraken/videos/" & $sTemp)
+				$sTitle = Json_ObjGet($oJSON, "title")
 
-		GUISetState(@SW_SHOW, $hGuiClipboard)
-		GUICtrlSetData($idLabel, $sTitle)
-		GUICtrlSetState($idQuality, $GUI_HIDE)
-		GUICtrlSetState($idPlay, $GUI_DISABLE)
+				$oResolutions = Json_ObjGet($oJSON, "resolutions")
+				If Json_ObjGet($oResolutions, "high") Then $sQualities &= "|high"
+				If Json_ObjGet($oResolutions, "medium") Then $sQualities &= "|medium"
+				If Json_ObjGet($oResolutions, "low") Then $sQualities &= "|low"
+				If Json_ObjGet($oResolutions, "mobile") Then $sQualities &= "|mobile"
+				$sQualities &= "|audio"
 
-		_GUICtrlComboBox_ResetContent($idQuality)
-		$asQualities = _GetQualities($sClipboard)
-		GUICtrlSetData($idQuality, _ArrayToString($asQualities), $asQualities[UBound($asQualities) -1])
-		GUICtrlSetState($idQuality, $GUI_SHOW)
-		GUICtrlSetState($idPlay, $GUI_ENABLE)
-	EndIf
+				ContinueCase
 
-	Return 0
+			ElseIf StringInStr($sClipboard, "twitch.tv/") Then
+				ConsoleWrite(3 & @CRLF)
+
+				$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -1))
+
+				$oChannel = Fetch("https://api.twitch.tv/kraken/channels/" & $sTemp)
+				$sTitle = Json_ObjGet($oChannel, "status")
+
+				$asQualities = _GetQualities($sClipboard)
+				$sQualities = _ArrayToString($asQualities)
+
+				ContinueCase
+
+			ElseIf StringInStr($sClipboard, "hitbox.tv/video/") Then
+				ConsoleWrite(2 & @CRLF)
+				$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -1))
+				$oVideo = FetchItem("https://api.hitbox.tv/media/video/" & $sTemp, "video")
+				If UBound($oVideo) = 0 Then Return
+				$sTitle = Json_ObjGet($oVideo[0], "media_title")
+				ConsoleWrite($sTitle & @CRLF)
+				Exit
+				ContinueCase
+
+			Else
+				ConsoleWrite(3 & @CRLF)
+				Return
+			EndIf
+		Case False
+			$sUrl = $sClipboard
+
+			GUISetState(@SW_SHOW, $hGuiClipboard)
+			GUICtrlSetData($idLabel, $sTitle)
+			GUICtrlSetState($idQuality, $GUI_HIDE)
+			GUICtrlSetState($idPlay, $GUI_DISABLE)
+
+			_GUICtrlComboBox_ResetContent($idQuality)
+			GUICtrlSetData($idQuality, $sQualities, "source")
+			GUICtrlSetState($idQuality, $GUI_SHOW)
+			GUICtrlSetState($idPlay, $GUI_ENABLE)
+	EndSelect
+
+	Return
 EndFunc   ;==>WM_CLIPBOARDUPDATE
 
 Func _WM_KILLFOCUS($hWnd, $iMsg, $wParam, $lParam)
