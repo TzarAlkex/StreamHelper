@@ -396,7 +396,11 @@ Func _TrayStuff()
 			'"Everything on the internet is a lie" - Abraham Lincoln... (One F Jef)', _
 			'"If someone''s breathing fire on your eyes you should tell an adult immediately" - MattShea', _
 			'"I didn''t realize who I was until I stopped being who I wasn''t" - Unknown', _
-			'"I don''t have time to get lucky" ~ ScetchLink']
+			'"I don''t have time to get lucky" ~ Scetchlink', _
+			'"It''s coming and so am I" -Scetchlink', _
+			'"Thanks for playing with me, I appreciate it" ~ Scetchlink', _
+			'"Go Flamesh*t with an Apethrower" - Jef 2016', _
+			'"Som tur va hade jag en s' & Chr(0xE5) & ' v' & Chr(0xE4) & 'lbakad prilla, s' & Chr(0xE5) & ' den fungerade som Air-bag" - Ragge']
 
 			$iRandom = Random(0, UBound($asText) -1, 1)
 			MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
