@@ -468,6 +468,8 @@ Func _MAIN()
 	If $sHitboxUsername <> "" Then _Hitbox()
 	ConsoleWrite("Getters done" & @CRLF)
 	_TrayRefresh()
+	;https://www.autoitscript.com/forum/topic/146955-solved-remove-crlf-at-the-end-of-text-file/?do=findComment&comment=1041088
+	If StringRight($sNew, 2) = @CRLF Then $sNew = StringTrimRight($sNew, 2)
 	If (Not @Compiled) Then
 		TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
 	Else
