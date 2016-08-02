@@ -382,7 +382,7 @@ Func _TrayStuff()
 			"Bewbs", _
 			"Pizza", _
 			"25W lightbulb (broken)", _
-			"Estrellas Salt & Vin?ger chips ?r godast", _
+			"Estrellas Salt & Vin" & Chr(0xE4) & 'ger chips ' & Chr(0xE4) & "r godast", _
 			"Vote Pewdiepie for King of Sweden", _
 			"Vote Robbaz for King of Sweden", _
 			"Vote Anderz for King of Sweden", _
@@ -408,7 +408,7 @@ Func _TrayStuff()
 			'"It''s coming and so am I" -Scetchlink', _
 			'"Thanks for playing with me, I appreciate it" ~ Scetchlink', _
 			'"Go Flamesh*t with an Apethrower" - Jef 2016', _
-			'"Som tur va hade jag en s' & Chr(0xE5) & ' v' & Chr(0xE4) & 'lbakad prilla, s' & Chr(0xE5) & ' den fungerade som Air-bag" - Ragge']
+			'"Som tur va hade jag en s' & Chr(0xE5) & ' v' & Chr(0xE4) & 'lbakad prilla, s' & Chr(0xE5) & ' den fungerade som airbag" - Ragge']
 
 			$iRandom = Random(0, UBound($asText) -1, 1)
 			MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
