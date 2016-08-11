@@ -601,17 +601,9 @@ EndFunc   ;==>WM_CLIPBOARDUPDATE
 Func _WM_KILLFOCUS($hWnd, $iMsg, $wParam, $lParam)
 	#forceref $hWnd, $iMsg, $wParam, $lParam
 
-;~ 	ConsoleWrite(Random() & @CRLF)
-;~ 	ConsoleWrite(BitShift($wParam, 16) & @CRLF)
-;~ 	ConsoleWrite(BitAND($wParam, 0x0000FFFF) & @CRLF)
-
-;~ 	Local $WA_INACTIVE = 0
-
 	If _WinAPI_LoWord($wParam) = $WA_INACTIVE Then
 		GUISetState(@SW_HIDE, $hGuiClipboard)
 	EndIf
-
-;~ 	GUISetState(@SW_HIDE, $hGuiClipboard)
 EndFunc
 
 Func _Hide()
