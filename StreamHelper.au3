@@ -17,7 +17,10 @@
 
 #ce ----------------------------------------------------------------------------
 
-If (Not @Compiled) Then TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
+If (Not @Compiled) Then
+	TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
+	HotKeySet("{F5}", _Quit)
+EndIf
 
 $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
 $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
@@ -699,5 +702,9 @@ Func _CheckUpdates()
 	If $aRet[1] <= 1 Then Return   ;Version
 
 	_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", $eLink)
+EndFunc
+
+Func _Quit()
+	Exit
 EndFunc
 #EndRegion
