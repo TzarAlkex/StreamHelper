@@ -4,3 +4,4 @@ log.txt
 *.py
 power test.au3
 *.orig
+*.json
