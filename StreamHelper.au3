@@ -519,7 +519,7 @@ EndFunc
 
 Func _ClipboardGo($asStream)
 	Local $sTitle
-	Local $sUrl = $asStream[0]
+	$sUrl = $asStream[0]
 
 	GUISetState(@SW_SHOWNORMAL, $hGuiClipboard)
 
