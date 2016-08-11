@@ -514,6 +514,32 @@ Func _GuiPlay()
 	Run("livestreamer " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
 
+Func _ClipboardGo($asStream)
+	Local $sTitle
+	Local $sUrl = $asStream[0]
+
+	GUISetState(@SW_SHOWNORMAL, $hGuiClipboard)
+
+	If UBound($asStream) > 1 Then $sTitle &= $asStream[1]
+	GUICtrlSetData($idLabel, $sTitle)
+
+	GUICtrlSetState($idQuality, $GUI_HIDE)
+	GUICtrlSetState($idPlay, $GUI_DISABLE)
+	_GUICtrlComboBox_ResetContent($idQuality)
+
+	If StringInStr($sUrl, "twitch") Then
+		$asQualities = _GetQualities($sUrl)
+		$sQualities = _ArrayToString($asQualities)
+	ElseIf StringInStr($sUrl, "hitbox") Then
+		$asQualities = _GetQualities($sUrl)
+		$sQualities = _ArrayToString($asQualities)
+	EndIf
+
+	GUICtrlSetData($idQuality, $sQualities, "source")
+	GUICtrlSetState($idQuality, $GUI_SHOW)
+	GUICtrlSetState($idPlay, $GUI_ENABLE)
+EndFunc
+
 Func _WM_CLIPBOARDUPDATE($hWnd, $iMsg, $wParam, $lParam)
 	#forceref $hWnd, $iMsg, $wParam, $lParam
 
@@ -529,7 +555,9 @@ Func _WM_CLIPBOARDUPDATE($hWnd, $iMsg, $wParam, $lParam)
 
 	Select
 		Case IsArray($asTwitch)
+			_ClipboardGo($asTwitch)
 		Case IsArray($asHitbox)
+			_ClipboardGo($asHitbox)
 	EndSelect
 	Return
 EndFunc   ;==>WM_CLIPBOARDUPDATE
