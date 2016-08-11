@@ -2,6 +2,9 @@
 #AutoIt3Wrapper_Icon=Svartnos.ico
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Fileversion=1.0.0.0
+#AutoIt3Wrapper_Res_ProductVersion=1.0.0.0
+#AutoIt3Wrapper_Res_Description=StreamHelper
+#AutoIt3Wrapper_Res_LegalCopyright=My right shoe
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #cs ----------------------------------------------------------------------------
