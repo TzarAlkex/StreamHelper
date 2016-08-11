@@ -391,9 +391,9 @@ Func _TrayStuff()
 			"Vote Anderz for King of Sweden", _
 			"I'm sorry trancexx", _
 			"Vote Knugen for King of Sweden", _
-			'"Is it creepy that I follow you, should I stop doing it?" -Xandy', _
-			'"I can''t be expected to perform under pressure!" -jaberwacky', _
-			'"The square root of 76 is brown" -One F Jef', _
+			'"Is it creepy that I follow you, should I stop doing it?" - Xandy', _
+			'"I can''t be expected to perform under pressure!" - jaberwacky', _
+			'"The square root of 76 is brown" - One F Jef', _
 			"42", _
 			'"THERE... ARE... FOUR LIGHTS!" - Picard', _
 			'"A. I was jogging, B. your cousin''s a liar, and C. some peacocks are poisonous" - Dennis Finch', _
@@ -407,10 +407,10 @@ Func _TrayStuff()
 			'"Everything on the internet is a lie" - Abraham Lincoln... (One F Jef)', _
 			'"If someone''s breathing fire on your eyes you should tell an adult immediately" - MattShea', _
 			'"I didn''t realize who I was until I stopped being who I wasn''t" - Unknown', _
-			'"I don''t have time to get lucky" ~ Scetchlink', _
-			'"It''s coming and so am I" -Scetchlink', _
-			'"Thanks for playing with me, I appreciate it" ~ Scetchlink', _
-			'"Go Flamesh*t with an Apethrower" - Jef 2016', _
+			'"I don''t have time to get lucky" - Scetchlink', _
+			'"It''s coming and so am I" - Scetchlink', _
+			'"Thanks for playing with me, I appreciate it" - Scetchlink', _
+			'"Go Flamesh*t with an Apethrower" - One F Jef 2016', _
 			'"Som tur va hade jag en s' & Chr(0xE5) & ' v' & Chr(0xE4) & 'lbakad prilla, s' & Chr(0xE5) & ' den fungerade som airbag" - Ragge']
 
 			$iRandom = Random(0, UBound($asText) -1, 1)
