@@ -527,7 +527,10 @@ Func _GuiDownload()
 
 	$iPid = Run('livestreamer -o "' & $sPathToFile & """ --hls-segment-threads 4 " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
 	$sFile = StringTrimLeft($sPathToFile, StringInStr($sPathToFile, "\", Default, -1))
+
 	$hGui = GUICreate($sFile, 500, 1, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_VISIBLE, $WS_SIZEBOX))
+	GUISetOnEvent($GUI_EVENT_CLOSE, _StopDownload)
+
 	If @Compiled Then
 		GUISetIcon(@ScriptFullPath)
 	Else
@@ -551,6 +554,17 @@ Func _GuiDownloadAdlib()
 		EndIf
 
 		If $sOutput <> "" Then WinSetTitle($avDownloads[$iX][1], "", StringStripWS(StringReplace($sOutput, "[download]", ""), BitOR($STR_STRIPLEADING, $STR_STRIPTRAILING)))
+	Next
+EndFunc
+
+Func _StopDownload()
+	For $iX = 1 To UBound($avDownloads) -1
+		If $avDownloads[$iX][1] = @GUI_WinHandle Then
+			Run("TaskKill /PID " & $avDownloads[$iX][0], "", @SW_HIDE)   ;Not sure if taskkill sends a ctrl+c or not... But at least it works.
+			GUIDelete($avDownloads[$iX][1])
+			_ArrayDelete($avDownloads, $iX)
+			Return
+		EndIf
 	Next
 EndFunc
 
