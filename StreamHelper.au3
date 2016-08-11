@@ -102,11 +102,6 @@ If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
 	GUIRegisterMsg($WM_ACTIVATE, _WM_KILLFOCUS)
 EndIf
 
-If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
-	_WinAPI_AddClipboardFormatListener(GUICreate("To infinity... and beyond!"))
-	GUIRegisterMsg($WM_CLIPBOARDUPDATE, _WM_CLIPBOARDUPDATE)
-EndIf
-
 _GDIPlus_Startup()
 
 Global $hBitmap, $hImage, $hGraphic
