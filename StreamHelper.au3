@@ -521,67 +521,16 @@ Func _WM_CLIPBOARDUPDATE($hWnd, $iMsg, $wParam, $lParam)
 	Local $sTitle
 	Local $sQualities = "source"
 
+	$sTwitchRegex = "http(?:s)?:\/\/(?:[\w\-]+\.)?twitch.tv\/(?P<channel>[^\/]+)(?:\/[bcv]\/(?P<video_id>\d+))?"
+	$sHitboxRegex = "http(s)?:\/\/(?:www\.)?hitbox.tv\/(?P<channel>[^\/]+)(?:\/(?P<media_id>[^\/]+))?"
+
+	$asTwitch = StringRegExp($sClipboard, $sTwitchRegex, $STR_REGEXPARRAYFULLMATCH)
+	$asHitbox = StringRegExp($sClipboard, $sHitboxRegex, $STR_REGEXPARRAYFULLMATCH)
+
 	Select
-		Case True
-			If StringInStr($sClipboard, "twitch.tv/") And StringInStr($sClipboard, "/v/") Then
-				ConsoleWrite(1 & @CRLF)
-
-				$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -2))
-				$sTemp = StringReplace($sTemp, "/", "")
-
-				$oJSON = Fetch("https://api.twitch.tv/kraken/videos/" & $sTemp)
-				$sTitle = Json_ObjGet($oJSON, "title")
-
-				$oResolutions = Json_ObjGet($oJSON, "resolutions")
-				If Json_ObjGet($oResolutions, "high") Then $sQualities &= "|high"
-				If Json_ObjGet($oResolutions, "medium") Then $sQualities &= "|medium"
-				If Json_ObjGet($oResolutions, "low") Then $sQualities &= "|low"
-				If Json_ObjGet($oResolutions, "mobile") Then $sQualities &= "|mobile"
-				$sQualities &= "|audio"
-
-				ContinueCase
-
-			ElseIf StringInStr($sClipboard, "twitch.tv/") Then
-				ConsoleWrite(3 & @CRLF)
-
-				$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -1))
-
-				$oChannel = Fetch("https://api.twitch.tv/kraken/channels/" & $sTemp)
-				$sTitle = Json_ObjGet($oChannel, "status")
-
-				$asQualities = _GetQualities($sClipboard)
-				$sQualities = _ArrayToString($asQualities)
-
-				ContinueCase
-
-			ElseIf StringInStr($sClipboard, "hitbox.tv/video/") Then
-				ConsoleWrite(2 & @CRLF)
-				$sTemp = StringTrimLeft($sClipboard, StringInStr($sClipboard, "/", $STR_CASESENSE, -1))
-				$oVideo = FetchItem("https://api.hitbox.tv/media/video/" & $sTemp, "video")
-				If UBound($oVideo) = 0 Then Return
-				$sTitle = Json_ObjGet($oVideo[0], "media_title")
-				ConsoleWrite($sTitle & @CRLF)
-				Exit
-				ContinueCase
-
-			Else
-				ConsoleWrite(3 & @CRLF)
-				Return
-			EndIf
-		Case False
-			$sUrl = $sClipboard
-
-			GUISetState(@SW_SHOW, $hGuiClipboard)
-			GUICtrlSetData($idLabel, $sTitle)
-			GUICtrlSetState($idQuality, $GUI_HIDE)
-			GUICtrlSetState($idPlay, $GUI_DISABLE)
-
-			_GUICtrlComboBox_ResetContent($idQuality)
-			GUICtrlSetData($idQuality, $sQualities, "source")
-			GUICtrlSetState($idQuality, $GUI_SHOW)
-			GUICtrlSetState($idPlay, $GUI_ENABLE)
+		Case IsArray($asTwitch)
+		Case IsArray($asHitbox)
 	EndSelect
-
 	Return
 EndFunc   ;==>WM_CLIPBOARDUPDATE
 
