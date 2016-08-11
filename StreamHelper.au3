@@ -82,18 +82,23 @@ Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 Global $hGuiClipboard
 Global $idLabel, $idQuality, $idPlay
 Global $sUrl
+Global $avDownloads[1][2]
 
 If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
 	Local $iGuiWidth = 420, $iGuiHeight = 70
-;~ 	$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1, $WS_EX_TOOLWINDOW)
-	$hGuiClipboard = GUICreate("Copy Twitch/Hitbox link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1, $WS_EX_TOOLWINDOW)
+
+	If Random(0, 1, 1) Then
+		$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1, $WS_EX_TOOLWINDOW)
+	Else
+		$hGuiClipboard = GUICreate("Copy Twitch/Hitbox link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1, $WS_EX_TOOLWINDOW)
+	EndIf
 
 	$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
-	$idQuality = GUICtrlCreateCombo("", 70, 40, 250, 20)
-	$idPlay = GUICtrlCreateButton("Play", 330, 40, 80, 20)
+	$idQuality = GUICtrlCreateCombo("", 70, 40, 160, 20)
+	$idPlay = GUICtrlCreateButton("Play", 240, 40, 80, 20)
 	GUICtrlSetOnEvent(-1, _GuiPlay)
-
-;~ 	GUISetState(@SW_SHOW, $hGuiClipboard)
+	$idDownload = GUICtrlCreateButton("Download", 330, 40, 80, 20)
+	GUICtrlSetOnEvent(-1, _GuiDownload)
 
 	GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
 
@@ -507,9 +512,42 @@ Func _GuiPlay()
 	$sQuality = GUICtrlRead($idQuality)
 	If $sQuality = "" Then $sQuality = "best"
 
-	ConsoleWrite("livestreamer " & $sUrl & " " & $sQuality & @CRLF)
-
 	Run("livestreamer " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+EndFunc
+
+Func _GuiDownload()
+	$sPathToFile = FileSaveDialog("Save Stream to", "", "Video files (*.mp4)")
+
+	$sQuality = GUICtrlRead($idQuality)
+	If $sQuality = "" Then $sQuality = "best"
+
+	$iPid = Run('livestreamer -o "' & $sPathToFile & """ --hls-segment-threads 4 " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
+	$sFile = StringTrimLeft($sPathToFile, StringInStr($sPathToFile, "\", Default, -1))
+	$hGui = GUICreate($sFile, 500, 1, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_VISIBLE, $WS_SIZEBOX))
+	If @Compiled Then
+		GUISetIcon(@ScriptFullPath)
+	Else
+		GUISetIcon(@ScriptDir & "\Svartnos.ico")
+	EndIf
+	GUICtrlCreateLabel("Nothing to see here ;)", 10, 10)
+
+	Local $avData[1][2] = [[$iPid, $hGui]]
+	_ArrayAdd($avDownloads, $avData)
+
+	AdlibRegister(_GuiDownloadAdlib)
+EndFunc
+
+Func _GuiDownloadAdlib()
+	For $iX = UBound($avDownloads) -1 To 1 Step -1
+		$sOutput = StderrRead($avDownloads[$iX][0])
+		If @error Then
+			GUIDelete($avDownloads[$iX][1])
+			_ArrayDelete($avDownloads, $iX)
+			ContinueLoop
+		EndIf
+
+		If $sOutput <> "" Then WinSetTitle($avDownloads[$iX][1], "", StringStripWS(StringReplace($sOutput, "[download]", ""), BitOR($STR_STRIPLEADING, $STR_STRIPTRAILING)))
+	Next
 EndFunc
 
 Func _ClipboardGo($asStream)
