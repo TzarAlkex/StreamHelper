@@ -45,6 +45,7 @@ Opt("GUIOnEventMode", 1)
 #include <MsgBoxConstants.au3>
 #include <WinAPISys.au3>
 #include <GuiComboBox.au3>
+#include <Misc.au3>
 
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
@@ -434,7 +435,12 @@ Func _TrayStuff()
 			Next
 
 			If $iLivestreamerInstalled And $aStreams[$iX][$eService] <> $eLink Then
-				Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
+				If _IsPressed("10") Then
+					Local $asStream[2] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
+					_ClipboardGo($asStream, True)
+				Else
+					Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
+				EndIf
 			Else
 				ShellExecute($sUrl)
 			EndIf
