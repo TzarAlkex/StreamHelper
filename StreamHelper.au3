@@ -658,33 +658,26 @@ EndFunc
 Func _GetQualities($sUrl)
 	If $iLivestreamerInstalled = False Then Return ""
 
-	$iPID = Run("livestreamer " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
+	$iPID = Run("livestreamer --json " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
 	ProcessWaitClose($iPID)
 	Local $sOutput = StdoutRead($iPID)
-	$aSplitted = StringSplit($sOutput, @CRLF, $STR_ENTIRESPLIT)
+	Local $asError[] = ["Error"]
 
-	Local $iIndex = -1, $asError[] = ["Error"]
-	For $iX = 1 To $aSplitted[0]
-		If StringLeft($aSplitted[$iX], 19) = "Available streams: " Then
-			$iIndex = $iX
-			ExitLoop
-		EndIf
+	$oJSON = Json_Decode($sOutput)
+	If IsObj($oJSON) = False Then Return $asError
+
+	$aoStreams = Json_ObjGet($oJSON, "streams")
+	If IsObj($aoStreams) = False Then Return $asError
+
+	Local $asQualities[0]
+	For $vItem In $aoStreams
+		If $vItem = "best" Or $vItem = "worst" Then ContinueLoop
+		_ArrayAdd($asQualities, $vItem)
 	Next
-	If $iIndex = -1 Then Return $asError
 
-	$sStripped = StringReplace($aSplitted[$iIndex], "Available streams: ", "")
-	$sStripped = StringReplace($sStripped, "worst", "")
-	$sStripped = StringReplace($sStripped, "best", "")
-	$sStripped = StringReplace($sStripped, "(", "")
-	$sStripped = StringReplace($sStripped, ")", "")
-	$sStripped = StringReplace($sStripped, " ", "")
-	If StringRight($sStripped, 1) = "," Then $sStripped = StringTrimRight($sStripped, 1)
-
-	$aSplitted = StringSplit($sStripped, ",", $STR_NOCOUNT)
-	For $iX = 0 To UBound($aSplitted) -1
-		$aSplitted[$iX] = $aSplitted[$iX]   ;The hell is this part supposed to be doing?? //Future me
-	Next
-	Return $aSplitted
+	_ArraySort($asQualities)
+	_ArrayAdd($asQualities, "worst|best")
+	Return $asQualities
 EndFunc
 
 Func _PowerEvents($hWnd, $Msg, $wParam, $lParam)
