@@ -91,7 +91,7 @@ Global $idLabel, $idQuality, $idPlay
 Global $sUrl
 Global $avDownloads[1][2]
 
-If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
+If $iLivestreamerInstalled Then
 	Local $iGuiWidth = 420, $iGuiHeight = 70
 
 	If Random(0, 1, 1) Then
@@ -108,10 +108,6 @@ If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
 	GUICtrlSetOnEvent(-1, _GuiDownload)
 
 	GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
-
-;~ 	_WinAPI_AddClipboardFormatListener($hGuiClipboard)
-;~ 	GUIRegisterMsg($WM_CLIPBOARDUPDATE, _WM_CLIPBOARDUPDATE)
-;~ 	GUIRegisterMsg($WM_ACTIVATE, _WM_KILLFOCUS)
 EndIf
 
 _GDIPlus_Startup()
@@ -306,23 +302,6 @@ Func FetchItems($sUrl, $sKey, $sExtendedKey = Null)
 	Else
 		Return SetExtended($sRetExtended, "")
 	EndIf
-EndFunc
-
-Func FetchItem($sUrl, $sKey)
-	$oJSON = getJson($sUrl)
-
-	If IsObj($oJSON) = False Then Return ""
-
-	$aFollows = Json_ObjGet($oJSON, $sKey)
-	Return $aFollows
-EndFunc
-
-Func Fetch($sUrl)
-	$oJSON = getJson($sUrl)
-
-	If IsObj($oJSON) = False Then Return ""
-
-	Return $oJSON
 EndFunc
 
 Func getJson($sUrl)
