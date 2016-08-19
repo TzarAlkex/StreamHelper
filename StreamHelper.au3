@@ -92,9 +92,9 @@ If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
 	Local $iGuiWidth = 420, $iGuiHeight = 70
 
 	If Random(0, 1, 1) Then
-		$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1, $WS_EX_TOOLWINDOW)
+		$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 	Else
-		$hGuiClipboard = GUICreate("Copy Twitch/Hitbox link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1, $WS_EX_TOOLWINDOW)
+		$hGuiClipboard = GUICreate("Copy Twitch/Hitbox link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 	EndIf
 
 	$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
