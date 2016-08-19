@@ -51,6 +51,9 @@ TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
+Local $idClipboard = TrayCreateItem("Play from clipboard")
+TrayItemSetOnEvent( -1, _TrayStuff)
+
 Global $sAppName = "StreamHelper v" & (@Compiled ? FileGetVersion(@ScriptFullPath) : "uncompiled")
 If $sCheckForUpdates = "-1" Then
 	If MsgBox($MB_YESNO, $sAppName, "Automatically check for updates?") = $IDYES Then
@@ -106,9 +109,9 @@ If $iLivestreamerInstalled And _WinAPI_GetVersion() >= '6.0' Then
 
 	GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
 
-	_WinAPI_AddClipboardFormatListener($hGuiClipboard)
-	GUIRegisterMsg($WM_CLIPBOARDUPDATE, _WM_CLIPBOARDUPDATE)
-	GUIRegisterMsg($WM_ACTIVATE, _WM_KILLFOCUS)
+;~ 	_WinAPI_AddClipboardFormatListener($hGuiClipboard)
+;~ 	GUIRegisterMsg($WM_CLIPBOARDUPDATE, _WM_CLIPBOARDUPDATE)
+;~ 	GUIRegisterMsg($WM_ACTIVATE, _WM_KILLFOCUS)
 EndIf
 
 _GDIPlus_Startup()
@@ -422,6 +425,10 @@ Func _TrayStuff()
 			MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
 		Case $idRefresh
 			_MAIN()
+		Case $idClipboard
+			Local $sClipboard = ClipGet()
+			Local $asStream[2] = [$sClipboard, $sClipboard]
+			_ClipboardGo($asStream)
 		Case $idExit
 			Exit
 		Case Else
@@ -595,36 +602,6 @@ Func _ClipboardGo($asStream)
 	EndIf
 
 	GUICtrlSetState($idQuality, $GUI_SHOW)
-EndFunc
-
-Func _WM_CLIPBOARDUPDATE($hWnd, $iMsg, $wParam, $lParam)
-	#forceref $hWnd, $iMsg, $wParam, $lParam
-
-	Local $sClipboard = ClipGet()
-	Local $sTitle
-	Local $sQualities = "source"
-
-	$sTwitchRegex = "http(?:s)?:\/\/(?:[\w\-]+\.)?twitch.tv\/(?P<channel>[^\/]+)(?:\/[bcv]\/(?P<video_id>\d+))?"
-	$sHitboxRegex = "http(s)?:\/\/(?:www\.)?hitbox.tv\/(?P<channel>[^\/]+)(?:\/(?P<media_id>[^\/]+))?"
-
-	$asTwitch = StringRegExp($sClipboard, $sTwitchRegex, $STR_REGEXPARRAYFULLMATCH)
-	$asHitbox = StringRegExp($sClipboard, $sHitboxRegex, $STR_REGEXPARRAYFULLMATCH)
-
-	Select
-		Case IsArray($asTwitch)
-			_ClipboardGo($asTwitch)
-		Case IsArray($asHitbox)
-			_ClipboardGo($asHitbox)
-	EndSelect
-	Return
-EndFunc   ;==>WM_CLIPBOARDUPDATE
-
-Func _WM_KILLFOCUS($hWnd, $iMsg, $wParam, $lParam)
-	#forceref $hWnd, $iMsg, $wParam, $lParam
-
-	If _WinAPI_LoWord($wParam) = $WA_INACTIVE Then
-		GUISetState(@SW_HIDE, $hGuiClipboard)
-	EndIf
 EndFunc
 
 Func _Hide()
