@@ -631,7 +631,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eService] = $iService
 
 	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
-		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
+;~ 		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
 	EndIf
 EndFunc
 
