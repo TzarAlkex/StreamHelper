@@ -437,7 +437,7 @@ Func _TrayStuff()
 			If $iLivestreamerInstalled And $aStreams[$iX][$eService] <> $eLink Then
 				If _IsPressed("10") Then
 					Local $asStream[2] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
-					_ClipboardGo($asStream, True)
+					_ClipboardGo($asStream)
 				Else
 					Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
 				EndIf
@@ -578,26 +578,23 @@ Func _ClipboardGo($asStream)
 	Local $sTitle
 	$sUrl = $asStream[0]
 
-	GUISetState(@SW_SHOWNORMAL, $hGuiClipboard)
-
 	If UBound($asStream) > 1 Then $sTitle &= $asStream[1]
 	GUICtrlSetData($idLabel, $sTitle)
 
 	GUICtrlSetState($idQuality, $GUI_HIDE)
-	GUICtrlSetState($idPlay, $GUI_DISABLE)
 	_GUICtrlComboBox_ResetContent($idQuality)
 
-	If StringInStr($sUrl, "twitch") Then
-		$asQualities = _GetQualities($sUrl)
-		$sQualities = _ArrayToString($asQualities)
-	ElseIf StringInStr($sUrl, "hitbox") Then
-		$asQualities = _GetQualities($sUrl)
-		$sQualities = _ArrayToString($asQualities)
+	GUISetState(@SW_SHOWNORMAL, $hGuiClipboard)
+	$asQualities = _GetQualities($sUrl)
+	$sQualities = _ArrayToString($asQualities)
+
+	If StringInStr($sQualities, "Error") Then
+		GUICtrlSetData($idQuality, $sQualities, "Error")
+	Else
+		GUICtrlSetData($idQuality, $sQualities, "best")
 	EndIf
 
-	GUICtrlSetData($idQuality, $sQualities, "source")
 	GUICtrlSetState($idQuality, $GUI_SHOW)
-	GUICtrlSetState($idPlay, $GUI_ENABLE)
 EndFunc
 
 Func _WM_CLIPBOARDUPDATE($hWnd, $iMsg, $wParam, $lParam)
