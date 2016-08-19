@@ -661,13 +661,21 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	EndIf
 EndFunc
 
+Func _LivestreamerCanHandle($sUrl)
+	$iExitCode = RunWait("livestreamer --can-handle-url " & $sUrl, "", @SW_HIDE)
+	Return ($iExitCode = 0)
+EndFunc
+
 Func _GetQualities($sUrl)
 	If $iLivestreamerInstalled = False Then Return ""
+
+	Local $asError[] = ["Error"]
+
+	If Not _LivestreamerCanHandle($sUrl) Then Return $asError
 
 	$iPID = Run("livestreamer --json " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
 	ProcessWaitClose($iPID)
 	Local $sOutput = StdoutRead($iPID)
-	Local $asError[] = ["Error"]
 
 	$oJSON = Json_Decode($sOutput)
 	If IsObj($oJSON) = False Then Return $asError
