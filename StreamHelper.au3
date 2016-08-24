@@ -570,7 +570,7 @@ Func _ClipboardGo($asStream)
 	GUICtrlSetState($idQuality, $GUI_HIDE)
 	_GUICtrlComboBox_ResetContent($idQuality)
 
-	GUISetState(@SW_SHOWNORMAL, $hGuiClipboard)
+	If Not GUISetState(@SW_SHOW, $hGuiClipboard) Then WinActivate($hGuiClipboard)
 	$asQualities = _GetQualities($sUrl)
 	$sQualities = _ArrayToString($asQualities)
 
