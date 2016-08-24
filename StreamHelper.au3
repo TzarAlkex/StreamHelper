@@ -19,7 +19,6 @@
 
 If (Not @Compiled) Then
 	TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
-	HotKeySet("{F5}", _Quit)
 EndIf
 
 $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
@@ -82,7 +81,6 @@ Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
 Global Const $AUT_NOTIFY_ICON_ID = 1 ; Application.h
 Global Const $PBT_APMRESUMEAUTOMATIC =  0x12
-Global Const $WA_INACTIVE = 0
 
 AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the second")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
@@ -677,9 +675,5 @@ Func _CheckUpdates()
 	If $aRet[1] <= 1 Then Return   ;Version
 
 	_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", $eLink)
-EndFunc
-
-Func _Quit()
-	Exit
 EndFunc
 #EndRegion
