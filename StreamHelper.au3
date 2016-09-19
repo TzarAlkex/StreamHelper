@@ -15,6 +15,14 @@
  Script Function:
 	Stuff
 
+
+
+Activate Twitch support on livestreamer with:
+https://github.com/chrippa/livestreamer/issues/1456#issuecomment-247192307
+
+Todo:
+*Should probably do the recovery mode thing also when internet disappears and not just when waking the computer
+
 #ce ----------------------------------------------------------------------------
 
 If (Not @Compiled) Then
