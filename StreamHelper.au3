@@ -680,7 +680,7 @@ Func _CheckUpdates()
 	$aRet = StringSplit($sData, "|")
 	If @error Then Return
 	If $aRet[0] <> 2 Then Return
-	If $aRet[1] <= 1 Then Return   ;Version
+	If $aRet[1] <= 2 Then Return   ;Version
 
 	_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", $eLink)
 EndFunc
