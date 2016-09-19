@@ -22,6 +22,8 @@ https://github.com/chrippa/livestreamer/issues/1456#issuecomment-247192307
 
 Todo:
 *Should probably do the recovery mode thing also when internet disappears and not just when waking the computer
+*Add back the quality stuff in the array now that Twitch changed how they allocate transcoding to non-partners?
+*Always save quality stuff to array for partners?
 
 #ce ----------------------------------------------------------------------------
 
