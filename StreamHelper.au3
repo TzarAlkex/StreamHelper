@@ -105,7 +105,7 @@ If $iLivestreamerInstalled Then
 	If Random(0, 1, 1) Then
 		$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 	Else
-		$hGuiClipboard = GUICreate("Copy Twitch/Hitbox link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+		$hGuiClipboard = GUICreate("Copy Livestreamer compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 	EndIf
 
 	$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
