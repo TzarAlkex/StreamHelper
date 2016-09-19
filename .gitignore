@@ -2,6 +2,6 @@
 log.txt
 *.zip
 *.py
-power test.au3
+*test.au3
 *.orig
 *.json
