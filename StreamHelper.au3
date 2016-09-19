@@ -423,7 +423,7 @@ Func _TrayStuff()
 					Local $asStream[2] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
 					_ClipboardGo($asStream)
 				Else
-					Run("livestreamer " & $sUrl & " best", "", @SW_HIDE)
+					Run("livestreamer --hls-segment-threads 2 " & $sUrl & " best", "", @SW_HIDE)
 				EndIf
 			Else
 				ShellExecute($sUrl)
@@ -506,7 +506,7 @@ Func _GuiPlay()
 	$sQuality = GUICtrlRead($idQuality)
 	If $sQuality = "" Then $sQuality = "best"
 
-	Run("livestreamer " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+	Run("livestreamer --hls-segment-threads 2 " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
 
 Func _GuiDownload()
