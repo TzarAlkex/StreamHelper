@@ -141,7 +141,7 @@ Func _TwitchGet($sUsername)
 	$sBaseUrl = "https://api.twitch.tv/kraken/users/" & $sQuotedUsername & "/follows/channels"
 
 	While True
-		$sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
+		$sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit) & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
 		$avTemp = FetchItems($sUrl, "follows")
 		If UBound($avTemp) = 0 Then ExitLoop
 
@@ -153,7 +153,7 @@ Func _TwitchGet($sUsername)
 		Next
 
 		$sOptions = StringTrimRight($sOptions, 1)
-		$sUrl = 'https://api.twitch.tv/kraken/streams?channel=' & $sOptions & '&limit=' & $iLimit
+		$sUrl = 'https://api.twitch.tv/kraken/streams?channel=' & $sOptions & '&limit=' & $iLimit & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
 		$oChannel = FetchItems($sUrl, "streams")
 
 		For $iX = 0 To UBound($oChannel) -1
