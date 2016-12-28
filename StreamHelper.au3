@@ -37,6 +37,11 @@ $iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 2
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "")   ;PRINT ON JSON
 $sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "-1")   ;JUST TYPE SOMETHING TO CHECK
 
+$sFavorites = IniRead(@ScriptDir & "\Settings.ini", "Section", "Favorites", "")
+$sIgnore = IniRead(@ScriptDir & "\Settings.ini", "Section", "Ignore", "")
+Global $sOldFavorites = $sFavorites
+Global $sOldIgnore = $sIgnore
+
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
 Opt("GUIOnEventMode", 1)
@@ -358,18 +363,26 @@ Func _TrayRefresh()
 
 	For $iX = 0 To UBound($aStreams) -1
 		If $aStreams[$iX][$eOnline] = True Then
+			Local $sDisplayName = $aStreams[$iX][$eDisplayName]
+			If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
+			If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
+
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				If $aStreams[$iX][$eGame] <> "" Then
-					$aStreams[$iX][$eTrayId] = TrayCreateItem($aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame], -1, 0)
-					$sNew &= $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame] & @CRLF
+					$aStreams[$iX][$eTrayId] = TrayCreateItem($sDisplayName & " | " & $aStreams[$iX][$eGame], -1, 0)
+					If (Not StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";")) Then
+						$sNew &= $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame] & @CRLF
+					EndIf
 				Else
-					$aStreams[$iX][$eTrayId] = TrayCreateItem($aStreams[$iX][$eDisplayName], -1, 0)
-					$sNew &= $aStreams[$iX][$eDisplayName] & @CRLF
+					$aStreams[$iX][$eTrayId] = TrayCreateItem($sDisplayName, -1, 0)
+					If (Not StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";")) Then
+						$sNew &= $aStreams[$iX][$eDisplayName] & @CRLF
+					EndIf
 				EndIf
 				TrayItemSetOnEvent( -1, _TrayStuff)
-
 			Else
-				TrayItemSetText($aStreams[$iX][$eTrayId], $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame])
+				;Shouldn't this also have an if not game then skip game display?
+				TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
 			EndIf
 			$aStreams[$iX][$eOnline] = False
 		Else
@@ -428,6 +441,8 @@ Func _TrayStuff()
 			Local $asStream[2] = [$sClipboard, $sClipboard]
 			_ClipboardGo($asStream)
 		Case $idExit
+			If $sFavorites <> $sOldFavorites Then IniWrite(@ScriptDir & "\Settings.ini", "Section", "Favorites", $sFavorites)
+			If $sIgnore <> $sOldIgnore Then IniWrite(@ScriptDir & "\Settings.ini", "Section", "Ignore", $sIgnore)
 			Exit
 		Case Else
 			Local $sUrl   ;Remove this variable?
@@ -443,6 +458,23 @@ Func _TrayStuff()
 				If _IsPressed("10") Then
 					Local $asStream[2] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
 					_ClipboardGo($asStream)
+				ElseIf _IsPressed("11") Then
+					$sUrl = $sUrl & ";"
+
+					If StringInStr($sFavorites, $sUrl) Then
+						$sFavorites = StringReplace($sFavorites, $sUrl, "")
+						$sIgnore &= $sUrl
+					ElseIf StringInStr($sIgnore, $sUrl) Then
+						$sIgnore = StringReplace($sIgnore, $sUrl, "")
+					Else
+						$sFavorites &= $sUrl
+					EndIf
+
+					Local $sDisplayName = $aStreams[$iX][$eDisplayName]
+					If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
+					If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
+					;Shouldn't this also have an if not game then skip game display?
+					TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
 				Else
 					$sQuality = "best,1080p60"
 					Run("livestreamer --hls-segment-threads 2 " & $sUrl & " " & $sQuality, "", @SW_HIDE)
