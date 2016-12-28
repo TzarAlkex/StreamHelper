@@ -156,7 +156,7 @@ Func _TwitchGet($sUsername)
 		$avTemp = FetchItems($sUrl, "follows")
 		If UBound($avTemp) = 0 Then ExitLoop
 
-		Local $sOptions
+		Local $sOptions = ""
 		For $iX = 0 To UBound($avTemp) -1
 			$oChannel = Json_ObjGet($avTemp[$iX], "channel")
 			$sName = Json_ObjGet($oChannel, "name")
