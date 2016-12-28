@@ -317,7 +317,11 @@ Func FetchItems($sUrl, $sKey, $sExtendedKey = Null)
 EndFunc
 
 Func getJson($sUrl)
-	$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
+	For $iX = 1 To 3
+		$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
+		If @error = 0 Then ExitLoop
+	Next
+	If @error Then ConsoleWrite("All downloads failed" & @CRLF)
 
 	If $iPrintJSON Then
 		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
