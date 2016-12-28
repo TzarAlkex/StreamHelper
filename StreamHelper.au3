@@ -444,7 +444,8 @@ Func _TrayStuff()
 					Local $asStream[2] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
 					_ClipboardGo($asStream)
 				Else
-					Run("livestreamer --hls-segment-threads 2 " & $sUrl & " best", "", @SW_HIDE)
+					$sQuality = "best,1080p60"
+					Run("livestreamer --hls-segment-threads 2 " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 				EndIf
 			Else
 				ShellExecute($sUrl)
@@ -526,7 +527,7 @@ EndFunc
 
 Func _GuiPlay()
 	$sQuality = GUICtrlRead($idQuality)
-	If $sQuality = "" Then $sQuality = "best"
+	If $sQuality = "" Then $sQuality = "best,1080p60"
 
 	Run("livestreamer --hls-segment-threads 2 " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
@@ -535,7 +536,7 @@ Func _GuiDownload()
 	$sPathToFile = FileSaveDialog("Save Stream to", "", "Video files (*.mp4)")
 
 	$sQuality = GUICtrlRead($idQuality)
-	If $sQuality = "" Then $sQuality = "best"
+	If $sQuality = "" Then $sQuality = "best,1080p60"
 
 	$iPid = Run('livestreamer -o "' & $sPathToFile & """ --hls-segment-threads 4 " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
 	$sFile = StringTrimLeft($sPathToFile, StringInStr($sPathToFile, "\", Default, -1))
@@ -594,11 +595,19 @@ Func _ClipboardGo($asStream)
 	$asQualities = _GetQualities($sUrl)
 	$sQualities = _ArrayToString($asQualities)
 
-	If StringInStr($sQualities, "Error") Then
-		GUICtrlSetData($idQuality, $sQualities, "Error")
-	Else
-		GUICtrlSetData($idQuality, $sQualities, "best")
+	Local $sDefault = "no default"
+	If StringInStr($sQualities, "source") Then
+		$sDefault = "source"
+	ElseIf StringInStr($sQualities, "1080p60") Then
+		$sDefault = "1080p60"
+	ElseIf StringInStr($sQualities, "Error") Then
+		$sDefault = "Error"
+	ElseIf $sDefault = "no default" Then
+		ConsoleWrite("No default quality" & @CRLF)
+		$sDefault = $asQualities[UBound($asQualities) -1]
 	EndIf
+
+	GUICtrlSetData($idQuality, $sQualities, $sDefault)
 
 	GUICtrlSetState($idQuality, $GUI_SHOW)
 EndFunc
@@ -664,7 +673,6 @@ Func _GetQualities($sUrl)
 	Next
 
 	_ArraySort($asQualities)
-	_ArrayAdd($asQualities, "worst|best")
 	Return $asQualities
 EndFunc
 
