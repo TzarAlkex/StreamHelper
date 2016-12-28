@@ -136,6 +136,7 @@ WEnd
 
 #Region TWITCH
 Func _Twitch()
+	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Twitching" & @CRLF)
 	_ProgressSpecific("T")
 
@@ -220,6 +221,7 @@ EndFunc
 
 #Region HITBOX
 Func _Hitbox()
+	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Hitboxing" & @CRLF)
 	_ProgressSpecific("H")
 
@@ -296,6 +298,8 @@ EndFunc
 Func FetchItems($sUrl, $sKey, $sExtendedKey = Null)
 	Local $sRetExtended
 
+	ConsoleWrite("myURL " & $sUrl & @CRLF)
+
 	$oJSON = getJson($sUrl)
 
 	If IsObj($oJSON) = False Then Return ""
@@ -315,7 +319,10 @@ EndFunc
 Func getJson($sUrl)
 	$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
 
-	If $iPrintJSON Then ConsoleWrite(BinaryToString($dJsonString) & @CRLF)
+	If $iPrintJSON Then
+		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
+		ConsoleWrite(BinaryToString($dJsonString) & @CRLF)
+	EndIf
 
 	$oJSON = Json_Decode(BinaryToString($dJsonString))
 	Return $oJSON
@@ -485,6 +492,7 @@ Func _MAIN()
 	If $sCheckForUpdates <> "" Then _CheckUpdates()
 	If $sTwitchUsername <> "" Then _Twitch()
 	If $sHitboxUsername <> "" Then _Hitbox()
+	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Getters done" & @CRLF)
 	_TrayRefresh()
 	;https://www.autoitscript.com/forum/topic/146955-solved-remove-crlf-at-the-end-of-text-file/?do=findComment&comment=1041088
@@ -598,6 +606,7 @@ EndFunc
 
 #Region INTENRAL INTERLECT
 Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService)
+	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
 
 	For $iIndex = 0 To UBound($aStreams) -1
