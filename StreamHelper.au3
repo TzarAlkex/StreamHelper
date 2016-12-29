@@ -24,6 +24,7 @@ Todo:
 *Should probably do the recovery mode thing also when internet disappears and not just when waking the computer
 *Add back the quality stuff in the array now that Twitch changed how they allocate transcoding to non-partners?
 *Always save quality stuff to array for partners?
+*Beep confirmed as annoying.
 
 #ce ----------------------------------------------------------------------------
 
@@ -541,17 +542,24 @@ Func _MAIN()
 	EndIf
 
 	If $sNew <> "" Then
-		$iSkipped = 0
-		While StringLen($sNew) > 240
-			$iPos = StringInStr($sNew, @CRLF, $STR_CASESENSE, -1)
-			$sNew = StringLeft($sNew, $iPos -1)
-			$iSkipped += 1
-		WEnd
-		If $iSkipped > 0 Then
-			$sNew &= @CRLF & "+" & $iSkipped & " more"
-		EndIf
+		If @OSBuild >= 9200 Then
+			$asSplit = StringSplit($sNew, @CRLF, $STR_ENTIRESPLIT)
+			For $iX = 1 To $asSplit[0]
+				TrayTip("Now streaming", $asSplit[$iX], 10)
+			Next
+		Else
+			$iSkipped = 0
+			While StringLen($sNew) > 240
+				$iPos = StringInStr($sNew, @CRLF, $STR_CASESENSE, -1)
+				$sNew = StringLeft($sNew, $iPos -1)
+				$iSkipped += 1
+			WEnd
+			If $iSkipped > 0 Then
+				$sNew &= @CRLF & "+" & $iSkipped & " more"
+			EndIf
 
-		TrayTip("Now streaming", $sNew, 10)
+			TrayTip("Now streaming", $sNew, 10)
+		EndIf
 	EndIf
 
 	AdlibRegister(_MAIN, $iRefresh)
