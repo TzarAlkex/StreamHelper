@@ -93,6 +93,7 @@ Global $sNew
 Global $aStreams[0][$eMax]
 
 Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
+Global $bBlobFirstRun = True
 
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
 Global Const $AUT_NOTIFY_ICON_ID = 1 ; Application.h
@@ -368,22 +369,20 @@ Func _TrayRefresh()
 			If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
 			If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
 
+			Local $sTrayText = $sDisplayName
+			If $aStreams[$iX][$eGame] <> "" Then $sTrayText &= " | " & $aStreams[$iX][$eGame]
+
 			If $aStreams[$iX][$eTrayId] = 0 Then
-				If $aStreams[$iX][$eGame] <> "" Then
-					$aStreams[$iX][$eTrayId] = TrayCreateItem($sDisplayName & " | " & $aStreams[$iX][$eGame], -1, 0)
-					If (Not StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";")) Then
-						$sNew &= $aStreams[$iX][$eDisplayName] & " | " & $aStreams[$iX][$eGame] & @CRLF
-					EndIf
-				Else
-					$aStreams[$iX][$eTrayId] = TrayCreateItem($sDisplayName, -1, 0)
-					If (Not StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";")) Then
-						$sNew &= $aStreams[$iX][$eDisplayName] & @CRLF
-					EndIf
+				$aStreams[$iX][$eTrayId] = TrayCreateItem($sTrayText, -1, 0)
+				If StringLeft($sDisplayName, 4) <> "[i] " Then
+					Local $NewText = $aStreams[$iX][$eDisplayName]
+					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> true Then $NewText &= " | " & $aStreams[$iX][$eGame]
+
+					$sNew &= $NewText & @CRLF
 				EndIf
 				TrayItemSetOnEvent( -1, _TrayStuff)
 			Else
-				;Shouldn't this also have an if not game then skip game display?
-				TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
+				TrayItemSetText($aStreams[$iX][$eTrayId], $sTrayText)
 			EndIf
 			$aStreams[$iX][$eOnline] = False
 		Else
@@ -542,7 +541,16 @@ Func _MAIN()
 	EndIf
 
 	If $sNew <> "" Then
-		If @OSBuild >= 9200 Then
+		If $bBlobFirstRun = True Then
+			$bBlobFirstRun = False
+			Local $sReplaced = StringReplace($sNew, @CRLF, ", ")
+
+			;Win 10 November Update seems to have a 140 character limit when just a block of text, but here spaces and things screw that up.
+			;I'm guessing 120 is low enough to cover most situations.
+			$sReplaced = StringLeft($sReplaced, 120)
+			$sReplaced &= "..."
+			TrayTip("Now streaming", $sReplaced, 10)
+		ElseIf @OSBuild >= 10240 Then
 			$asSplit = StringSplit($sNew, @CRLF, $STR_ENTIRESPLIT)
 			For $iX = 1 To $asSplit[0]
 				TrayTip("Now streaming", $asSplit[$iX], 10)
