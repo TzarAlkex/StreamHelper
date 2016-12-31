@@ -544,11 +544,12 @@ Func _MAIN()
 		If $bBlobFirstRun = True Then
 			$bBlobFirstRun = False
 			Local $sReplaced = StringReplace($sNew, @CRLF, ", ")
+			Local $iReplacedLength = StringLen($sReplaced)
 
 			;Win 10 November Update seems to have a 140 character limit when just a block of text, but here spaces and things screw that up.
 			;I'm guessing 120 is low enough to cover most situations.
 			$sReplaced = StringLeft($sReplaced, 120)
-			$sReplaced &= "..."
+			If StringLen($sReplaced) <> $iReplacedLength Then $sReplaced &= "..."
 			TrayTip("Now streaming", $sReplaced, 10)
 		ElseIf @OSBuild >= 10240 Then
 			$asSplit = StringSplit($sNew, @CRLF, $STR_ENTIRESPLIT)
