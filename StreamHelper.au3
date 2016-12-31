@@ -476,7 +476,7 @@ Func _TrayStuff()
 					;Shouldn't this also have an if not game then skip game display?
 					TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
 				Else
-					$sQuality = "best,1080p60"
+					$sQuality = "best,1080p60,1080p30"
 					Run("livestreamer --hls-segment-threads 2 " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 				EndIf
 			Else
@@ -575,7 +575,7 @@ EndFunc
 
 Func _GuiPlay()
 	$sQuality = GUICtrlRead($idQuality)
-	If $sQuality = "" Then $sQuality = "best,1080p60"
+	If $sQuality = "" Then $sQuality = "best,1080p60,1080p30"
 
 	Run("livestreamer --hls-segment-threads 2 " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
@@ -584,7 +584,7 @@ Func _GuiDownload()
 	$sPathToFile = FileSaveDialog("Save Stream to", "", "Video files (*.mp4)")
 
 	$sQuality = GUICtrlRead($idQuality)
-	If $sQuality = "" Then $sQuality = "best,1080p60"
+	If $sQuality = "" Then $sQuality = "best,1080p60,1080p30"
 
 	$iPid = Run('livestreamer -o "' & $sPathToFile & """ --hls-segment-threads 4 " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
 	$sFile = StringTrimLeft($sPathToFile, StringInStr($sPathToFile, "\", Default, -1))
