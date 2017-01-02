@@ -103,7 +103,6 @@ AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the secon
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 Global $hGuiClipboard
 Global $idLabel, $idQuality, $idPlay
-Global $sUrl
 Global $avDownloads[1][2]
 
 If $iLivestreamerInstalled Then
@@ -121,6 +120,7 @@ If $iLivestreamerInstalled Then
 	GUICtrlSetOnEvent(-1, _GuiPlay)
 	$idDownload = GUICtrlCreateButton("Download", 330, 40, 80, 20)
 	GUICtrlSetOnEvent(-1, _GuiDownload)
+	$idUrl = GUICtrlCreateDummy()
 
 	GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
 EndIf
@@ -159,7 +159,7 @@ Func _TwitchGet($sUsername)
 	$sBaseUrl = "https://api.twitch.tv/kraken/users/" & $sQuotedUsername & "/follows/channels"
 
 	While True
-		$sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit) & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
+		Local $sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit) & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
 		$avTemp = FetchItems($sUrl, "follows")
 		If UBound($avTemp) = 0 Then ExitLoop
 
@@ -251,7 +251,7 @@ Func _HitboxGet($sUsername)
 		If $iUserID = "" Then Return
 	EndIf
 
-	$sUrl = "https://api.hitbox.tv/media/live/list?follower_id=" & $iUserID
+	Local $sUrl = "https://api.hitbox.tv/media/live/list?follower_id=" & $iUserID
 	$oLivestream = FetchItems($sUrl, "livestream")
 	If UBound($oLivestream) = 0 Then Return
 
@@ -578,6 +578,8 @@ Func _GuiPlay()
 	$sQuality = GUICtrlRead($idQuality)
 	If $sQuality = "" Then $sQuality = "best,1080p60,1080p30"
 
+	Local $sUrl = GUICtrlRead($idUrl)
+
 	Run("livestreamer --hls-segment-threads 2 " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
 
@@ -586,6 +588,8 @@ Func _GuiDownload()
 
 	$sQuality = GUICtrlRead($idQuality)
 	If $sQuality = "" Then $sQuality = "best,1080p60,1080p30"
+
+	Local $sUrl = GUICtrlRead($idUrl)
 
 	$iPid = Run('livestreamer -o "' & $sPathToFile & """ --hls-segment-threads 4 " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
 	$sFile = StringTrimLeft($sPathToFile, StringInStr($sPathToFile, "\", Default, -1))
@@ -632,7 +636,7 @@ EndFunc
 
 Func _ClipboardGo($asStream)
 	Local $sTitle
-	$sUrl = $asStream[0]
+	Local $sUrl = $asStream[0]
 
 	If UBound($asStream) > 1 Then $sTitle &= $asStream[1]
 	GUICtrlSetData($idLabel, $sTitle)
@@ -657,6 +661,8 @@ Func _ClipboardGo($asStream)
 	EndIf
 
 	GUICtrlSetData($idQuality, $sQualities, $sDefault)
+
+	GUICtrlSendToDummy($idUrl, $sUrl)
 
 	GUICtrlSetState($idQuality, $GUI_SHOW)
 EndFunc
