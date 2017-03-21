@@ -26,6 +26,10 @@ Todo:
 *Always save quality stuff to array for partners?
 *Beep confirmed as annoying.
 
+*BroccoliCat on twitch doesn't load properly on source quality in livestreamer.
+Increase the timer wait thing in the config file?
+I have increased multiple seconds, difference is questionable?
+
 #ce ----------------------------------------------------------------------------
 
 If (Not @Compiled) Then
@@ -34,6 +38,7 @@ EndIf
 
 $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
 $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
+$sBeamUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Beam", "")   ;NAME ON BEAM
 $iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 2) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "")   ;PRINT ON JSON
 $sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "-1")   ;JUST TYPE SOMETHING TO CHECK
@@ -87,7 +92,7 @@ Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
 Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eMax
-Global Enum $eTwitch, $eHitbox, $eLink
+Global Enum $eTwitch, $eHitbox, $eBeam, $eLink
 
 Global $sNew
 Global $aStreams[0][$eMax]
@@ -301,11 +306,58 @@ Func OPTIONS_OFFSET_LIMIT_HITBOX($iOffset, $iLimit)
 EndFunc
 #EndRegion
 
+#Region BEAM
+Func _Beam()
+	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
+	ConsoleWrite("Beaming" & @CRLF)
+	_ProgressSpecific("B")
+
+	_BeamGet($sBeamUsername)
+
+	$iTrayRefresh = True
+EndFunc
+
+Func _BeamGet($sUsername)
+	$iLimit = 100
+	$iOffset = 0
+	Static Local $iUserID = ""
+
+	If $iUserID = "" Then
+		$sQuotedUsername = URLEncode($sUsername)
+
+		$sUserUrl = "https://beam.pro/api/v1/channels/" & $sQuotedUsername
+		FetchItems($sUserUrl, "", "userId")
+		$iUserID = @extended
+		If $iUserID = "" Then Return
+	EndIf
+
+	Local $sUrl = "https://beam.pro/api/v1/users/" & $iUserID & "/follows?where=online:eq:1"
+	$oFollows = getJson($sUrl)
+	If UBound($oFollows) = 0 Then Return
+
+	For $iX = 0 To UBound($oFollows) -1
+		$oUser = Json_ObjGet($oFollows[$iX], "user")
+		$sDisplayName = Json_ObjGet($oUser, "username")
+
+		$sUrl = "https://beam.pro/" & Json_ObjGet($oFollows[$iX], "token")
+
+		$oType = Json_ObjGet($oFollows[$iX], "type")
+		If IsObj($oType) Then
+			$sGame = Json_ObjGet($oType, "name")
+		Else
+			$sGame = "Error"
+		EndIf
+
+		_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eBeam)
+	Next
+
+	Return "Potato on a Stick"
+EndFunc
+#EndRegion
+
 #Region COMMON
 Func FetchItems($sUrl, $sKey, $sExtendedKey = Null)
 	Local $sRetExtended
-
-	ConsoleWrite("myURL " & $sUrl & @CRLF)
 
 	$oJSON = getJson($sUrl)
 
@@ -324,6 +376,8 @@ Func FetchItems($sUrl, $sKey, $sExtendedKey = Null)
 EndFunc
 
 Func getJson($sUrl)
+	ConsoleWrite("myURL " & $sUrl & @CRLF)
+
 	For $iX = 1 To 3
 		$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
 		If @error = 0 Then ExitLoop
@@ -529,6 +583,7 @@ Func _MAIN()
 	If $sCheckForUpdates <> "" Then _CheckUpdates()
 	If $sTwitchUsername <> "" Then _Twitch()
 	If $sHitboxUsername <> "" Then _Hitbox()
+	If $sBeamUsername <> "" Then _Beam()
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Getters done" & @CRLF)
 	_TrayRefresh()
