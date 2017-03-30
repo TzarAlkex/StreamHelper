@@ -345,7 +345,7 @@ Func _BeamGet($sUsername)
 		If IsObj($oType) Then
 			$sGame = Json_ObjGet($oType, "name")
 		Else
-			$sGame = "Error"
+			$sGame = "No game selected"
 		EndIf
 
 		_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eBeam)
