@@ -30,6 +30,17 @@ Todo:
 Increase the timer wait thing in the config file?
 I have increased multiple seconds, difference is questionable?
 
+*ItsNatashaFFS sometimes just doesn't open with livestreamer.
+The cmd and python processes start but just doesn't seem to do anything.
+My only idea is that she went offline just as I started and that livestreamer maybe doesn't handle offline streams well.
+
+*livestreamer https://www.twitch.tv/annemunition
+[cli][info] Found matching plugin twitch for URL https://www.twitch.tv/annemunition
+[plugin.twitch][info] Attempting to authenticate using OAuth token
+[plugin.twitch][info] Successfully logged in as ***
+Available streams: 160p (worst), 360p, 480p (best), 720p60, 864p60, audio_only
+Available streams: 1080p60, 160p (worst), 360p, 480p, 720p (best), 720p60, audio_only
+
 #ce ----------------------------------------------------------------------------
 
 If (Not @Compiled) Then
@@ -808,13 +819,24 @@ Func _CheckUpdates()
 	_ProgressSpecific("U")
 	$sCheckForUpdates = ""
 
-	Local $dData = InetRead("https://dl.dropboxusercontent.com/u/18344147/SoftwareUpdates/StreamHelper.txt", $INET_FORCERELOAD)
-	Local $sData = BinaryToString($dData)
-	$aRet = StringSplit($sData, "|")
-	If @error Then Return
-	If $aRet[0] <> 2 Then Return
-	If $aRet[1] <= 2 Then Return   ;Version
+	Local $dData = InetRead("https://api.github.com/repos/TzarAlkex/StreamHelper/releases/latest", $INET_FORCERELOAD)
 
-	_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", $eLink)
+	If $iPrintJSON Then
+		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
+		ConsoleWrite(BinaryToString($dData) & @CRLF)
+	EndIf
+
+	$oJSON = Json_Decode(BinaryToString($dData))
+
+	$sTag = Json_ObjGet($oJSON, "tag_name")
+
+	$iInternalVersion = "v1.2"
+	$iHigherVersion = _VersionCompare($sTag, $iInternalVersion)
+
+	If @error Then
+		_StreamSet("catasrophic[sic] error! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", $eLink)
+	ElseIf $iHigherVersion = 1 Then
+		_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", $eLink)
+	EndIf
 EndFunc
 #EndRegion
