@@ -17,8 +17,8 @@
 
 
 
-Activate Twitch support on livestreamer with:
-https://github.com/chrippa/livestreamer/issues/1456#issuecomment-247192307
+Activate Twitch support on streamlink by running the following in cmd:
+streamlink --twitch-oauth-authenticate
 
 Todo:
 *Should probably do the recovery mode thing also when internet disappears and not just when waking the computer
@@ -30,17 +30,12 @@ Todo:
 *BroccoliCat on twitch doesn't load properly on source quality in livestreamer.
 Increase the timer wait thing in the config file?
 I have increased multiple seconds, difference is questionable?
+(needs to be verified if it still happens with streamlink!)
 
 *ItsNatashaFFS sometimes just doesn't open with livestreamer.
 The cmd and python processes start but just doesn't seem to do anything.
 My only idea is that she went offline just as I started and that livestreamer maybe doesn't handle offline streams well.
-
-*livestreamer https://www.twitch.tv/annemunition
-[cli][info] Found matching plugin twitch for URL https://www.twitch.tv/annemunition
-[plugin.twitch][info] Attempting to authenticate using OAuth token
-[plugin.twitch][info] Successfully logged in as ***
-Available streams: 160p (worst), 360p, 480p (best), 720p60, 864p60, audio_only
-Available streams: 1080p60, 160p (worst), 360p, 480p, 720p (best), 720p60, audio_only
+(needs to be verified if it still happens with streamlink!)
 
 #ce ----------------------------------------------------------------------------
 
@@ -109,7 +104,7 @@ Global Enum $eTwitch, $eHitbox, $eBeam, $eLink
 Global $sNew
 Global $aStreams[0][$eMax]
 
-Global $iLivestreamerInstalled = StringInStr(EnvGet("path"), "Livestreamer") > 0
+Global $iStreamlinkInstalled = StringInStr(EnvGet("path"), "Streamlink") > 0
 Global $bBlobFirstRun = True
 
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
@@ -122,13 +117,13 @@ Global $hGuiClipboard
 Global $idLabel, $idQuality, $idPlay
 Global $avDownloads[1][2]
 
-If $iLivestreamerInstalled Then
+If $iStreamlinkInstalled Then
 	Local $iGuiWidth = 420, $iGuiHeight = 70
 
 	If Random(0, 1, 1) Then
 		$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 	Else
-		$hGuiClipboard = GUICreate("Copy Livestreamer compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+		$hGuiClipboard = GUICreate("Copy Streamlink compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 	EndIf
 
 	$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
@@ -520,7 +515,7 @@ Func _TrayStuff()
 				EndIf
 			Next
 
-			If $iLivestreamerInstalled And $aStreams[$iX][$eService] <> $eLink Then
+			If $iStreamlinkInstalled And $aStreams[$iX][$eService] <> $eLink Then
 				If _IsPressed("10") Then
 					Local $asStream[2] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
 					_ClipboardGo($asStream)
@@ -543,7 +538,7 @@ Func _TrayStuff()
 					TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
 				Else
 					$sQuality = "best"
-					Run("livestreamer " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+					Run("streamlink " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 				EndIf
 			Else
 				ShellExecute($sUrl)
@@ -647,7 +642,7 @@ Func _GuiPlay()
 
 	Local $sUrl = GUICtrlRead($idUrl)
 
-	Run("livestreamer " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+	Run("streamlink " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
 
 Func _GuiDownload()
@@ -658,7 +653,7 @@ Func _GuiDownload()
 
 	Local $sUrl = GUICtrlRead($idUrl)
 
-	$iPid = Run('livestreamer -o "' & $sPathToFile & """ " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
+	$iPid = Run('streamlink -o "' & $sPathToFile & """ " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
 	$sFile = StringTrimLeft($sPathToFile, StringInStr($sPathToFile, "\", Default, -1))
 
 	$hGui = GUICreate($sFile, 500, 1, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_VISIBLE, $WS_SIZEBOX))
@@ -766,19 +761,19 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	EndIf
 EndFunc
 
-Func _LivestreamerCanHandle($sUrl)
-	$iExitCode = RunWait("livestreamer --can-handle-url " & $sUrl, "", @SW_HIDE)
+Func _CanHandleURL($sUrl)
+	$iExitCode = RunWait("streamlink --can-handle-url " & $sUrl, "", @SW_HIDE)
 	Return ($iExitCode = 0)
 EndFunc
 
 Func _GetQualities($sUrl)
-	If $iLivestreamerInstalled = False Then Return ""
+	If $iStreamlinkInstalled = False Then Return ""
 
 	Local $asError[] = ["Error"]
 
-	If Not _LivestreamerCanHandle($sUrl) Then Return $asError
+	If Not _CanHandleURL($sUrl) Then Return $asError
 
-	$iPID = Run("livestreamer --json " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
+	$iPID = Run("streamlink --json " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
 	ProcessWaitClose($iPID)
 	Local $sOutput = StdoutRead($iPID)
 
