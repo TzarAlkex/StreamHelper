@@ -542,8 +542,8 @@ Func _TrayStuff()
 					;Shouldn't this also have an if not game then skip game display?
 					TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
 				Else
-					$sQuality = "best,1080p60,1080p30"
-					Run("livestreamer --hls-segment-threads 2 " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+					$sQuality = "best"
+					Run("livestreamer " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 				EndIf
 			Else
 				ShellExecute($sUrl)
@@ -643,22 +643,22 @@ EndFunc
 
 Func _GuiPlay()
 	$sQuality = GUICtrlRead($idQuality)
-	If $sQuality = "" Then $sQuality = "best,1080p60,1080p30"
+	If $sQuality = "" Then $sQuality = "best"
 
 	Local $sUrl = GUICtrlRead($idUrl)
 
-	Run("livestreamer --hls-segment-threads 2 " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+	Run("livestreamer " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
 
 Func _GuiDownload()
 	$sPathToFile = FileSaveDialog("Save Stream to", "", "Video files (*.mp4)")
 
 	$sQuality = GUICtrlRead($idQuality)
-	If $sQuality = "" Then $sQuality = "best,1080p60,1080p30"
+	If $sQuality = "" Then $sQuality = "best"
 
 	Local $sUrl = GUICtrlRead($idUrl)
 
-	$iPid = Run('livestreamer -o "' & $sPathToFile & """ --hls-segment-threads 4 " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
+	$iPid = Run('livestreamer -o "' & $sPathToFile & """ " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
 	$sFile = StringTrimLeft($sPathToFile, StringInStr($sPathToFile, "\", Default, -1))
 
 	$hGui = GUICreate($sFile, 500, 1, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_VISIBLE, $WS_SIZEBOX))
