@@ -230,6 +230,36 @@ Func _TwitchGet($sUsername)
 
 		$iOffset += $iLimit
 	WEnd
+
+	Local $sGamesUrl = "https://api.twitch.tv/api/users/" & $sQuotedUsername & "/follows/games"
+
+	While True
+		$sGamesUrl &= "?client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
+		$avTemp = FetchItems($sGamesUrl, "follows")
+		If UBound($avTemp) = 0 Then ExitLoop
+
+		For $iX = 0 To UBound($avTemp) -1
+			$sName = Json_ObjGet($avTemp[$iX], "name")
+
+			$sUrl = 'https://api.twitch.tv/kraken/streams/?game=' & $sName & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
+			$oChannel = FetchItems($sUrl, "streams")
+
+			For $iY = 0 To UBound($oChannel) -1
+				$oChannel2 = Json_ObjGet($oChannel[$iY], "channel")
+				$sUrl = Json_ObjGet($oChannel2, "url")
+				If $sUrl = "" Then $sUrl = "http://www.twitch.tv/" & Json_ObjGet($oChannel2, "name")
+
+				$sDisplayName = Json_ObjGet($oChannel2, "display_name")
+
+				$sGame = Json_ObjGet($oChannel[$iY], "game")
+
+				_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch)
+			Next
+		Next
+
+		ExitLoop
+	WEnd
+
 	Return "Potato on a Stick"
 EndFunc
 
