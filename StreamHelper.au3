@@ -25,6 +25,7 @@ Todo:
 *Add back the quality stuff in the array now that Twitch changed how they allocate transcoding to non-partners?
 *Always save quality stuff to array for partners?
 *Beep confirmed as annoying.
+*Random crash when starting without internet. FIX.
 
 *BroccoliCat on twitch doesn't load properly on source quality in livestreamer.
 Increase the timer wait thing in the config file?
@@ -51,7 +52,7 @@ $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", ""
 $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
 $sBeamUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Beam", "")   ;NAME ON BEAM
 $iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 2) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
-$iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "")   ;PRINT ON JSON
+$iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "-1")   ;JUST TYPE SOMETHING TO CHECK
 $sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "-1")   ;JUST TYPE SOMETHING TO CHECK
 
 $sFavorites = IniRead(@ScriptDir & "\Settings.ini", "Section", "Favorites", "")
@@ -395,7 +396,7 @@ Func getJson($sUrl)
 	Next
 	If @error Then ConsoleWrite("All downloads failed" & @CRLF)
 
-	If $iPrintJSON Then
+	If $iPrintJSON <> "-1" Then
 		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 		ConsoleWrite(BinaryToString($dJsonString) & @CRLF)
 	EndIf
@@ -821,7 +822,7 @@ Func _CheckUpdates()
 
 	Local $dData = InetRead("https://api.github.com/repos/TzarAlkex/StreamHelper/releases/latest", $INET_FORCERELOAD)
 
-	If $iPrintJSON Then
+	If $iPrintJSON <> "-1" Then
 		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 		ConsoleWrite(BinaryToString($dData) & @CRLF)
 	EndIf
