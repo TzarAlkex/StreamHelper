@@ -741,14 +741,9 @@ Func _ClipboardGo($asStream)
 	$sQualities = _ArrayToString($asQualities)
 
 	Local $sDefault = "no default"
-	If StringInStr($sQualities, "source") Then
-		$sDefault = "source"
-	ElseIf StringInStr($sQualities, "1080p60") Then
-		$sDefault = "1080p60"
-	ElseIf StringInStr($sQualities, "Error") Then
+	If StringInStr($sQualities, "Error") Then
 		$sDefault = "Error"
 	ElseIf $sDefault = "no default" Then
-		ConsoleWrite("No default quality" & @CRLF)
 		$sDefault = $asQualities[UBound($asQualities) -1]
 	EndIf
 
@@ -819,9 +814,29 @@ Func _GetQualities($sUrl)
 		_ArrayAdd($asQualities, $vItem)
 	Next
 
-	_ArraySort($asQualities)
+	_ArraySortNum($asQualities)
 	Return $asQualities
 EndFunc
+
+;https://www.autoitscript.com/forum/topic/95383-sorting-numbers/?do=findComment&comment=685701
+Func _ArraySortNum(ByRef $n_array, $i_descending = 0, $i_start = 0)
+    Local $i_ub = UBound($n_array)
+    For $i_count = $i_start To $i_ub - 2
+        Local $i_se = $i_count
+        If $i_descending Then
+            For $x_count = $i_count To $i_ub - 1
+                If Number($n_array[$i_se]) < Number($n_array[$x_count]) Then $i_se = $x_count
+            Next
+        Else
+            For $x_count = $i_count To $i_ub - 1
+                If Number($n_array[$i_se]) > Number($n_array[$x_count]) Then $i_se = $x_count
+            Next
+        EndIf
+        Local $i_hld = $n_array[$i_count]
+        $n_array[$i_count] = $n_array[$i_se]
+        $n_array[$i_se] = $i_hld
+    Next
+EndFunc   ;==>_ArraySortNum
 
 Func _PowerEvents($hWnd, $Msg, $wParam, $lParam)
 	Switch $wParam
