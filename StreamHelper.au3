@@ -471,21 +471,21 @@ Func _TrayRefresh()
 				If StringLeft($sDisplayName, 4) <> "[i] " Then
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> true Then $NewText &= " | " & $aStreams[$iX][$eGame]
+					$sNew &= $NewText & @CRLF
 
 					If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
-
-					$sNew &= $NewText & @CRLF
 				EndIf
 				TrayItemSetOnEvent( -1, _TrayStuff)
 			Else
+				If $sTrayText = TrayItemGetText($aStreams[$iX][$eTrayId]) Then ContinueLoop
+
 				TrayItemSetText($aStreams[$iX][$eTrayId], $sTrayText)
 
 				Local $NewText = $aStreams[$iX][$eDisplayName]
 				If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
+				$sChanged &= $NewText & @CRLF
 
 				If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
-
-				$sChanged &= $NewText & @CRLF
 			EndIf
 			$aStreams[$iX][$eOnline] = False
 		Else
