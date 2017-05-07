@@ -471,7 +471,7 @@ Func _TrayRefresh()
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> true Then $NewText &= " | " & $aStreams[$iX][$eGame]
 
-					If StringLeft($sDisplayName, 4) <> "[F] " Then $bFavoriteFound = True
+					If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
 
 					$sNew &= $NewText & @CRLF
 				EndIf
