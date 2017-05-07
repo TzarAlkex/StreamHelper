@@ -107,6 +107,8 @@ Global $aStreams[0][$eMax]
 Global $iStreamlinkInstalled = StringInStr(EnvGet("path"), "Streamlink") > 0
 Global $bBlobFirstRun = True
 
+Global $bFavoriteFound = False
+
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
 Global Const $AUT_NOTIFY_ICON_ID = 1 ; Application.h
 Global Const $PBT_APMRESUMEAUTOMATIC =  0x12
@@ -469,6 +471,8 @@ Func _TrayRefresh()
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> true Then $NewText &= " | " & $aStreams[$iX][$eGame]
 
+					If StringLeft($sDisplayName, 4) <> "[F] " Then $bFavoriteFound = True
+
 					$sNew &= $NewText & @CRLF
 				EndIf
 				TrayItemSetOnEvent( -1, _TrayStuff)
@@ -661,6 +665,11 @@ Func _MAIN()
 
 			TrayTip("Now streaming", $sNew, 10)
 		EndIf
+	EndIf
+
+	If $bFavoriteFound = True Then
+		SoundPlay(@ScriptDir & "\Authentic A-10 Warthog sounds TM.wav")
+		$bFavoriteFound = False
 	EndIf
 
 	AdlibRegister(_MAIN, $iRefresh)
