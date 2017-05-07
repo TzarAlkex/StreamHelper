@@ -108,6 +108,7 @@ Global $iStreamlinkInstalled = StringInStr(EnvGet("path"), "Streamlink") > 0
 Global $bBlobFirstRun = True
 
 Global $bFavoriteFound = False
+Global $sChanged
 
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
 Global Const $AUT_NOTIFY_ICON_ID = 1 ; Application.h
@@ -478,6 +479,13 @@ Func _TrayRefresh()
 				TrayItemSetOnEvent( -1, _TrayStuff)
 			Else
 				TrayItemSetText($aStreams[$iX][$eTrayId], $sTrayText)
+
+				Local $NewText = $aStreams[$iX][$eDisplayName]
+				If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
+
+				If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
+
+				$sChanged &= $NewText & @CRLF
 			EndIf
 			$aStreams[$iX][$eOnline] = False
 		Else
@@ -620,7 +628,7 @@ EndFunc
 Func _MAIN()
 	AdlibUnRegister(_MAIN)
 
-	Global $sNew = ""
+	Global $sNew = "", $sChanged = ""
 	If $sCheckForUpdates <> "" Then _CheckUpdates()
 	If $sTwitchUsername <> "" Then _Twitch()
 	If $sHitboxUsername <> "" Then _Hitbox()
@@ -652,6 +660,11 @@ Func _MAIN()
 			For $iX = 1 To $asSplit[0]
 				TrayTip("Now streaming", $asSplit[$iX], 10)
 			Next
+
+			$asSplit = StringSplit($sChanged, @CRLF, $STR_ENTIRESPLIT)
+			For $iX = 1 To $asSplit[0]
+				TrayTip("Changed game", $asSplit[$iX], 10)
+			Next
 		Else
 			$iSkipped = 0
 			While StringLen($sNew) > 240
@@ -664,6 +677,18 @@ Func _MAIN()
 			EndIf
 
 			TrayTip("Now streaming", $sNew, 10)
+
+			$iSkipped = 0
+			While StringLen($sChanged) > 240
+				$iPos = StringInStr($sChanged, @CRLF, $STR_CASESENSE, -1)
+				$sChanged = StringLeft($sChanged, $iPos -1)
+				$iSkipped += 1
+			WEnd
+			If $iSkipped > 0 Then
+				$sChanged &= @CRLF & "+" & $iSkipped & " more"
+			EndIf
+
+			TrayTip("Changed game", $sChanged, 10)
 		EndIf
 	EndIf
 
