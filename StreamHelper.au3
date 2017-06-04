@@ -48,7 +48,7 @@ $sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", ""
 $sBeamUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Beam", "")   ;NAME ON BEAM
 $iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 2) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "-1")   ;JUST TYPE SOMETHING TO CHECK
-$sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "-1")   ;JUST TYPE SOMETHING TO CHECK
+$sCheckForUpdates = "JustAlways Check probably"
 
 $sFavorites = IniRead(@ScriptDir & "\Settings.ini", "Section", "Favorites", "")
 $sIgnore = IniRead(@ScriptDir & "\Settings.ini", "Section", "Ignore", "")
@@ -80,16 +80,6 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 
 Local $idClipboard = TrayCreateItem("Play from clipboard")
 TrayItemSetOnEvent( -1, _TrayStuff)
-
-Global $sAppName = "StreamHelper v" & (@Compiled ? FileGetVersion(@ScriptFullPath) : "uncompiled")
-If $sCheckForUpdates = "-1" Then
-	If MsgBox($MB_YESNO, $sAppName, "Automatically check for updates?") = $IDYES Then
-		IniWrite(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "Tomato")
-	Else
-		IniWrite(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "")
-	EndIf
-EndIf
-$sCheckForUpdates = IniRead(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates", "-1")
 
 TrayCreateItem("")
 Local $idAbout = TrayCreateItem("About")
