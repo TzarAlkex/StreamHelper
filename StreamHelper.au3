@@ -219,8 +219,6 @@ Func _TwitchGet($sUsername)
 			_StreamSet($sDisplayName, $sUrl, $sMedium, $sGame, $sCreated, $sTime, $sStatus, $eTwitch)
 		Next
 
-		If UBound($avTemp) <> 100 Then ExitLoop
-
 		$iOffset += $iLimit
 	WEnd
 
