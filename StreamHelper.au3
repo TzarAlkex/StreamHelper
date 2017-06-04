@@ -88,8 +88,9 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eMax
 Global Enum $eTwitch, $eHitbox, $eBeam, $eLink
+Global Enum Step *2 $eVodCast
 
 Global $sNew
 Global $aStreams[0][$eMax]
@@ -216,7 +217,10 @@ Func _TwitchGet($sUsername)
 
 			$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-			_StreamSet($sDisplayName, $sUrl, $sMedium, $sGame, $sCreated, $sTime, $sStatus, $eTwitch)
+			Local $iFlags = 0
+			If Json_ObjGet($oChannel[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
+
+			_StreamSet($sDisplayName, $sUrl, $sMedium, $sGame, $sCreated, $sTime, $sStatus, $eTwitch, $iFlags)
 		Next
 
 		$iOffset += $iLimit
@@ -450,6 +454,7 @@ Func _TrayRefresh()
 			Local $sDisplayName = $aStreams[$iX][$eDisplayName]
 			If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
 			If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
+			If BitAND($aStreams[$iX][$eFlags], $eVodCast) Then $sDisplayName = "[v] " & $sDisplayName
 
 			Local $sTrayText = $sDisplayName
 			If $aStreams[$iX][$eGame] <> "" Then $sTrayText &= " | " & $aStreams[$iX][$eGame]
@@ -783,7 +788,7 @@ EndFunc
 #EndRegion GUI
 
 #Region INTENRAL INTERLECT
-Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService)
+Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iFlags = 0)
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
 
@@ -803,6 +808,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eStatus] = $sStatus
 	$aStreams[$iIndex][$eOnline] = True
 	$aStreams[$iIndex][$eService] = $iService
+	$aStreams[$iIndex][$eFlags] = $iFlags
 
 	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
 ;~ 		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
