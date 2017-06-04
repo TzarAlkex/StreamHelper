@@ -43,6 +43,8 @@ If (Not @Compiled) Then
 	TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
 EndIf
 
+_UpgradeIni()
+
 $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
 $sSmashcastUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Smashcast", "")   ;NAME ON SMASHCAST
 $sMixerUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Mixer", "")   ;NAME ON MIXER
@@ -789,6 +791,22 @@ EndFunc
 #EndRegion GUI
 
 #Region INTENRAL INTERLECT
+Func _UpgradeIni()
+	$sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
+	If $sHitboxUsername <> "" Then
+		IniWrite(@ScriptDir & "\Settings.ini", "Section", "Smashcast", $sHitboxUsername)
+		IniDelete(@ScriptDir & "\Settings.ini", "Section", "Hitbox")
+	EndIf
+
+	$sBeamUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Beam", "")   ;NAME ON BEAM
+	If $sBeamUsername <> "" Then
+		IniWrite(@ScriptDir & "\Settings.ini", "Section", "Mixer", $sBeamUsername)
+		IniDelete(@ScriptDir & "\Settings.ini", "Section", "Beam")
+	EndIf
+
+	IniDelete(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates")
+EndFunc
+
 Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iFlags = 0)
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
