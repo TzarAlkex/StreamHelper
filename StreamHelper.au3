@@ -466,6 +466,8 @@ Func _TrayRefresh()
 			Local $sTrayText = $sDisplayName
 			If $aStreams[$iX][$eGame] <> "" Then $sTrayText &= " | " & $aStreams[$iX][$eGame]
 
+			$aStreams[$iX][$eOnline] = False
+
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				$aStreams[$iX][$eTrayId] = TrayCreateItem($sTrayText, -1, 0)
 				If StringLeft($sDisplayName, 4) <> "[i] " Then
@@ -487,7 +489,6 @@ Func _TrayRefresh()
 
 				If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
 			EndIf
-			$aStreams[$iX][$eOnline] = False
 		Else
 			If $aStreams[$iX][$eTrayId] <> 0 And $aStreams[$iX][$eService] <> $eLink Then
 				TrayItemDelete($aStreams[$iX][$eTrayId])
