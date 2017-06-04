@@ -44,8 +44,8 @@ If (Not @Compiled) Then
 EndIf
 
 $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
-$sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
-$sBeamUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Beam", "")   ;NAME ON BEAM
+$sSmashcastUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Smashcast", "")   ;NAME ON SMASHCAST
+$sMixerUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Mixer", "")   ;NAME ON MIXER
 $iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 2) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "-1")   ;JUST TYPE SOMETHING TO CHECK
 $sCheckForUpdates = "JustAlways Check probably"
@@ -89,7 +89,7 @@ Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
 Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eMax
-Global Enum $eTwitch, $eHitbox, $eBeam, $eLink
+Global Enum $eTwitch, $eSmashcast, $eMixer, $eLink
 Global Enum Step *2 $eVodCast
 
 Global $sNew
@@ -263,18 +263,18 @@ Func OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
 EndFunc
 #EndRegion TWITCH
 
-#Region HITBOX
-Func _Hitbox()
+#Region SMASHCAST
+Func _Smashcast()
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-	ConsoleWrite("Hitboxing" & @CRLF)
-	_ProgressSpecific("H")
+	ConsoleWrite("Smashcasting" & @CRLF)
+	_ProgressSpecific("S")
 
-	_HitboxGet($sHitboxUsername)
+	_SmashcastGet($sSmashcastUsername)
 
 	$iTrayRefresh = True
 EndFunc
 
-Func _HitboxGet($sUsername)
+Func _SmashcastGet($sUsername)
 	$iLimit = 100
 	$iOffset = 0
 	Static Local $iUserID = ""
@@ -282,13 +282,13 @@ Func _HitboxGet($sUsername)
 	If $iUserID = "" Then
 		$sQuotedUsername = URLEncode($sUsername)
 
-		$sUserUrl = "https://api.hitbox.tv/user/" & $sQuotedUsername
+		$sUserUrl = "https://api.smashcast.tv/user/" & $sQuotedUsername
 		FetchItems($sUserUrl, "", "user_id")
 		$iUserID = @extended
 		If $iUserID = "" Then Return
 	EndIf
 
-	Local $sUrl = "https://api.hitbox.tv/media/live/list?follower_id=" & $iUserID
+	Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $iUserID
 	$oLivestream = FetchItems($sUrl, "livestream")
 	If UBound($oLivestream) = 0 Then Return
 
@@ -300,6 +300,7 @@ Func _HitboxGet($sUsername)
 
 		$sStatus = Json_ObjGet($oLivestream[$iX], "media_status")
 
+		;The website actually still says to use the hitbox url for images, prob a doc error but whatever
 		$sThumbnail = "http://edge.sf.hitbox.tv" & Json_ObjGet($oLivestream[$iX], "media_thumbnail")
 
 		$sGame = Json_ObjGet($oLivestream[$iX], "category_name")
@@ -327,29 +328,29 @@ Func _HitboxGet($sUsername)
 
 		$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-		_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eHitbox)
+		_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eSmashcast)
 	Next
 
 	Return "Potato on a Stick"
 EndFunc
 
-Func OPTIONS_OFFSET_LIMIT_HITBOX($iOffset, $iLimit)
+Func OPTIONS_OFFSET_LIMIT_SMASHCAST($iOffset, $iLimit)
 	Return '&offset=' & $iOffset & '&limit=' & $iLimit
 EndFunc
 #EndRegion
 
-#Region BEAM
-Func _Beam()
+#Region MIXER
+Func _Mixer()
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-	ConsoleWrite("Beaming" & @CRLF)
-	_ProgressSpecific("B")
+	ConsoleWrite("Mixering" & @CRLF)
+	_ProgressSpecific("M")
 
-	_BeamGet($sBeamUsername)
+	_MixerGet($sMixerUsername)
 
 	$iTrayRefresh = True
 EndFunc
 
-Func _BeamGet($sUsername)
+Func _MixerGet($sUsername)
 	$iLimit = 100
 	$iOffset = 0
 	Static Local $iUserID = ""
@@ -357,13 +358,13 @@ Func _BeamGet($sUsername)
 	If $iUserID = "" Then
 		$sQuotedUsername = URLEncode($sUsername)
 
-		$sUserUrl = "https://beam.pro/api/v1/channels/" & $sQuotedUsername
+		$sUserUrl = "https://mixer.com/api/v1/channels/" & $sQuotedUsername
 		FetchItems($sUserUrl, "", "userId")
 		$iUserID = @extended
 		If $iUserID = "" Then Return
 	EndIf
 
-	Local $sUrl = "https://beam.pro/api/v1/users/" & $iUserID & "/follows?where=online:eq:1"
+	Local $sUrl = "https://mixer.com/api/v1/users/" & $iUserID & "/follows?where=online:eq:1"
 	$oFollows = getJson($sUrl)
 	If UBound($oFollows) = 0 Then Return
 
@@ -371,7 +372,7 @@ Func _BeamGet($sUsername)
 		$oUser = Json_ObjGet($oFollows[$iX], "user")
 		$sDisplayName = Json_ObjGet($oUser, "username")
 
-		$sUrl = "https://beam.pro/" & Json_ObjGet($oFollows[$iX], "token")
+		$sUrl = "https://mixer.com/" & Json_ObjGet($oFollows[$iX], "token")
 
 		$oType = Json_ObjGet($oFollows[$iX], "type")
 		If IsObj($oType) Then
@@ -380,7 +381,7 @@ Func _BeamGet($sUsername)
 			$sGame = "No game selected"
 		EndIf
 
-		_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eBeam)
+		_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eMixer)
 	Next
 
 	Return "Potato on a Stick"
@@ -625,8 +626,8 @@ Func _MAIN()
 	Global $sNew = "", $sChanged = ""
 	If $sCheckForUpdates <> "" Then _CheckUpdates()
 	If $sTwitchUsername <> "" Then _Twitch()
-	If $sHitboxUsername <> "" Then _Hitbox()
-	If $sBeamUsername <> "" Then _Beam()
+	If $sSmashcastUsername <> "" Then _Smashcast()
+	If $sMixerUsername <> "" Then _Mixer()
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Getters done" & @CRLF)
 	_TrayRefresh()
