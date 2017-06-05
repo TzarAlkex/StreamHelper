@@ -37,6 +37,9 @@ The cmd and python processes start but just doesn't seem to do anything.
 My only idea is that she went offline just as I started and that livestreamer maybe doesn't handle offline streams well.
 (needs to be verified if it still happens with streamlink!)
 
+*Find a way to use https://api.twitch.tv/kraken/streams/followed instead (requires OAuth).
+Maybe just have OAuth be optional and use the above optimised endpoint if available.
+
 #ce ----------------------------------------------------------------------------
 
 If (Not @Compiled) Then
@@ -577,7 +580,7 @@ Func _TrayStuff()
 					TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
 				Else
 					$sQuality = "best"
-					Run("streamlink " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+					Run("streamlink.exe --twitch-disable-hosting " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 				EndIf
 			Else
 				ShellExecute($sUrl)
@@ -703,7 +706,7 @@ Func _GuiPlay()
 
 	Local $sUrl = GUICtrlRead($idUrl)
 
-	Run("streamlink " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+	Run("streamlink.exe --twitch-disable-hosting " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
 
 Func _GuiDownload()
@@ -714,7 +717,7 @@ Func _GuiDownload()
 
 	Local $sUrl = GUICtrlRead($idUrl)
 
-	$iPid = Run('streamlink -o "' & $sPathToFile & """ " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
+	$iPid = Run('streamlink.exe --twitch-disable-hosting --output "' & $sPathToFile & """ " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
 	$sFile = StringTrimLeft($sPathToFile, StringInStr($sPathToFile, "\", Default, -1))
 
 	$hGui = GUICreate($sFile, 500, 1, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_VISIBLE, $WS_SIZEBOX))
@@ -749,7 +752,7 @@ EndFunc
 Func _StopDownload()
 	For $iX = 1 To UBound($avDownloads) -1
 		If $avDownloads[$iX][1] = @GUI_WinHandle Then
-			Run("TaskKill /PID " & $avDownloads[$iX][0], "", @SW_HIDE)   ;Not sure if taskkill sends a ctrl+c or not... But at least it works.
+			Run("taskkill.exe /PID " & $avDownloads[$iX][0], "", @SW_HIDE)   ;Not sure if taskkill sends a ctrl+c or not... But at least it works.
 			GUIDelete($avDownloads[$iX][1])
 			_ArrayDelete($avDownloads, $iX)
 			Return
@@ -846,7 +849,7 @@ Func _GetQualities($sUrl)
 
 	If Not _CanHandleURL($sUrl) Then Return $asError
 
-	$iPID = Run("streamlink --json " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
+	$iPID = Run("streamlink.exe --twitch-disable-hosting --json " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
 	ProcessWaitClose($iPID)
 	Local $sOutput = StdoutRead($iPID)
 
