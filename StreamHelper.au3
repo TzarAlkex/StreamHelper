@@ -632,13 +632,19 @@ Func _TrayStuff()
 					;Shouldn't this also have an if not game then skip game display?
 					TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
 				Else
-					$sQuality = "best"
-					Run("streamlink.exe --twitch-disable-hosting " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+					_StreamlinkPlay($sUrl)
 				EndIf
 			Else
 				ShellExecute($sUrl)
 			EndIf
 	EndSwitch
+EndFunc
+
+Func _StreamlinkPlay($sUrl, $sQuality = "")
+	;_GuiPlay can send empty $sQuality so conversion has to be done
+	If $sQuality = "" Then $sQuality = "best"
+
+	Run("streamlink.exe --twitch-disable-hosting " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
 
 ;Based on https://www.autoitscript.com/forum/topic/115222-set-the-tray-icon-as-a-hicon/
@@ -760,12 +766,10 @@ Func _MAIN()
 EndFunc
 
 Func _GuiPlay()
-	$sQuality = GUICtrlRead($idQuality)
-	If $sQuality = "" Then $sQuality = "best"
-
+	Local $sQuality = GUICtrlRead($idQuality)
 	Local $sUrl = GUICtrlRead($idUrl)
 
-	Run("streamlink.exe --twitch-disable-hosting " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+	_StreamlinkPlay($sUrl, $sQuality)
 EndFunc
 
 Func _GuiDownload()
@@ -827,7 +831,9 @@ Func _ClipboardGo($asStream)
 	GUICtrlSetData($idLabel, $sTitle)
 
 	GUICtrlSetState($idQuality, $GUI_HIDE)
+
 	_GUICtrlComboBox_ResetContent($idQuality)
+	GUICtrlSendToDummy($idUrl, $sUrl)
 
 	If Not GUISetState(@SW_SHOW, $hGuiClipboard) Then WinActivate($hGuiClipboard)
 	$asQualities = _GetQualities($sUrl)
@@ -841,8 +847,6 @@ Func _ClipboardGo($asStream)
 	EndIf
 
 	GUICtrlSetData($idQuality, $sQualities, $sDefault)
-
-	GUICtrlSendToDummy($idUrl, $sUrl)
 
 	GUICtrlSetState($idQuality, $GUI_SHOW)
 EndFunc
