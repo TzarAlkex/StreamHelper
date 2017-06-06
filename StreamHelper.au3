@@ -167,22 +167,34 @@ Func _TwitchGet($sUsername)
 	$iLimit = 100
 	$iOffset = 0
 	$sQuotedUsername = URLEncode($sUsername)
-	$sBaseUrl = "https://api.twitch.tv/kraken/users/" & $sQuotedUsername & "/follows/channels"
+
+	Static Local $iUserID = ""
+
+	If $iUserID = "" Then
+		$sQuotedUsername = URLEncode($sUsername)
+
+		$sUserUrl = "https://api.twitch.tv/kraken/users?login=" & $sQuotedUsername & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
+		$oUser = FetchItems($sUserUrl, "users")
+		$iUserID = Json_ObjGet($oUser[0], "_id")
+		If $iUserID = "" Then Return
+	EndIf
+
+	Static Local $sBaseUrl = "https://api.twitch.tv/kraken/users/" & $iUserID & "/follows/channels"
 
 	While True
-		Local $sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit) & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
+		Local $sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit) & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
 		$avTemp = FetchItems($sUrl, "follows")
 		If UBound($avTemp) = 0 Then ExitLoop
 
 		Local $sOptions = ""
 		For $iX = 0 To UBound($avTemp) -1
 			$oChannel = Json_ObjGet($avTemp[$iX], "channel")
-			$sName = Json_ObjGet($oChannel, "name")
-			$sOptions &= $sName & ','
+			$iId = Json_ObjGet($oChannel, "_id")
+			$sOptions &= $iId & ','
 		Next
 
 		$sOptions = StringTrimRight($sOptions, 1)
-		$sUrl = 'https://api.twitch.tv/kraken/streams?channel=' & $sOptions & '&limit=' & $iLimit & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
+		$sUrl = 'https://api.twitch.tv/kraken/streams?channel=' & $sOptions & '&limit=' & $iLimit & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
 		$oChannel = FetchItems($sUrl, "streams")
 
 		For $iX = 0 To UBound($oChannel) -1
@@ -231,17 +243,16 @@ Func _TwitchGet($sUsername)
 		$iOffset += $iLimit
 	WEnd
 
-	Local $sGamesUrl = "https://api.twitch.tv/api/users/" & $sQuotedUsername & "/follows/games"
+	Local $sGamesUrl = "https://api.twitch.tv/api/users/" & $sQuotedUsername & "/follows/games/live?client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
 
 	While True
-		$sGamesUrl &= "?client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
 		$avTemp = FetchItems($sGamesUrl, "follows")
 		If UBound($avTemp) = 0 Then ExitLoop
 
 		For $iX = 0 To UBound($avTemp) -1
 			$sName = Json_ObjGet($avTemp[$iX], "name")
 
-			$sUrl = 'https://api.twitch.tv/kraken/streams/?game=' & $sName & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07"
+			$sUrl = 'https://api.twitch.tv/kraken/streams/game=' & $sName & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
 			$oChannel = FetchItems($sUrl, "streams")
 
 			For $iY = 0 To UBound($oChannel) -1
