@@ -48,7 +48,8 @@ EndIf
 
 _UpgradeIni()
 
-$sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
+$sTwitchOAuth = IniRead(@ScriptDir & "\Settings.ini", "Section", "TwitchOAuth", "")   ;NAME ON TWITCHOAuth
+If $sTwitchOAuth = "" Then $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
 $sSmashcastUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Smashcast", "")   ;NAME ON SMASHCAST
 $sMixerUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Mixer", "")   ;NAME ON MIXER
 $iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 2) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
@@ -152,6 +153,48 @@ While 1
 	Sleep(3600000)
 WEnd
 
+#Region TWITCH OAuth
+Func _TwitchOAuth()
+	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
+	ConsoleWrite("Twitching (OAuth)" & @CRLF)
+	_ProgressSpecific("T")
+
+	_TwitchOAuthGet($sTwitchOAuth)
+
+	$iTrayRefresh = True
+EndFunc
+
+Func _TwitchOAuthGet($sOAuth)
+	$sUrl = "https://api.twitch.tv/kraken/streams/followed?oauth_token=" & $sOAuth & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
+
+	$oStreams = FetchItems($sUrl, "streams")
+	If UBound($oStreams) = 0 Then Return
+
+	For $iX = 0 To UBound($oStreams) -1
+		$oChannel = Json_ObjGet($oStreams[$iX], "channel")
+
+		$sUrl = Json_ObjGet($oChannel, "url")
+		$sDisplayName = Json_ObjGet($oChannel, "display_name")
+		$sGame = Json_ObjGet($oChannel, "game")
+
+		Local $iFlags = 0
+		If Json_ObjGet($oStreams[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
+
+		_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $iFlags)
+	Next
+
+	Static Local $sUserName = ""
+
+	If $sUserName = "" Then
+		$sUserUrl = "https://api.twitch.tv/kraken/user?oauth_token=" & $sOAuth & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
+		$sUserName = FetchItem($sUserUrl, "name")
+		If $sUserName = "" Then Return
+	EndIf
+
+	_TwitchGetGames($sUsername)
+EndFunc
+#EndRegion
+
 #Region TWITCH
 Func _Twitch()
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
@@ -171,8 +214,6 @@ Func _TwitchGet($sUsername)
 	Static Local $iUserID = ""
 
 	If $iUserID = "" Then
-		$sQuotedUsername = URLEncode($sUsername)
-
 		$sUserUrl = "https://api.twitch.tv/kraken/users?login=" & $sQuotedUsername & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
 		$oUser = FetchItems($sUserUrl, "users")
 		$iUserID = Json_ObjGet($oUser[0], "_id")
@@ -243,35 +284,35 @@ Func _TwitchGet($sUsername)
 		$iOffset += $iLimit
 	WEnd
 
-	Local $sGamesUrl = "https://api.twitch.tv/api/users/" & $sQuotedUsername & "/follows/games/live?client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
-
-	While True
-		$avTemp = FetchItems($sGamesUrl, "follows")
-		If UBound($avTemp) = 0 Then ExitLoop
-
-		For $iX = 0 To UBound($avTemp) -1
-			$sName = Json_ObjGet($avTemp[$iX], "name")
-
-			$sUrl = 'https://api.twitch.tv/kraken/streams/game=' & $sName & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
-			$oChannel = FetchItems($sUrl, "streams")
-
-			For $iY = 0 To UBound($oChannel) -1
-				$oChannel2 = Json_ObjGet($oChannel[$iY], "channel")
-				$sUrl = Json_ObjGet($oChannel2, "url")
-				If $sUrl = "" Then $sUrl = "http://www.twitch.tv/" & Json_ObjGet($oChannel2, "name")
-
-				$sDisplayName = Json_ObjGet($oChannel2, "display_name")
-
-				$sGame = Json_ObjGet($oChannel[$iY], "game")
-
-				_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch)
-			Next
-		Next
-
-		ExitLoop
-	WEnd
+	_TwitchGetGames($sQuotedUsername)
 
 	Return "Potato on a Stick"
+EndFunc
+
+Func _TwitchGetGames($sUsername)
+	Local $sGamesUrl = "https://api.twitch.tv/api/users/" & $sUsername & "/follows/games/live?client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
+
+	$avTemp = FetchItems($sGamesUrl, "follows")
+	If UBound($avTemp) = 0 Then Return
+
+	For $iX = 0 To UBound($avTemp) -1
+		$sName = Json_ObjGet($avTemp[$iX], "name")
+
+		$sUrl = 'https://api.twitch.tv/kraken/streams/game=' & $sName & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
+		$oChannel = FetchItems($sUrl, "streams")
+
+		For $iY = 0 To UBound($oChannel) -1
+			$oChannel2 = Json_ObjGet($oChannel[$iY], "channel")
+			$sUrl = Json_ObjGet($oChannel2, "url")
+			If $sUrl = "" Then $sUrl = "http://www.twitch.tv/" & Json_ObjGet($oChannel2, "name")
+
+			$sDisplayName = Json_ObjGet($oChannel2, "display_name")
+
+			$sGame = Json_ObjGet($oChannel[$iY], "game")
+
+			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch)
+		Next
+	Next
 EndFunc
 
 Func OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
@@ -299,8 +340,7 @@ Func _SmashcastGet($sUsername)
 		$sQuotedUsername = URLEncode($sUsername)
 
 		$sUserUrl = "https://api.smashcast.tv/user/" & $sQuotedUsername
-		FetchItems($sUserUrl, "", "user_id")
-		$iUserID = @extended
+		$iUserID = FetchItem($sUserUrl, "user_id")
 		If $iUserID = "" Then Return
 	EndIf
 
@@ -375,8 +415,7 @@ Func _MixerGet($sUsername)
 		$sQuotedUsername = URLEncode($sUsername)
 
 		$sUserUrl = "https://mixer.com/api/v1/channels/" & $sQuotedUsername
-		FetchItems($sUserUrl, "", "userId")
-		$iUserID = @extended
+		$iUserID = FetchItem($sUserUrl, "userId")
 		If $iUserID = "" Then Return
 	EndIf
 
@@ -405,23 +444,26 @@ EndFunc
 #EndRegion
 
 #Region COMMON
-Func FetchItems($sUrl, $sKey, $sExtendedKey = Null)
-	Local $sRetExtended
-
+Func FetchItems($sUrl, $sKey)
 	$oJSON = getJson($sUrl)
 
 	If IsObj($oJSON) = False Then Return ""
 
-	If IsString($sExtendedKey) Then
-		$sRetExtended = Json_ObjGet($oJSON, $sExtendedKey)
-	EndIf
-
 	$aFollows = Json_ObjGet($oJSON, $sKey)
 	If UBound($aFollows) > 0 Then
-		Return SetExtended($sRetExtended, $aFollows)
+		Return $aFollows
 	Else
-		Return SetExtended($sRetExtended, "")
+		Return ""
 	EndIf
+EndFunc
+
+Func FetchItem($sUrl, $sKey)
+	$oJSON = getJson($sUrl)
+
+	If IsObj($oJSON) = False Then Return ""
+
+	$aFollows = Json_ObjGet($oJSON, $sKey)
+	Return $aFollows
 EndFunc
 
 Func getJson($sUrl)
@@ -641,9 +683,15 @@ Func _MAIN()
 
 	Global $sNew = "", $sChanged = ""
 	If $sCheckForUpdates <> "" Then _CheckUpdates()
-	If $sTwitchUsername <> "" Then _Twitch()
+
+	If $sTwitchOAuth <> "" Then
+		_TwitchOAuth()
+	ElseIf $sTwitchUsername <> "" Then
+		_Twitch()
+	EndIf
 	If $sSmashcastUsername <> "" Then _Smashcast()
 	If $sMixerUsername <> "" Then _Mixer()
+
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Getters done" & @CRLF)
 	_TrayRefresh()
