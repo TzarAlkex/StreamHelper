@@ -40,6 +40,8 @@ My only idea is that she went offline just as I started and that livestreamer ma
 *Find a way to use https://api.twitch.tv/kraken/streams/followed instead (requires OAuth).
 Maybe just have OAuth be optional and use the above optimised endpoint if available.
 
+*Favs changing games make the sound but not the notification?
+
 #ce ----------------------------------------------------------------------------
 
 If (Not @Compiled) Then
@@ -55,6 +57,7 @@ $sMixerUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Mixer", "") 
 $iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 2) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "-1")   ;JUST TYPE SOMETHING TO CHECK
 $sCheckForUpdates = "JustAlways Check probably"
+$iClosePreviousBeforePlaying = True
 
 $sFavorites = IniRead(@ScriptDir & "\Settings.ini", "Section", "Favorites", "")
 $sIgnore = IniRead(@ScriptDir & "\Settings.ini", "Section", "Ignore", "")
@@ -641,10 +644,18 @@ Func _TrayStuff()
 EndFunc
 
 Func _StreamlinkPlay($sUrl, $sQuality = "")
+	Static Local $iPID = 0
 	;_GuiPlay can send empty $sQuality so conversion has to be done
 	If $sQuality = "" Then $sQuality = "best"
 
-	Run("streamlink.exe --twitch-disable-hosting " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+	If $iClosePreviousBeforePlaying Then
+		If _WinAPI_GetProcessName($iPID) = "streamlink.exe" Then
+			RunWait("taskkill.exe /PID " & $iPID & " /T", "", @SW_HIDE)
+			ProcessWaitClose($iPID, 1000)
+		EndIf
+	EndIf
+
+	$iPID = Run("streamlink.exe --twitch-disable-hosting " & $sUrl & " " & $sQuality, "", @SW_HIDE)
 EndFunc
 
 ;Based on https://www.autoitscript.com/forum/topic/115222-set-the-tray-icon-as-a-hicon/
@@ -915,6 +926,11 @@ Func _GetQualities($sUrl)
 	$iPID = Run("streamlink.exe --twitch-disable-hosting --json " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
 	ProcessWaitClose($iPID)
 	Local $sOutput = StdoutRead($iPID)
+
+	If $iPrintJSON <> "-1" Then
+		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
+		ConsoleWrite(StringStripWS($sOutput, $STR_STRIPALL) & @CRLF)
+	EndIf
 
 	$oJSON = Json_Decode($sOutput)
 	If IsObj($oJSON) = False Then Return $asError
