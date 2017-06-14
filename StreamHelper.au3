@@ -20,12 +20,13 @@
 Activate Twitch support on streamlink by running the following in cmd:
 streamlink --twitch-oauth-authenticate
 
+
+
 Todo:
 *Should probably do the recovery mode thing also when internet disappears and not just when waking the computer
 *Add back the quality stuff in the array now that Twitch changed how they allocate transcoding to non-partners?
 *Always save quality stuff to array for partners?
 *Beep confirmed as annoying.
-*Random crash when starting without internet. FIX.
 
 *BroccoliCat on twitch doesn't load properly on source quality in livestreamer.
 Increase the timer wait thing in the config file?
@@ -36,9 +37,6 @@ I have increased multiple seconds, difference is questionable?
 The cmd and python processes start but just doesn't seem to do anything.
 My only idea is that she went offline just as I started and that livestreamer maybe doesn't handle offline streams well.
 (needs to be verified if it still happens with streamlink!)
-
-*Find a way to use https://api.twitch.tv/kraken/streams/followed instead (requires OAuth).
-Maybe just have OAuth be optional and use the above optimised endpoint if available.
 
 *Favs changing games make the sound but not the notification?
 
@@ -98,8 +96,8 @@ Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
 Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eMax
-Global Enum $eTwitch, $eSmashcast, $eMixer, $eLink
-Global Enum Step *2 $eVodCast
+Global Enum $eTwitch, $eSmashcast, $eMixer
+Global Enum Step *2 $eVodCast, $eIsLink, $eIsText, $eIsStream
 
 Global $sNew
 Global $aStreams[0][$eMax]
@@ -180,7 +178,7 @@ Func _TwitchOAuthGet($sOAuth)
 		$sDisplayName = Json_ObjGet($oChannel, "display_name")
 		$sGame = Json_ObjGet($oChannel, "game")
 
-		Local $iFlags = 0
+		Local $iFlags = $eIsStream
 		If Json_ObjGet($oStreams[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
 
 		_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $iFlags)
@@ -278,7 +276,7 @@ Func _TwitchGet($sUsername)
 
 			$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-			Local $iFlags = 0
+			Local $iFlags = $eIsStream
 			If Json_ObjGet($oChannel[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
 
 			_StreamSet($sDisplayName, $sUrl, $sMedium, $sGame, $sCreated, $sTime, $sStatus, $eTwitch, $iFlags)
@@ -545,7 +543,7 @@ Func _TrayRefresh()
 				If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
 			EndIf
 		Else
-			If $aStreams[$iX][$eTrayId] <> 0 And $aStreams[$iX][$eService] <> $eLink Then
+			If $aStreams[$iX][$eTrayId] <> 0 And BitAND($aStreams[$iX][$eService], $eIsStream) = $eIsStream Then
 				TrayItemDelete($aStreams[$iX][$eTrayId])
 				$aStreams[$iX][$eTrayId] = 0
 			EndIf
@@ -613,32 +611,38 @@ Func _TrayStuff()
 				EndIf
 			Next
 
-			If $iStreamlinkInstalled And $aStreams[$iX][$eService] <> $eLink Then
-				If _IsPressed("10") Then
-					Local $asStream[2] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
-					_ClipboardGo($asStream)
-				ElseIf _IsPressed("11") Then
-					$sUrl = $sUrl & ";"
-
-					If StringInStr($sFavorites, $sUrl) Then
-						$sFavorites = StringReplace($sFavorites, $sUrl, "")
-						$sIgnore &= $sUrl
-					ElseIf StringInStr($sIgnore, $sUrl) Then
-						$sIgnore = StringReplace($sIgnore, $sUrl, "")
-					Else
-						$sFavorites &= $sUrl
-					EndIf
-
-					Local $sDisplayName = $aStreams[$iX][$eDisplayName]
-					If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
-					If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
-					;Shouldn't this also have an if not game then skip game display?
-					TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
-				Else
-					_StreamlinkPlay($sUrl)
-				EndIf
-			Else
+			If BitAND($aStreams[$iX][$eFlags], $eIsLink) = $eIsLink Then
 				ShellExecute($sUrl)
+			ElseIf BitAND($aStreams[$iX][$eFlags], $eIsText) = $eIsText Then
+				Return
+			ElseIf BitAND($aStreams[$iX][$eFlags], $eIsStream) = $eIsStream Then
+				If $iStreamlinkInstalled Then
+					If _IsPressed("10") Then
+						Local $asStream[2] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
+						_ClipboardGo($asStream)
+					ElseIf _IsPressed("11") Then
+						$sUrl = $sUrl & ";"
+
+						If StringInStr($sFavorites, $sUrl) Then
+							$sFavorites = StringReplace($sFavorites, $sUrl, "")
+							$sIgnore &= $sUrl
+						ElseIf StringInStr($sIgnore, $sUrl) Then
+							$sIgnore = StringReplace($sIgnore, $sUrl, "")
+						Else
+							$sFavorites &= $sUrl
+						EndIf
+
+						Local $sDisplayName = $aStreams[$iX][$eDisplayName]
+						If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
+						If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
+						;Shouldn't this also have an if not game then skip game display?
+						TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
+					Else
+						_StreamlinkPlay($sUrl)
+					EndIf
+				Else
+					ShellExecute($sUrl)
+				EndIf
 			EndIf
 	EndSwitch
 EndFunc
@@ -697,6 +701,10 @@ EndFunc
 
 Func _MAIN()
 	AdlibUnRegister(_MAIN)
+	If (Not _WinAPI_IsInternetConnected()) Then
+		AdlibRegister(_WaitForInternet)
+		Return
+	EndIf
 
 	Global $sNew = "", $sChanged = ""
 	If $sCheckForUpdates <> "" Then _CheckUpdates()
@@ -884,7 +892,7 @@ Func _UpgradeIni()
 	IniDelete(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates")
 EndFunc
 
-Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iFlags = 0)
+Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iFlags = $eIsStream)
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
 
@@ -972,15 +980,15 @@ Func _PowerEvents($hWnd, $Msg, $wParam, $lParam)
 	Switch $wParam
 		Case $PBT_APMRESUMEAUTOMATIC
 			AdlibUnRegister(_MAIN)
-			AdlibRegister(_ComputerResumed)
+			AdlibRegister(_WaitForInternet)
 	EndSwitch
 
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_PowerEvents
 
-Func _ComputerResumed()
+Func _WaitForInternet()
 	If _WinAPI_IsInternetConnected() Then
-		AdlibUnRegister(_ComputerResumed)
+		AdlibUnRegister(_WaitForInternet)
 		_MAIN()
 	EndIf
 EndFunc
@@ -999,15 +1007,17 @@ Func _CheckUpdates()
 
 	$oJSON = Json_Decode(BinaryToString($dData))
 
+	If IsObj($oJSON) = False Then Return _StreamSet("Update check failed", "poopsicle", "", "", "", "", "", "", $eIsText)
+
 	$sTag = Json_ObjGet($oJSON, "tag_name")
 
 	$iInternalVersion = "v1.2"
 	$iHigherVersion = _VersionCompare($sTag, $iInternalVersion)
 
 	If @error Then
-		_StreamSet("catasrophic[sic] error! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", $eLink)
+		_StreamSet("Update check failed", "poopsicle", "", "", "", "", "", "", $eIsText)
 	ElseIf $iHigherVersion = 1 Then
-		_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", $eLink)
+		_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", "", $eIsLink)
 	EndIf
 EndFunc
 #EndRegion
