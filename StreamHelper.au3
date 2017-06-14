@@ -23,7 +23,6 @@ streamlink --twitch-oauth-authenticate
 
 
 Todo:
-*Should probably do the recovery mode thing also when internet disappears and not just when waking the computer
 *Add back the quality stuff in the array now that Twitch changed how they allocate transcoding to non-partners?
 *Always save quality stuff to array for partners?
 *Beep confirmed as annoying.
@@ -525,7 +524,7 @@ Func _TrayRefresh()
 				$aStreams[$iX][$eTrayId] = TrayCreateItem($sTrayText, -1, 0)
 				If StringLeft($sDisplayName, 4) <> "[i] " Then
 					Local $NewText = $aStreams[$iX][$eDisplayName]
-					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> true Then $NewText &= " | " & $aStreams[$iX][$eGame]
+					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> True Then $NewText &= " | " & $aStreams[$iX][$eGame]
 					$sNew &= $NewText & @CRLF
 
 					If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
@@ -701,6 +700,7 @@ EndFunc
 
 Func _MAIN()
 	AdlibUnRegister(_MAIN)
+
 	If (Not _WinAPI_IsInternetConnected()) Then
 		AdlibRegister(_WaitForInternet)
 		Return
@@ -720,6 +720,7 @@ Func _MAIN()
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
 	ConsoleWrite("Getters done" & @CRLF)
 	_TrayRefresh()
+
 	;https://www.autoitscript.com/forum/topic/146955-solved-remove-crlf-at-the-end-of-text-file/?do=findComment&comment=1041088
 	If StringRight($sNew, 2) = @CRLF Then $sNew = StringTrimRight($sNew, 2)
 	If (Not @Compiled) Then
