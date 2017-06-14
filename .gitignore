@@ -5,3 +5,4 @@ log.txt
 *test.au3
 *.orig
 *.json
+*_stripped.au3
