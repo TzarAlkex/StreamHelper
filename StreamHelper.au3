@@ -429,7 +429,6 @@ Func _MixerGet($sUsername)
 		$oUser = Json_ObjGet($oFollows[$iX], "user")
 		$sDisplayName = Json_ObjGet($oUser, "username")
 
-		$sUrl = "https://mixer.com/" & Json_ObjGet($oFollows[$iX], "token")
 		$sUrl = "https://beam.pro/" & Json_ObjGet($oFollows[$iX], "token")   ;streamlink hasn't added mixer domain yet
 
 		$oType = Json_ObjGet($oFollows[$iX], "type")
@@ -545,7 +544,7 @@ Func _TrayRefresh()
 				If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
 			EndIf
 		Else
-			If $aStreams[$iX][$eTrayId] <> 0 And BitAND($aStreams[$iX][$eService], $eIsStream) = $eIsStream Then
+			If $aStreams[$iX][$eTrayId] <> 0 And BitAND($aStreams[$iX][$eFlags], $eIsStream) = $eIsStream Then
 				TrayItemDelete($aStreams[$iX][$eTrayId])
 				$aStreams[$iX][$eTrayId] = 0
 			EndIf
