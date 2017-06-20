@@ -430,6 +430,7 @@ Func _MixerGet($sUsername)
 		$sDisplayName = Json_ObjGet($oUser, "username")
 
 		$sUrl = "https://mixer.com/" & Json_ObjGet($oFollows[$iX], "token")
+		$sUrl = "https://beam.pro/" & Json_ObjGet($oFollows[$iX], "token")   ;streamlink hasn't added mixer domain yet
 
 		$oType = Json_ObjGet($oFollows[$iX], "type")
 		If IsObj($oType) Then
