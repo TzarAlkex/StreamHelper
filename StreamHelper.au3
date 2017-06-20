@@ -524,12 +524,12 @@ Func _TrayRefresh()
 
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				$aStreams[$iX][$eTrayId] = TrayCreateItem($sTrayText, -1, 0)
-				If StringLeft($sDisplayName, 4) <> "[i] " Then
+				If StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 And StringInStr($sDisplayName, "[v] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> True Then $NewText &= " | " & $aStreams[$iX][$eGame]
 					$sNew &= $NewText & @CRLF
 
-					If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
+					If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
 				EndIf
 				TrayItemSetOnEvent( -1, _TrayStuff)
 			Else
@@ -541,7 +541,7 @@ Func _TrayRefresh()
 				If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
 				$sChanged &= $NewText & @CRLF
 
-				If StringLeft($sDisplayName, 4) = "[F] " Then $bFavoriteFound = True
+				If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
 			EndIf
 		Else
 			If $aStreams[$iX][$eTrayId] <> 0 And BitAND($aStreams[$iX][$eFlags], $eIsStream) = $eIsStream Then
