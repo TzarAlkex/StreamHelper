@@ -743,15 +743,29 @@ Func _MAIN()
 			If StringLen($sReplaced) <> $iReplacedLength Then $sReplaced &= "..."
 			TrayTip("Now streaming", $sReplaced, 10)
 		ElseIf @OSBuild >= 10240 Then
-			$asSplit = StringSplit($sNew, @CRLF, $STR_ENTIRESPLIT)
-			For $iX = 1 To $asSplit[0]
-				TrayTip("Now streaming", $asSplit[$iX], 10)
-			Next
+			$iSkipped = 0
+			While StringLen($sNew) > 140
+				$iPos = StringInStr($sNew, @CRLF, $STR_CASESENSE, -1)
+				$sNew = StringLeft($sNew, $iPos -1)
+				$iSkipped += 1
+			WEnd
+			If $iSkipped > 0 Then
+				$sNew &= @CRLF & "+" & $iSkipped & " more"
+			EndIf
 
-			$asSplit = StringSplit($sChanged, @CRLF, $STR_ENTIRESPLIT)
-			For $iX = 1 To $asSplit[0]
-				TrayTip("Changed game", $asSplit[$iX], 10)
-			Next
+			TrayTip("Now streaming", $sNew, 10)
+
+			$iSkipped = 0
+			While StringLen($sChanged) > 140
+				$iPos = StringInStr($sChanged, @CRLF, $STR_CASESENSE, -1)
+				$sChanged = StringLeft($sChanged, $iPos -1)
+				$iSkipped += 1
+			WEnd
+			If $iSkipped > 0 Then
+				$sChanged &= @CRLF & "+" & $iSkipped & " more"
+			EndIf
+
+			TrayTip("Changed game", $sChanged, 10)
 		Else
 			$iSkipped = 0
 			While StringLen($sNew) > 240
@@ -785,6 +799,53 @@ Func _MAIN()
 	EndIf
 
 	AdlibRegister(_MAIN, $iRefresh)
+EndFunc
+
+;Sort every array by length to move overrun to the end? What if there is multiple long lines?
+;https://www.autoitscript.com/forum/topic/177643-how-to-sort-a-array-by-string-length/
+Func _TrayTipThis($sPeople, $sDesc, $iLines)
+	$asSplit = StringSplit($sPeople, @CRLF, $STR_ENTIRESPLIT + $STR_NOCOUNT)
+
+	While True
+		Local $asText[0]
+		For $iX = 1 To $iLines
+			$sPopped = _ArrayPop($asSplit)
+			If @error Then
+				TrayTip($sDesc, _ArrayToString($asText, @CRLF), 10)
+				Return
+			Else
+				_ArrayAdd($asText, $sPopped, Default, Default, Default, $ARRAYFILL_FORCE_SINGLEITEM)
+			EndIf
+		Next
+		TrayTip($sDesc, _ArrayToString($asText, @CRLF), 10)
+	WEnd
+EndFunc
+
+Func _TrayTipThis2($sPeople, $sDesc, $iLines)
+	While True
+		$iLocation = StringInStr($sPeople, @CRLF, $STR_NOCASESENSEBASIC, $iLines)
+		If $iLocation = 0 Then
+			TrayTip($sDesc, $sPeople, 10)
+			ExitLoop
+		Else
+			$sText = StringLeft($sPeople, $iLocation -1)
+			$sPeople = StringTrimLeft($sPeople, $iLocation +1)
+			TrayTip($sDesc, $sText, 10)
+		EndIf
+	WEnd
+EndFunc
+
+Func _TrayTipThis3($sPeople, $sDesc, $iLines)
+	$asSplit = StringSplit($sPeople, @CRLF, $STR_ENTIRESPLIT)
+
+	For $iX = 1 To $asSplit[0] Step $iLines
+		Local $sText = ""
+		For $iY = 1 To $iLines
+			$sText &= $asSplit[$iX+$iY] & @CRLF
+		Next
+		$sText = StringTrimRight($sText, 2)
+		TrayTip($sDesc, $sText, 10)
+	Next
 EndFunc
 
 Func _GuiPlay()
