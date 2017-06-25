@@ -731,6 +731,39 @@ Func _MAIN()
 		TraySetIcon()
 	EndIf
 
+	If $bFavoriteFound = True Then
+		SoundPlay(@ScriptDir & "\Authentic A-10 Warthog sounds TM.wav")
+		$bFavoriteFound = False
+	EndIf
+
+	If $sChanged <> "" Then
+		If @OSBuild >= 10240 Then
+			$iSkipped = 0
+			While StringLen($sChanged) > 140
+				$iPos = StringInStr($sChanged, @CRLF, $STR_CASESENSE, -1)
+				$sChanged = StringLeft($sChanged, $iPos -1)
+				$iSkipped += 1
+			WEnd
+			If $iSkipped > 0 Then
+				$sChanged &= @CRLF & "+" & $iSkipped & " more"
+			EndIf
+
+			TrayTip("Changed game", $sChanged, 10)
+		Else
+			$iSkipped = 0
+			While StringLen($sChanged) > 240
+				$iPos = StringInStr($sChanged, @CRLF, $STR_CASESENSE, -1)
+				$sChanged = StringLeft($sChanged, $iPos -1)
+				$iSkipped += 1
+			WEnd
+			If $iSkipped > 0 Then
+				$sChanged &= @CRLF & "+" & $iSkipped & " more"
+			EndIf
+
+			TrayTip("Changed game", $sChanged, 10)
+		EndIf
+	EndIf
+
 	If $sNew <> "" Then
 		If $bBlobFirstRun = True Then
 			$bBlobFirstRun = False
@@ -754,18 +787,6 @@ Func _MAIN()
 			EndIf
 
 			TrayTip("Now streaming", $sNew, 10)
-
-			$iSkipped = 0
-			While StringLen($sChanged) > 140
-				$iPos = StringInStr($sChanged, @CRLF, $STR_CASESENSE, -1)
-				$sChanged = StringLeft($sChanged, $iPos -1)
-				$iSkipped += 1
-			WEnd
-			If $iSkipped > 0 Then
-				$sChanged &= @CRLF & "+" & $iSkipped & " more"
-			EndIf
-
-			TrayTip("Changed game", $sChanged, 10)
 		Else
 			$iSkipped = 0
 			While StringLen($sNew) > 240
@@ -778,24 +799,7 @@ Func _MAIN()
 			EndIf
 
 			TrayTip("Now streaming", $sNew, 10)
-
-			$iSkipped = 0
-			While StringLen($sChanged) > 240
-				$iPos = StringInStr($sChanged, @CRLF, $STR_CASESENSE, -1)
-				$sChanged = StringLeft($sChanged, $iPos -1)
-				$iSkipped += 1
-			WEnd
-			If $iSkipped > 0 Then
-				$sChanged &= @CRLF & "+" & $iSkipped & " more"
-			EndIf
-
-			TrayTip("Changed game", $sChanged, 10)
 		EndIf
-	EndIf
-
-	If $bFavoriteFound = True Then
-		SoundPlay(@ScriptDir & "\Authentic A-10 Warthog sounds TM.wav")
-		$bFavoriteFound = False
 	EndIf
 
 	AdlibRegister(_MAIN, $iRefresh)
