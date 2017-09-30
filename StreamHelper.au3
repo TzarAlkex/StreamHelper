@@ -11,7 +11,7 @@
 
 #cs ----------------------------------------------------------------------------
 
- AutoIt Version: 3.3.12.0 (Stable)
+ AutoIt Version: 3.3.14.2 (Stable)
  Author:         Alexander Samuelsson AKA AdmiralAlkex
 
  Script Function:
@@ -298,9 +298,10 @@ Func _TwitchGetGames($sUsername)
 	If UBound($avTemp) = 0 Then Return
 
 	For $iX = 0 To UBound($avTemp) -1
-		$sName = Json_ObjGet($avTemp[$iX], "name")
+		$oGame = Json_ObjGet($avTemp[$iX], "game")
+		$sName = Json_ObjGet($oGame, "name")
 
-		$sUrl = 'https://api.twitch.tv/kraken/streams/game=' & $sName & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
+		$sUrl = 'https://api.twitch.tv/kraken/streams/?game=' & $sName & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
 		$oChannel = FetchItems($sUrl, "streams")
 
 		For $iY = 0 To UBound($oChannel) -1
