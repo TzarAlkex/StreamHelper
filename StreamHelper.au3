@@ -119,25 +119,25 @@ Global $hGuiClipboard
 Global $idLabel, $idQuality, $idPlay
 Global $avDownloads[1][2]
 
-If $iStreamlinkInstalled Then
-	Local $iGuiWidth = 420, $iGuiHeight = 70
+Local $iGuiWidth = 510, $iGuiHeight = 70
 
-	If Random(0, 1, 1) Then
-		$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1)
-	Else
-		$hGuiClipboard = GUICreate("Copy Streamlink compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
-	EndIf
-
-	$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
-	$idQuality = GUICtrlCreateCombo("", 70, 40, 160, 20)
-	$idPlay = GUICtrlCreateButton("Play", 240, 40, 80, 20)
-	GUICtrlSetOnEvent(-1, _GuiPlay)
-	$idDownload = GUICtrlCreateButton("Download", 330, 40, 80, 20)
-	GUICtrlSetOnEvent(-1, _GuiDownload)
-	$idUrl = GUICtrlCreateDummy()
-
-	GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
+If Random(0, 1, 1) Then
+	$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+Else
+	$hGuiClipboard = GUICreate("Copy Streamlink compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 EndIf
+
+$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
+$idQuality = GUICtrlCreateCombo("", 70, 40, 160, 20)
+$idPlay = GUICtrlCreateButton("Play", 240, 40, 60, 20)
+GUICtrlSetOnEvent(-1, _GuiPlay)
+$idDownload = GUICtrlCreateButton("Download", 310, 40, 80, 20)
+GUICtrlSetOnEvent(-1, _GuiDownload)
+$idBrowser = GUICtrlCreateButton("Open in browser", 400, 40, 100, 20)
+GUICtrlSetOnEvent(-1, _GuiBrowser)
+$idUrl = GUICtrlCreateDummy()
+
+GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
 
 _GDIPlus_Startup()
 
@@ -597,7 +597,7 @@ Func _TrayStuff()
 			_MAIN()
 		Case $idClipboard
 			Local $sClipboard = ClipGet()
-			Local $asStream[2] = [$sClipboard, $sClipboard]
+			Local $asStream[] = [$sClipboard]
 			_ClipboardGo($asStream)
 		Case $idExit
 			Exit
@@ -616,33 +616,35 @@ Func _TrayStuff()
 			ElseIf BitAND($aStreams[$iX][$eFlags], $eIsText) = $eIsText Then
 				Return
 			ElseIf BitAND($aStreams[$iX][$eFlags], $eIsStream) = $eIsStream Then
-				If $iStreamlinkInstalled Then
-					If _IsPressed("10") Then
-						Local $asStream[2] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
-						_ClipboardGo($asStream)
-					ElseIf _IsPressed("11") Then
-						$sUrl = $sUrl & ";"
+				If _IsPressed("10") Then
+					Local $asStream[] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
+					_ClipboardGo($asStream)
+				ElseIf _IsPressed("11") Then
+					$sUrl = $sUrl & ";"
 
-						If StringInStr($sFavorites, $sUrl) Then
-							$sFavorites = StringReplace($sFavorites, $sUrl, "")
-							$sIgnore &= $sUrl
-						ElseIf StringInStr($sIgnore, $sUrl) Then
-							$sIgnore = StringReplace($sIgnore, $sUrl, "")
-						Else
-							$sFavorites &= $sUrl
-						EndIf
-
-						IniWrite(@ScriptDir & "\Settings.ini", "Section", "Favorites", $sFavorites)
-						IniWrite(@ScriptDir & "\Settings.ini", "Section", "Ignore", $sIgnore)
-
-						Local $sDisplayName = $aStreams[$iX][$eDisplayName]
-						If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
-						If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
-						;Shouldn't this also have an if not game then skip game display?
-						TrayItemSetText($aStreams[$iX][$eTrayId], $sDisplayName & " | " & $aStreams[$iX][$eGame])
+					If StringInStr($sFavorites, $sUrl) Then
+						$sFavorites = StringReplace($sFavorites, $sUrl, "")
+						$sIgnore &= $sUrl
+					ElseIf StringInStr($sIgnore, $sUrl) Then
+						$sIgnore = StringReplace($sIgnore, $sUrl, "")
 					Else
-						_StreamlinkPlay($sUrl)
+						$sFavorites &= $sUrl
 					EndIf
+
+					IniWrite(@ScriptDir & "\Settings.ini", "Section", "Favorites", $sFavorites)
+					IniWrite(@ScriptDir & "\Settings.ini", "Section", "Ignore", $sIgnore)
+
+					Local $sDisplayName = $aStreams[$iX][$eDisplayName]
+					If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
+					If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
+
+					;Shouldn't this also have an if not game then skip game display?
+					;Future me: Yes. Yes it should.
+					Local $NewText = $sDisplayName
+					If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
+					TrayItemSetText($aStreams[$iX][$eTrayId], $NewText)
+				ElseIf $iStreamlinkInstalled And $aStreams[$iX][$eService] <> $eMixer Then
+					_StreamlinkPlay($sUrl)
 				Else
 					ShellExecute($sUrl)
 				EndIf
@@ -912,19 +914,32 @@ Func _StopDownload()
 	Next
 EndFunc
 
+Func _GuiBrowser()
+	Local $sUrl = GUICtrlRead($idUrl)
+	ShellExecute($sUrl)
+EndFunc
+
 Func _ClipboardGo($asStream)
 	Local $sTitle
 	Local $sUrl = $asStream[0]
 
+	If $iStreamlinkInstalled = False Then
+		If MsgBox($MB_YESNO, @ScriptName, "Streamlink not found, open url in browser instead?") = $IDYES Then
+			ShellExecute($sUrl)
+		EndIf
+		Return
+	EndIf
+
 	If UBound($asStream) > 1 Then $sTitle &= $asStream[1]
+
 	GUICtrlSetData($idLabel, $sTitle)
-
-	GUICtrlSetState($idQuality, $GUI_HIDE)
-
-	_GUICtrlComboBox_ResetContent($idQuality)
 	GUICtrlSendToDummy($idUrl, $sUrl)
 
+	GUICtrlSetState($idQuality, $GUI_HIDE)
+	_GUICtrlComboBox_ResetContent($idQuality)
+
 	If Not GUISetState(@SW_SHOW, $hGuiClipboard) Then WinActivate($hGuiClipboard)
+
 	$asQualities = _GetQualities($sUrl)
 	$sQualities = _ArrayToString($asQualities)
 
@@ -995,9 +1010,9 @@ Func _CanHandleURL($sUrl)
 EndFunc
 
 Func _GetQualities($sUrl)
-	If $iStreamlinkInstalled = False Then Return ""
-
 	Local $asError[] = ["Error"]
+
+	If $iStreamlinkInstalled = False Then Return $asError
 
 	If Not _CanHandleURL($sUrl) Then Return $asError
 
