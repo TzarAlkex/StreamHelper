@@ -53,7 +53,7 @@ $sTwitchOAuth = IniRead(@ScriptDir & "\Settings.ini", "Section", "TwitchOAuth", 
 If $sTwitchOAuth = "" Then $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
 $sSmashcastUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Smashcast", "")   ;NAME ON SMASHCAST
 $sMixerUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Mixer", "")   ;NAME ON MIXER
-$iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 2) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
+$iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 3) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
 $iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "-1")   ;JUST TYPE SOMETHING TO CHECK
 $sCheckForUpdates = "JustAlways Check probably"
 $iClosePreviousBeforePlaying = True
