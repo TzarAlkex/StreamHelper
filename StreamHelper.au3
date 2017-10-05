@@ -600,8 +600,6 @@ Func _TrayStuff()
 			Local $asStream[2] = [$sClipboard, $sClipboard]
 			_ClipboardGo($asStream)
 		Case $idExit
-			If $sFavorites <> $sOldFavorites Then IniWrite(@ScriptDir & "\Settings.ini", "Section", "Favorites", $sFavorites)
-			If $sIgnore <> $sOldIgnore Then IniWrite(@ScriptDir & "\Settings.ini", "Section", "Ignore", $sIgnore)
 			Exit
 		Case Else
 			Local $sUrl   ;Remove this variable?
@@ -633,6 +631,9 @@ Func _TrayStuff()
 						Else
 							$sFavorites &= $sUrl
 						EndIf
+
+						IniWrite(@ScriptDir & "\Settings.ini", "Section", "Favorites", $sFavorites)
+						IniWrite(@ScriptDir & "\Settings.ini", "Section", "Ignore", $sIgnore)
 
 						Local $sDisplayName = $aStreams[$iX][$eDisplayName]
 						If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
