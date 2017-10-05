@@ -865,6 +865,7 @@ EndFunc
 
 Func _GuiDownload()
 	$sPathToFile = FileSaveDialog("Save Stream to", "", "Video files (*.mp4)")
+	If @error Then Return
 
 	$sQuality = GUICtrlRead($idQuality)
 	If $sQuality = "" Then $sQuality = "best"
