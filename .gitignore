@@ -1,5 +1,5 @@
 *.ini
-log.txt
+*log.txt
 *.zip
 *.py
 *test.au3

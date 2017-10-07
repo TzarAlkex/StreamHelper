@@ -81,6 +81,7 @@ Opt("GUIOnEventMode", 1)
 #include <WinAPISys.au3>
 #include <GuiComboBox.au3>
 #include <Misc.au3>
+#include <File.au3>
 
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
@@ -157,8 +158,7 @@ WEnd
 
 #Region TWITCH OAuth
 Func _TwitchOAuth()
-	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-	ConsoleWrite("Twitching (OAuth)" & @CRLF)
+	_CW("Twitching (OAuth)")
 	_ProgressSpecific("T")
 
 	_TwitchOAuthGet($sTwitchOAuth)
@@ -199,8 +199,7 @@ EndFunc
 
 #Region TWITCH
 Func _Twitch()
-	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-	ConsoleWrite("Twitching" & @CRLF)
+	_CW("Twitching")
 	_ProgressSpecific("T")
 
 	_TwitchGet($sTwitchUsername)
@@ -325,8 +324,7 @@ EndFunc
 
 #Region SMASHCAST
 Func _Smashcast()
-	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-	ConsoleWrite("Smashcasting" & @CRLF)
+	_CW("Smashcasting")
 	_ProgressSpecific("S")
 
 	_SmashcastGet($sSmashcastUsername)
@@ -400,8 +398,7 @@ EndFunc
 
 #Region MIXER
 Func _Mixer()
-	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-	ConsoleWrite("Mixering" & @CRLF)
+	_CW("Mixering")
 	_ProgressSpecific("M")
 
 	_MixerGet($sMixerUsername)
@@ -470,18 +467,15 @@ Func FetchItem($sUrl, $sKey)
 EndFunc
 
 Func getJson($sUrl)
-	ConsoleWrite("myURL " & $sUrl & @CRLF)
+	_CW("myURL " & $sUrl)
 
 	For $iX = 1 To 3
 		$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
 		If @error = 0 Then ExitLoop
 	Next
-	If @error Then ConsoleWrite("All downloads failed" & @CRLF)
+	If @error Then _CW("All downloads failed")
 
-	If $iPrintJSON <> "-1" Then
-		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-		ConsoleWrite(BinaryToString($dJsonString) & @CRLF)
-	EndIf
+	_CW(BinaryToString($dJsonString), True)
 
 	$oJSON = Json_Decode(BinaryToString($dJsonString))
 	Return $oJSON
@@ -723,8 +717,7 @@ Func _MAIN()
 	If $sSmashcastUsername <> "" Then _Smashcast()
 	If $sMixerUsername <> "" Then _Mixer()
 
-	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-	ConsoleWrite("Getters done" & @CRLF)
+	_CW("Getters done")
 	_TrayRefresh()
 
 	;https://www.autoitscript.com/forum/topic/146955-solved-remove-crlf-at-the-end-of-text-file/?do=findComment&comment=1041088
@@ -962,6 +955,20 @@ EndFunc
 #EndRegion GUI
 
 #Region INTENRAL INTERLECT
+Func _CW($sMessage, $iJSON = False)
+	If $iJSON And $iPrintJSON = "-1" Then Return
+
+	If @Compiled Then
+		Static Local $iFileExist = FileExists(@ScriptDir & "\log.txt")
+		If $iFileExist Then
+			Static Local $hLog = FileOpen(@ScriptDir & "\log.txt", $FO_APPEND)
+			If $hLog Then _FileWriteLog($hLog, $sMessage)
+		EndIf
+	Else
+		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " " & $sMessage & @CRLF)
+	EndIf
+EndFunc
+
 Func _UpgradeIni()
 	$sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
 	If $sHitboxUsername <> "" Then
@@ -979,8 +986,7 @@ Func _UpgradeIni()
 EndFunc
 
 Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iFlags = $eIsStream)
-	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-	ConsoleWrite("Found streamer: " & $sDisplayName & @CRLF)
+	_CW("Found streamer: " & $sDisplayName)
 
 	For $iIndex = 0 To UBound($aStreams) -1
 		If $aStreams[$iIndex][$eUrl] = $sUrl Then ExitLoop
@@ -1021,10 +1027,7 @@ Func _GetQualities($sUrl)
 	ProcessWaitClose($iPID)
 	Local $sOutput = StdoutRead($iPID)
 
-	If $iPrintJSON <> "-1" Then
-		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-		ConsoleWrite(StringStripWS($sOutput, $STR_STRIPALL) & @CRLF)
-	EndIf
+	_CW(StringStripWS($sOutput, $STR_STRIPALL), True)
 
 	$oJSON = Json_Decode($sOutput)
 	If IsObj($oJSON) = False Then Return $asError
@@ -1080,16 +1083,13 @@ Func _WaitForInternet()
 EndFunc
 
 Func _CheckUpdates()
-	ConsoleWrite('"Updateing"' & @CRLF)
+	_CW("Updateing")
 	_ProgressSpecific("U")
 	$sCheckForUpdates = ""
 
 	Local $dData = InetRead("https://api.github.com/repos/TzarAlkex/StreamHelper/releases/latest", $INET_FORCERELOAD)
 
-	If $iPrintJSON <> "-1" Then
-		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " ")
-		ConsoleWrite(BinaryToString($dData) & @CRLF)
-	EndIf
+	_CW(BinaryToString($dData), True)
 
 	$oJSON = Json_Decode(BinaryToString($dData))
 
