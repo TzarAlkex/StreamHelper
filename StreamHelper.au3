@@ -116,29 +116,12 @@ Global Const $PBT_APMRESUMEAUTOMATIC =  0x12
 
 AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the second")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
-Global $hGuiClipboard
-Global $idLabel, $idQuality, $idPlay
 Global $avDownloads[1][2]
 
-Local $iGuiWidth = 510, $iGuiHeight = 70
+Global $hGuiClipboard
+Global $idLabel, $idQuality, $idUrl
+_GuiCreate()
 
-If Random(0, 1, 1) Then
-	$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1)
-Else
-	$hGuiClipboard = GUICreate("Copy Streamlink compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
-EndIf
-
-$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
-$idQuality = GUICtrlCreateCombo("", 70, 40, 160, 20)
-$idPlay = GUICtrlCreateButton("Play", 240, 40, 60, 20)
-GUICtrlSetOnEvent(-1, _GuiPlay)
-$idDownload = GUICtrlCreateButton("Download", 310, 40, 80, 20)
-GUICtrlSetOnEvent(-1, _GuiDownload)
-$idBrowser = GUICtrlCreateButton("Open in browser", 400, 40, 100, 20)
-GUICtrlSetOnEvent(-1, _GuiBrowser)
-$idUrl = GUICtrlCreateDummy()
-
-GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
 
 _GDIPlus_Startup()
 
@@ -847,6 +830,28 @@ Func _TrayTipThis3($sPeople, $sDesc, $iLines)
 		$sText = StringTrimRight($sText, 2)
 		TrayTip($sDesc, $sText, 10)
 	Next
+EndFunc
+
+Func _GuiCreate()
+	Local $iGuiWidth = 510, $iGuiHeight = 70
+
+	If Random(0, 1, 1) Then
+		$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+	Else
+		$hGuiClipboard = GUICreate("Copy Streamlink compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+	EndIf
+
+	$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
+	$idQuality = GUICtrlCreateCombo("", 70, 40, 160, 20)
+	$idPlay = GUICtrlCreateButton("Play", 240, 40, 60, 20)
+	GUICtrlSetOnEvent(-1, _GuiPlay)
+	$idDownload = GUICtrlCreateButton("Download", 310, 40, 80, 20)
+	GUICtrlSetOnEvent(-1, _GuiDownload)
+	$idBrowser = GUICtrlCreateButton("Open in browser", 400, 40, 100, 20)
+	GUICtrlSetOnEvent(-1, _GuiBrowser)
+	$idUrl = GUICtrlCreateDummy()
+
+	GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
 EndFunc
 
 Func _GuiPlay()
