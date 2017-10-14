@@ -452,15 +452,20 @@ EndFunc
 Func getJson($sUrl)
 	_CW("myURL " & $sUrl)
 
+	Local $sJson, $iError
 	For $iX = 1 To 3
 		$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
-		If @error = 0 Then ExitLoop
+		$iError = @error
+		_CW("Inet @error:" & $iError & " @extended: " & @extended & " BinaryLen: " & BinaryLen($dJsonString) & " StringLen: " & StringLen(BinaryToString($dJsonString)))
+		If $iError = 0 Then ExitLoop
 	Next
 	If @error Then _CW("All downloads failed")
 
-	_CW(BinaryToString($dJsonString), True)
+	_CW($dJsonString, True)
+	$sJson = BinaryToString($dJsonString)
+	_CW($sJson, True)
 
-	$oJSON = Json_Decode(BinaryToString($dJsonString))
+	$oJSON = Json_Decode($sJson)
 	Return $oJSON
 EndFunc
 
@@ -966,7 +971,7 @@ Func _CW($sMessage, $iJSON = False)
 	If @Compiled Then
 		Static Local $iFileExist = FileExists(@ScriptDir & "\log.txt")
 		If $iFileExist Then
-			Static Local $hLog = FileOpen(@ScriptDir & "\log.txt", $FO_APPEND)
+			Static Local $hLog = FileOpen(@ScriptDir & "\log" & @WDAY & ".txt", $FO_OVERWRITE)
 			If $hLog Then _FileWriteLog($hLog, $sMessage)
 		EndIf
 	Else
@@ -1094,9 +1099,10 @@ Func _CheckUpdates()
 
 	Local $dData = InetRead("https://api.github.com/repos/TzarAlkex/StreamHelper/releases/latest", $INET_FORCERELOAD)
 
-	_CW(BinaryToString($dData), True)
+	$sJson = BinaryToString($dData)
+	_CW($sJson, True)
 
-	$oJSON = Json_Decode(BinaryToString($dData))
+	$oJSON = Json_Decode($sJson)
 
 	If IsObj($oJSON) = False Then Return _StreamSet("Update check failed", "poopsicle", "", "", "", "", "", "", $eIsText)
 
