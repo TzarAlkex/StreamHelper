@@ -968,16 +968,39 @@ EndFunc
 Func _CW($sMessage, $iJSON = False)
 	If $iJSON And $iPrintJSON = "-1" Then Return
 
+	_DeleteOldLogs()
+
 	If @Compiled Then
 		Static Local $iFileExist = FileExists(@ScriptDir & "\log.txt")
 		If $iFileExist Then
-			Static Local $hLog = FileOpen(@ScriptDir & "\log" & @WDAY & ".txt", $FO_OVERWRITE)
+			Static Local $hLog = FileOpen(@ScriptDir & "\log" & @WDAY & ".txt", $FO_APPEND)
 			If $hLog Then _FileWriteLog($hLog, $sMessage)
 		EndIf
 	Else
 		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " " & $sMessage & @CRLF)
 	EndIf
 EndFunc
+
+Func _DeleteOldLogs()
+	Static Local $iRunOnce = False
+	If $iRunOnce = True Then Return
+
+	$asLogs = _FileListToArray(@ScriptDir, "log*.txt", $FLTA_FILES, True)
+	Local $asLogsTime[$asLogs[0]][2]
+	For $iX = 1 To $asLogs[0]
+		$asLogsTime[$iX -1][0] = FileGetTime($asLogs[$iX], $FT_CREATED, $FT_STRING)
+		$asLogsTime[$iX -1][1] = $asLogs[$iX]
+	Next
+	_ArraySort($asLogsTime, 1)   ;Sort newest first
+
+	For $iX = 3 To UBound($asLogsTime) -1
+		FileDelete($asLogsTime[$iX][1])
+	Next
+
+	$iRunOnce = True
+	_CW("Deleted old logs")
+EndFunc
+
 
 Func _UpgradeIni()
 	$sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
