@@ -352,28 +352,31 @@ Func _Mixer()
 EndFunc
 
 Func _MixerGet()
-	$iLimit = 100
 	$iOffset = 0
 
-	Local $sUrl = "https://mixer.com/api/v1/users/" & $sMixerId & "/follows?where=online:eq:1"
-	$oFollows = getJson($sUrl)
-	If UBound($oFollows) = 0 Then Return
+	While 1
+		Local $sUrl = "https://mixer.com/api/v1/users/" & $sMixerId & "/follows?page=" & $iOffset & "&limit=100&where=online:eq:1&fields=user,token,type&noCount=1"
+		$oFollows = getJson($sUrl)
+		If UBound($oFollows) = 0 Then Return
 
-	For $iX = 0 To UBound($oFollows) -1
-		$oUser = Json_ObjGet($oFollows[$iX], "user")
-		$sDisplayName = Json_ObjGet($oUser, "username")
+		For $iX = 0 To UBound($oFollows) -1
+			$oUser = Json_ObjGet($oFollows[$iX], "user")
+			$sDisplayName = Json_ObjGet($oUser, "username")
 
-		$sUrl = "https://mixer.com/" & Json_ObjGet($oFollows[$iX], "token")
+			$sUrl = "https://mixer.com/" & Json_ObjGet($oFollows[$iX], "token")
 
-		$oType = Json_ObjGet($oFollows[$iX], "type")
-		If IsObj($oType) Then
-			$sGame = Json_ObjGet($oType, "name")
-		Else
-			$sGame = "No game selected"
-		EndIf
+			$oType = Json_ObjGet($oFollows[$iX], "type")
+			If IsObj($oType) Then
+				$sGame = Json_ObjGet($oType, "name")
+			Else
+				$sGame = "No game selected"
+			EndIf
 
-		_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eMixer)
-	Next
+			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eMixer)
+		Next
+		If UBound($oFollows) <> 100 Then Return "Potato on a Stick"
+		$iOffset += 1
+	WEnd
 
 	Return "Potato on a Stick"
 EndFunc
