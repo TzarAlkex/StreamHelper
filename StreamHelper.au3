@@ -412,8 +412,10 @@ Func getJson($sUrl)
 		$iError = @error
 		_CW("Inet @error:" & $iError & " @extended: " & @extended & " BinaryLen: " & BinaryLen($dJsonString) & " StringLen: " & StringLen(BinaryToString($dJsonString)))
 		If $iError = 0 Then ExitLoop
+		If $iError = 13 Then ExitLoop   ;error 13 seems to mean the server rejected the download so no need to repeat
 	Next
-	If @error Then _CW("All downloads failed")
+	If $iError Then _CW("All downloads failed")
+	If $dJsonString = "" Then Return
 
 	_CW($dJsonString, True)
 	$sJson = BinaryToString($dJsonString)
