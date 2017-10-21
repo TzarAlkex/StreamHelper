@@ -157,12 +157,14 @@ While 1
 	Sleep(3600000)
 WEnd
 
-#Region TWITCH New
+#Region TWITCH
 Func _TwitchNew()
 	_CW("Twitching")
 	_ProgressSpecific("T")
 
 	_TwitchNewGet()
+
+	_TwitchGetGames()
 
 	$iTrayRefresh = True
 EndFunc
@@ -205,53 +207,28 @@ Func _TwitchNewGet()
 
 			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID, $iFlags)
 		Next
+		If UBound($aData) <> 100 Then Return "Potato on a Stick"
 	WEnd
-
-	Static Local $sUserName = ""
-
-	If $sUserName = "" Then
-		$sUrl = "users?login=" & $sTwitchId
-		$oJSON = _TwitchNewDownload($sUrl)
-		If IsObj($oJSON) = False Then Return
-
-		$aData = Json_ObjGet($oJSON, "data")
-		If UBound($aData) <> 1 Then Return
-
-		$sUserName = Json_ObjGet($aData[0], "login")
-
-		If $sUserName = "" Then Return
-
-		If $sUserName <> $sTwitchName Then
-			RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchName", "REG_SZ", $sUsername)
-			$sTwitchName = $sUsername
-		EndIf
-	EndIf
-
-	_TwitchGetGames($sUsername)
 
 	Return "Potato on a Stick"
 EndFunc
 
-Func _TwitchNewDownload($sUrl)
-	_CW("myURL " & $sUrl)
+Func _TwitchGetGames()
+	$sUrl = "users?login=" & $sTwitchId
+	$oJSON = _TwitchNewDownload($sUrl)
+	If IsObj($oJSON) = False Then Return
 
-	Local $hOpen = _WinHttpOpen()
-	Local $hConnect = _WinHttpConnect($hOpen, "api.twitch.tv")
+	$aData = Json_ObjGet($oJSON, "data")
+	If UBound($aData) <> 1 Then Return
 
-	$asResponse = _WinHttpSimpleSSLRequest($hConnect, Default, "helix/" & $sUrl, Default, Default, "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07", True)
+	$sUserName = Json_ObjGet($aData[0], "login")
+	If $sUserName = "" Then
+		Return
+	Else
+		RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchName", "REG_SZ", $sUsername)
+		$sTwitchName = $sUsername
+	EndIf
 
-	_WinHttpCloseHandle($hConnect)
-	_WinHttpCloseHandle($hOpen)
-
-	_CW($asResponse[1])
-
-	$oJSON = Json_Decode($asResponse[1])
-	Return $oJSON
-EndFunc
-#EndRegion
-
-#Region TWITCH v5
-Func _TwitchGetGames($sUsername)
 	Local $sGamesUrl = "https://api.twitch.tv/api/users/" & $sUsername & "/follows/games/live?client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
 
 	$avTemp = FetchItems($sGamesUrl, "follows")
@@ -275,6 +252,23 @@ Func _TwitchGetGames($sUsername)
 			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID)
 		Next
 	Next
+EndFunc
+
+Func _TwitchNewDownload($sUrl)
+	_CW("myURL " & $sUrl)
+
+	Local $hOpen = _WinHttpOpen()
+	Local $hConnect = _WinHttpConnect($hOpen, "api.twitch.tv")
+
+	$asResponse = _WinHttpSimpleSSLRequest($hConnect, Default, "helix/" & $sUrl, Default, Default, "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07", True)
+
+	_WinHttpCloseHandle($hConnect)
+	_WinHttpCloseHandle($hOpen)
+
+	_CW($asResponse[1])
+
+	$oJSON = Json_Decode($asResponse[1])
+	Return $oJSON
 EndFunc
 #EndRegion TWITCH
 
