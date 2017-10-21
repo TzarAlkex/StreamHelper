@@ -287,7 +287,7 @@ Func _SmashcastGet()
 	$iOffset = 0
 
 	While 1
-		Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $sSmashcastId & "&offset=" & $iOffset
+		Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $sSmashcastId & "&start=" & $iOffset
 		$oLivestream = FetchItems($sUrl, "livestream")
 		If UBound($oLivestream) = 0 Then Return
 
