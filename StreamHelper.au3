@@ -67,10 +67,12 @@ $sMixerName = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerName")
 $sSmashcastId = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastId")
 $sSmashcastName = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastName")
 
-$sFavorites = IniRead(@ScriptDir & "\Settings.ini", "Section", "Favorites", "")
-$sIgnore = IniRead(@ScriptDir & "\Settings.ini", "Section", "Ignore", "")
-Global $sOldFavorites = $sFavorites
-Global $sOldIgnore = $sIgnore
+Global $sFavoritesNew = RegRead("HKCU\SOFTWARE\StreamHelper\", "Favorites")
+If $sFavoritesNew <> "" Then $sFavoritesNew &= @LF
+Global $sOldFavoritesNew = $sFavoritesNew
+Global $sIgnoreNew = RegRead("HKCU\SOFTWARE\StreamHelper\", "Ignore")
+If $sIgnoreNew <> "" Then $sIgnoreNew &= @LF
+Global $sOldIgnoreNew = $sIgnoreNew
 
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
@@ -452,8 +454,8 @@ Func _TrayRefresh()
 	For $iX = 0 To UBound($aStreams) -1
 		If $aStreams[$iX][$eOnline] = True Then
 			Local $sDisplayName = $aStreams[$iX][$eDisplayName]
-			If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
-			If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
+			If StringInStr($sFavoritesNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[F] " & $sDisplayName
+			If StringInStr($sIgnoreNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[i] " & $sDisplayName
 			If BitAND($aStreams[$iX][$eFlags], $eVodCast) Then $sDisplayName = "[v] " & $sDisplayName
 
 			Local $sTrayText = $sDisplayName
@@ -560,23 +562,29 @@ Func _TrayStuff()
 					Local $asStream[] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
 					_ClipboardGo($asStream)
 				ElseIf _IsPressed("11") Then
-					$sUrl = $sUrl & ";"
+					$sUserID = $aStreams[$iX][$eUserID] & @LF
 
-					If StringInStr($sFavorites, $sUrl) Then
-						$sFavorites = StringReplace($sFavorites, $sUrl, "")
-						$sIgnore &= $sUrl
-					ElseIf StringInStr($sIgnore, $sUrl) Then
-						$sIgnore = StringReplace($sIgnore, $sUrl, "")
+					If StringInStr($sFavoritesNew, $sUserID) Then
+						$sFavoritesNew = StringReplace($sFavoritesNew, $sUserID, "")
+						$sIgnoreNew &= $sUserID
+					ElseIf StringInStr($sIgnoreNew, $sUserID) Then
+						$sIgnoreNew = StringReplace($sIgnoreNew, $sUserID, "")
 					Else
-						$sFavorites &= $sUrl
+						$sFavoritesNew &= $sUserID
 					EndIf
 
-					IniWrite(@ScriptDir & "\Settings.ini", "Section", "Favorites", $sFavorites)
-					IniWrite(@ScriptDir & "\Settings.ini", "Section", "Ignore", $sIgnore)
+					If $sFavoritesNew <> $sOldFavoritesNew Then
+						RegWrite("HKCU\SOFTWARE\StreamHelper\", "Favorites", "REG_MULTI_SZ", StringStripWS($sFavoritesNew, $STR_STRIPTRAILING))
+						$sOldFavoritesNew = $sFavoritesNew
+					EndIf
+					If $sIgnoreNew <> $sOldIgnoreNew Then
+						RegWrite("HKCU\SOFTWARE\StreamHelper\", "Ignore", "REG_MULTI_SZ", StringStripWS($sIgnoreNew, $STR_STRIPTRAILING))
+						$sOldIgnoreNew = $sIgnoreNew
+					EndIf
 
 					Local $sDisplayName = $aStreams[$iX][$eDisplayName]
-					If StringInStr($sFavorites, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[F] " & $sDisplayName
-					If StringInStr($sIgnore, $aStreams[$iX][$eUrl] & ";") Then $sDisplayName = "[i] " & $sDisplayName
+					If StringInStr($sFavoritesNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[F] " & $sDisplayName
+					If StringInStr($sIgnoreNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[i] " & $sDisplayName
 
 					;Shouldn't this also have an if not game then skip game display?
 					;Future me: Yes. Yes it should.
