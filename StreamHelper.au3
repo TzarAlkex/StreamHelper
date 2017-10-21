@@ -112,7 +112,7 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eMax
 Global Enum $eTwitch, $eSmashcast, $eMixer
 Global Enum Step *2 $eVodCast, $eIsLink, $eIsText, $eIsStream
 
@@ -169,6 +169,7 @@ EndFunc
 
 Func _TwitchNewGet()
 	$sCursor = ""
+
 	While True
 		$sUrl = "users/follows?from_id=" & $sTwitchId & "&first=100&after=" & $sCursor
 		$oJSON = _TwitchNewDownload($sUrl)
@@ -197,11 +198,12 @@ Func _TwitchNewGet()
 			$sUrl = Json_ObjGet($oChannel, "url")
 			$sDisplayName = Json_ObjGet($oChannel, "display_name")
 			$sGame = Json_ObjGet($oChannel, "game")
+			$sUserID = "T" & Json_ObjGet($oChannel, "_id")
 
 			Local $iFlags = $eIsStream
 			If Json_ObjGet($aoStreams[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
 
-			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $iFlags)
+			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID, $iFlags)
 		Next
 	WEnd
 
@@ -264,14 +266,13 @@ Func _TwitchGetGames($sUsername)
 
 		For $iY = 0 To UBound($oChannel) -1
 			$oChannel2 = Json_ObjGet($oChannel[$iY], "channel")
+
 			$sUrl = Json_ObjGet($oChannel2, "url")
-			If $sUrl = "" Then $sUrl = "http://www.twitch.tv/" & Json_ObjGet($oChannel2, "name")
-
 			$sDisplayName = Json_ObjGet($oChannel2, "display_name")
-
 			$sGame = Json_ObjGet($oChannel[$iY], "game")
+			$sUserID = "T" & Json_ObjGet($oChannel2, "_id")
 
-			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch)
+			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID)
 		Next
 	Next
 EndFunc
@@ -291,13 +292,14 @@ Func _SmashcastGet()
 	$iOffset = 0
 
 	While 1
-		Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $sSmashcastId & "&fast&offset=" & $iOffset
+		Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $sSmashcastId & "&offset=" & $iOffset
 		$oLivestream = FetchItems($sUrl, "livestream")
 		If UBound($oLivestream) = 0 Then Return
 
 		For $iX = 0 To UBound($oLivestream) -1
 			$oChannel = Json_ObjGet($oLivestream[$iX], "channel")
 			$sUrl = Json_ObjGet($oChannel, "channel_link")
+			$sUserID = "S" & Json_ObjGet($oChannel, "user_id")
 
 			$sDisplayName = Json_ObjGet($oLivestream[$iX], "media_display_name")
 
@@ -331,7 +333,7 @@ Func _SmashcastGet()
 
 			$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-			_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eSmashcast)
+			_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eSmashcast, $sUserID)
 		Next
 		If UBound($oLivestream) <> 100 Then Return "Potato on a Stick"
 		$iOffset += 100
@@ -362,6 +364,7 @@ Func _MixerGet()
 		For $iX = 0 To UBound($oFollows) -1
 			$oUser = Json_ObjGet($oFollows[$iX], "user")
 			$sDisplayName = Json_ObjGet($oUser, "username")
+			$sUserID = "M" & Json_ObjGet($oUser, "id")
 
 			$sUrl = "https://mixer.com/" & Json_ObjGet($oFollows[$iX], "token")
 
@@ -372,7 +375,7 @@ Func _MixerGet()
 				$sGame = "No game selected"
 			EndIf
 
-			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eMixer)
+			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eMixer, $sUserID)
 		Next
 		If UBound($oFollows) <> 100 Then Return "Potato on a Stick"
 		$iOffset += 1
@@ -1172,7 +1175,7 @@ Func _UpgradeIni()
 	IniDelete(@ScriptDir & "\Settings.ini", "Section", "CheckForUpdates")
 EndFunc
 
-Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iFlags = $eIsStream)
+Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID = "", $iFlags = $eIsStream)
 	_CW("Found streamer: " & $sDisplayName)
 
 	For $iIndex = 0 To UBound($aStreams) -1
@@ -1192,6 +1195,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eOnline] = True
 	$aStreams[$iIndex][$eService] = $iService
 	$aStreams[$iIndex][$eFlags] = $iFlags
+	$aStreams[$iIndex][$eUserID] = $iUserID
 
 	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
 ;~ 		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
@@ -1298,7 +1302,7 @@ Func _CheckUpdates()
 
 	$oJSON = Json_Decode($sJson)
 
-	If IsObj($oJSON) = False Then Return _StreamSet("Update check failed", "poopsicle", "", "", "", "", "", "", $eIsText)
+	If IsObj($oJSON) = False Then Return _StreamSet("Update check failed", "poopsicle", "", "", "", "", "", "", "", $eIsText)
 
 	$sTag = Json_ObjGet($oJSON, "tag_name")
 
@@ -1306,9 +1310,9 @@ Func _CheckUpdates()
 	$iHigherVersion = _VersionCompare($sTag, $iInternalVersion)
 
 	If @error Then
-		_StreamSet("Update check failed", "poopsicle", "", "", "", "", "", "", $eIsText)
+		_StreamSet("Update check failed", "poopsicle", "", "", "", "", "", "", "", $eIsText)
 	ElseIf $iHigherVersion = 1 Then
-		_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", "", $eIsLink)
+		_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", "", "", $eIsLink)
 	EndIf
 EndFunc
 #EndRegion
