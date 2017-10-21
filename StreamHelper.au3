@@ -417,9 +417,9 @@ Func getJson($sUrl)
 	If $iError Then _CW("All downloads failed")
 	If $dJsonString = "" Then Return
 
-	_CW($dJsonString, True)
+	_CW($dJsonString)
 	$sJson = BinaryToString($dJsonString)
-	_CW($sJson, True)
+	_CW($sJson)
 
 	$oJSON = Json_Decode($sJson)
 	Return $oJSON
@@ -1118,8 +1118,8 @@ EndFunc
 #EndRegion
 
 #Region INTENRAL INTERLECT
-Func _CW($sMessage, $iJSON = False)
-	If $iJSON And $iPrintJSON = "-1" Then Return
+Func _CW($sMessage)
+	If $sLog = 0 Then Return
 
 	_DeleteOldLogs()
 
@@ -1137,6 +1137,7 @@ EndFunc
 Func _DeleteOldLogs()
 	Static Local $iRunOnce = False
 	If $iRunOnce = True Then Return
+	$iRunOnce = True
 
 	$asLogs = _FileListToArray(@ScriptDir, "log*.txt", $FLTA_FILES, True)
 	Local $asLogsTime[$asLogs[0]][2]
@@ -1150,10 +1151,8 @@ Func _DeleteOldLogs()
 		FileDelete($asLogsTime[$iX][1])
 	Next
 
-	$iRunOnce = True
 	_CW("Deleted old logs")
 EndFunc
-
 
 Func _UpgradeIni()
 	$sHitboxUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Hitbox", "")   ;NAME ON HITBOX
@@ -1213,7 +1212,7 @@ Func _GetQualities($sUrl)
 	ProcessWaitClose($iPID)
 	Local $sOutput = StdoutRead($iPID)
 
-	_CW(StringStripWS($sOutput, $STR_STRIPALL), True)
+	_CW(StringStripWS($sOutput, $STR_STRIPALL))
 
 	$oJSON = Json_Decode($sOutput)
 	If IsObj($oJSON) = False Then Return $asError
@@ -1293,7 +1292,7 @@ Func _CheckUpdates()
 	Local $dData = InetRead("https://api.github.com/repos/TzarAlkex/StreamHelper/releases/latest", $INET_FORCERELOAD)
 
 	$sJson = BinaryToString($dData)
-	_CW($sJson, True)
+	_CW($sJson)
 
 	$oJSON = Json_Decode($sJson)
 
