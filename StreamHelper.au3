@@ -214,7 +214,7 @@ Func _TwitchNewGet()
 EndFunc
 
 Func _TwitchGetGames()
-	$sUrl = "users?login=" & $sTwitchId
+	$sUrl = "users?id=" & $sTwitchId
 	$oJSON = _TwitchNewDownload($sUrl)
 	If IsObj($oJSON) = False Then Return
 
