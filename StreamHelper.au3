@@ -41,6 +41,8 @@ My only idea is that she went offline just as I started and that livestreamer ma
 
 *Favs changing games make the sound but not the notification?
 
+*Add a check for when twitch says it returns x items and there is not x items in the response array (and log it!)
+
 #ce ----------------------------------------------------------------------------
 
 If (Not @Compiled) Then
@@ -49,14 +51,21 @@ EndIf
 
 _UpgradeIni()
 
-$sTwitchOAuth = IniRead(@ScriptDir & "\Settings.ini", "Section", "TwitchOAuth", "")   ;NAME ON TWITCHOAuth
-If $sTwitchOAuth = "" Then $sTwitchUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Twitch", "")   ;NAME ON TWITCH
-$sSmashcastUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Smashcast", "")   ;NAME ON SMASHCAST
-$sMixerUsername = IniRead(@ScriptDir & "\Settings.ini", "Section", "Mixer", "")   ;NAME ON MIXER
-$iRefresh = IniRead(@ScriptDir & "\Settings.ini", "Section", "RefreshMinutes", 3) * 60000   ;HOW MANY TIME UNITS BETWEEN EVERY CHECK FOR NEW STREAMS
-$iPrintJSON = IniRead(@ScriptDir & "\Settings.ini", "Section", "PrintJSON", "-1")   ;JUST TYPE SOMETHING TO CHECK
-$sCheckForUpdates = "JustAlways Check probably"
 $iClosePreviousBeforePlaying = True
+
+$sRefreshMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "RefreshMinutes")
+If @error Then $sRefreshMinutes = 3
+$sUpdateCheck = RegRead("HKCU\SOFTWARE\StreamHelper\", "UpdateCheck")
+If @error Then $sUpdateCheck = "Daily"
+$sCheckTime = RegRead("HKCU\SOFTWARE\StreamHelper\", "CheckTime")
+$sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
+
+$sTwitchId = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchId")
+$sTwitchName = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchName")
+$sMixerId = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerId")
+$sMixerName = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerName")
+$sSmashcastId = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastId")
+$sSmashcastName = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastName")
 
 $sFavorites = IniRead(@ScriptDir & "\Settings.ini", "Section", "Favorites", "")
 $sIgnore = IniRead(@ScriptDir & "\Settings.ini", "Section", "Ignore", "")
@@ -82,6 +91,9 @@ Opt("GUIOnEventMode", 1)
 #include <GuiComboBox.au3>
 #include <Misc.au3>
 #include <File.au3>
+#include <GuiEdit.au3>
+#include <UpDownConstants.au3>
+#include "WinHttp.au3"
 
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
@@ -91,6 +103,9 @@ Local $idClipboard = TrayCreateItem("Play from clipboard")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
 TrayCreateItem("")
+Local $idSettings = TrayCreateItem("Settings")
+TrayItemSetOnEvent( -1, _TrayStuff)
+
 Local $idAbout = TrayCreateItem("About")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
@@ -122,6 +137,9 @@ Global $hGuiClipboard
 Global $idLabel, $idQuality, $idUrl
 _GuiCreate()
 
+Global $hGuiSettings
+Global $idRefreshMinutes, $idUpdates, $idLog, $idTwitchInput, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName
+_SettingsCreate()
 
 _GDIPlus_Startup()
 
@@ -139,140 +157,98 @@ While 1
 	Sleep(3600000)
 WEnd
 
-#Region TWITCH OAuth
-Func _TwitchOAuth()
-	_CW("Twitching (OAuth)")
+#Region TWITCH New
+Func _TwitchNew()
+	_CW("Twitching")
 	_ProgressSpecific("T")
 
-	_TwitchOAuthGet($sTwitchOAuth)
+	_TwitchNewGet()
 
 	$iTrayRefresh = True
 EndFunc
 
-Func _TwitchOAuthGet($sOAuth)
-	$sUrl = "https://api.twitch.tv/kraken/streams/followed?oauth_token=" & $sOAuth & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
+Func _TwitchNewGet()
+	$sCursor = ""
+	While True
+		$sUrl = "users/follows?from_id=" & $sTwitchId & "&first=100&after=" & $sCursor
+		$oJSON = _TwitchNewDownload($sUrl)
+		If IsObj($oJSON) = False Then Return
 
-	$oStreams = FetchItems($sUrl, "streams")
-	If UBound($oStreams) = 0 Then Return
+		$aData = Json_ObjGet($oJSON, "data")
+		If UBound($aData) = 0 Then ExitLoop
 
-	For $iX = 0 To UBound($oStreams) -1
-		$oChannel = Json_ObjGet($oStreams[$iX], "channel")
+		$oPagination = Json_ObjGet($oJSON, "pagination")
+		$sCursor = Json_ObjGet($oPagination, "cursor")
 
-		$sUrl = Json_ObjGet($oChannel, "url")
-		$sDisplayName = Json_ObjGet($oChannel, "display_name")
-		$sGame = Json_ObjGet($oChannel, "game")
+		Local $sUsers = ""
+		For $iX = 0 To UBound($aData) -1
+			$sUser = Json_ObjGet($aData[$iX], "to_id")
+			$sUsers &= $sUser & ','
+		Next
 
-		Local $iFlags = $eIsStream
-		If Json_ObjGet($oStreams[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
+		$sUsers = StringTrimRight($sUsers, 1)
+		$sUrl = 'https://api.twitch.tv/kraken/streams/?channel=' & $sUsers & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
+		$aoStreams = FetchItems($sUrl, "streams")
+		If UBound($aoStreams) = 0 Then ExitLoop
 
-		_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $iFlags)
-	Next
+		For $iX = 0 To UBound($aoStreams) -1
+			$oChannel = Json_ObjGet($aoStreams[$iX], "channel")
+
+			$sUrl = Json_ObjGet($oChannel, "url")
+			$sDisplayName = Json_ObjGet($oChannel, "display_name")
+			$sGame = Json_ObjGet($oChannel, "game")
+
+			Local $iFlags = $eIsStream
+			If Json_ObjGet($aoStreams[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
+
+			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $iFlags)
+		Next
+	WEnd
 
 	Static Local $sUserName = ""
 
 	If $sUserName = "" Then
-		$sUserUrl = "https://api.twitch.tv/kraken/user?oauth_token=" & $sOAuth & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
-		$sUserName = FetchItem($sUserUrl, "name")
+		$sUrl = "users?login=" & $sTwitchId
+		$oJSON = _TwitchNewDownload($sUrl)
+		If IsObj($oJSON) = False Then Return
+
+		$aData = Json_ObjGet($oJSON, "data")
+		If UBound($aData) <> 1 Then Return
+
+		$sUserName = Json_ObjGet($aData[0], "login")
+
 		If $sUserName = "" Then Return
+
+		If $sUserName <> $sTwitchName Then
+			RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchName", "REG_SZ", $sUsername)
+			$sTwitchName = $sUsername
+		EndIf
 	EndIf
 
 	_TwitchGetGames($sUsername)
-EndFunc
-#EndRegion
-
-#Region TWITCH
-Func _Twitch()
-	_CW("Twitching")
-	_ProgressSpecific("T")
-
-	_TwitchGet($sTwitchUsername)
-
-	$iTrayRefresh = True
-EndFunc
-
-Func _TwitchGet($sUsername)
-	$iLimit = 100
-	$iOffset = 0
-	$sQuotedUsername = URLEncode($sUsername)
-
-	Static Local $iUserID = ""
-
-	If $iUserID = "" Then
-		$sUserUrl = "https://api.twitch.tv/kraken/users?login=" & $sQuotedUsername & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
-		$oUser = FetchItems($sUserUrl, "users")
-		$iUserID = Json_ObjGet($oUser[0], "_id")
-		If $iUserID = "" Then Return
-	EndIf
-
-	Static Local $sBaseUrl = "https://api.twitch.tv/kraken/users/" & $iUserID & "/follows/channels"
-
-	While True
-		Local $sUrl = $sBaseUrl & OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit) & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
-		$avTemp = FetchItems($sUrl, "follows")
-		If UBound($avTemp) = 0 Then ExitLoop
-
-		Local $sOptions = ""
-		For $iX = 0 To UBound($avTemp) -1
-			$oChannel = Json_ObjGet($avTemp[$iX], "channel")
-			$iId = Json_ObjGet($oChannel, "_id")
-			$sOptions &= $iId & ','
-		Next
-
-		$sOptions = StringTrimRight($sOptions, 1)
-		$sUrl = 'https://api.twitch.tv/kraken/streams?channel=' & $sOptions & '&limit=' & $iLimit & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
-		$oChannel = FetchItems($sUrl, "streams")
-
-		For $iX = 0 To UBound($oChannel) -1
-			$oChannel2 = Json_ObjGet($oChannel[$iX], "channel")
-			$sUrl = Json_ObjGet($oChannel2, "url")
-			If $sUrl = "" Then $sUrl = "http://www.twitch.tv/" & Json_ObjGet($oChannel2, "name")
-
-			$sDisplayName = Json_ObjGet($oChannel2, "display_name")
-
-			$sStatus = Json_ObjGet($oChannel2, "status")
-
-			$oPreview = Json_ObjGet($oChannel[$iX], "preview")
-			$sMedium = Json_ObjGet($oPreview, "medium")
-
-			$sGame = Json_ObjGet($oChannel[$iX], "game")
-
-			$sCreated = Json_ObjGet($oChannel[$iX], "created_at")
-
-			$asSplit = StringSplit($sCreated, "T")
-			$asDate = StringSplit($asSplit[1], "-")
-			$asTime = StringSplit(StringTrimRight($asSplit[2], 1), ":")
-
-			$tSystemTime = DllStructCreate($tagSYSTEMTIME)
-			$tSystemTime.Year = $asDate[1]
-			$tSystemTime.Month = $asDate[2]
-			$tSystemTime.Day = $asDate[3]
-			$tSystemTime.Hour = $asTime[1]
-			$tSystemTime.Minute = $asTime[2]
-			$tSystemTime.Second = $asTime[3]
-
-			$tFileTime = _Date_Time_SystemTimeToFileTime($tSystemTime)
-			$tLocalTime = _Date_Time_FileTimeToLocalFileTime($tFileTime)
-			$sTime = _Date_Time_FileTimeToStr($tLocalTime, 1)
-			$iHours = _DateDiff("h", $sTime, _NowCalc())
-			$iMinutes = _DateDiff("n", $sTime, _NowCalc())
-			$iMinutes -= $iHours * 60
-
-			$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
-
-			Local $iFlags = $eIsStream
-			If Json_ObjGet($oChannel[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
-
-			_StreamSet($sDisplayName, $sUrl, $sMedium, $sGame, $sCreated, $sTime, $sStatus, $eTwitch, $iFlags)
-		Next
-
-		$iOffset += $iLimit
-	WEnd
-
-	_TwitchGetGames($sQuotedUsername)
 
 	Return "Potato on a Stick"
 EndFunc
 
+Func _TwitchNewDownload($sUrl)
+	_CW("myURL " & $sUrl)
+
+	Local $hOpen = _WinHttpOpen()
+	Local $hConnect = _WinHttpConnect($hOpen, "api.twitch.tv")
+
+	$asResponse = _WinHttpSimpleSSLRequest($hConnect, Default, "helix/" & $sUrl, Default, Default, "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07", True)
+
+	_WinHttpCloseHandle($hConnect)
+	_WinHttpCloseHandle($hOpen)
+
+	_CW($asResponse[1])
+
+	$oJSON = Json_Decode($asResponse[1])
+	Return $oJSON
+EndFunc
+#EndRegion
+
+#Region TWITCH v5
 Func _TwitchGetGames($sUsername)
 	Local $sGamesUrl = "https://api.twitch.tv/api/users/" & $sUsername & "/follows/games/live?client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
 
@@ -299,10 +275,6 @@ Func _TwitchGetGames($sUsername)
 		Next
 	Next
 EndFunc
-
-Func OPTIONS_OFFSET_LIMIT_TWITCH($iOffset, $iLimit)
-	Return '?offset=' & $iOffset & '&limit=' & $iLimit
-EndFunc
 #EndRegion TWITCH
 
 #Region SMASHCAST
@@ -310,25 +282,16 @@ Func _Smashcast()
 	_CW("Smashcasting")
 	_ProgressSpecific("S")
 
-	_SmashcastGet($sSmashcastUsername)
+	_SmashcastGet()
 
 	$iTrayRefresh = True
 EndFunc
 
-Func _SmashcastGet($sUsername)
+Func _SmashcastGet()
 	$iLimit = 100
 	$iOffset = 0
-	Static Local $iUserID = ""
 
-	If $iUserID = "" Then
-		$sQuotedUsername = URLEncode($sUsername)
-
-		$sUserUrl = "https://api.smashcast.tv/user/" & $sQuotedUsername
-		$iUserID = FetchItem($sUserUrl, "user_id")
-		If $iUserID = "" Then Return
-	EndIf
-
-	Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $iUserID
+	Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $sSmashcastId & "&fast"
 	$oLivestream = FetchItems($sUrl, "livestream")
 	If UBound($oLivestream) = 0 Then Return
 
@@ -384,25 +347,16 @@ Func _Mixer()
 	_CW("Mixering")
 	_ProgressSpecific("M")
 
-	_MixerGet($sMixerUsername)
+	_MixerGet()
 
 	$iTrayRefresh = True
 EndFunc
 
-Func _MixerGet($sUsername)
+Func _MixerGet()
 	$iLimit = 100
 	$iOffset = 0
-	Static Local $iUserID = ""
 
-	If $iUserID = "" Then
-		$sQuotedUsername = URLEncode($sUsername)
-
-		$sUserUrl = "https://mixer.com/api/v1/channels/" & $sQuotedUsername
-		$iUserID = FetchItem($sUserUrl, "userId")
-		If $iUserID = "" Then Return
-	EndIf
-
-	Local $sUrl = "https://mixer.com/api/v1/users/" & $iUserID & "/follows?where=online:eq:1"
+	Local $sUrl = "https://mixer.com/api/v1/users/" & $sMixerId & "/follows?where=online:eq:1"
 	$oFollows = getJson($sUrl)
 	If UBound($oFollows) = 0 Then Return
 
@@ -537,6 +491,8 @@ EndFunc
 
 Func _TrayStuff()
 	Switch @TRAY_ID
+		Case $idSettings
+			If Not GUISetState(@SW_SHOW, $hGuiSettings) Then WinActivate($hGuiSettings)
 		Case $idAbout
 			Local $asText[] = ["I am unfinished", _
 			"Ouch", _
@@ -695,15 +651,11 @@ Func _MAIN()
 	EndIf
 
 	Global $sNew = "", $sChanged = ""
-	If $sCheckForUpdates <> "" Then _CheckUpdates()
+	_CheckUpdates()
 
-	If $sTwitchOAuth <> "" Then
-		_TwitchOAuth()
-	ElseIf $sTwitchUsername <> "" Then
-		_Twitch()
-	EndIf
-	If $sSmashcastUsername <> "" Then _Smashcast()
-	If $sMixerUsername <> "" Then _Mixer()
+	If $sTwitchId <> "" Then _TwitchNew()
+	If $sMixerId <> "" Then _Mixer()
+	If $sSmashcastId <> "" Then _Smashcast()
 
 	_CW("Getters done")
 	_TrayRefresh()
@@ -787,7 +739,7 @@ Func _MAIN()
 		EndIf
 	EndIf
 
-	AdlibRegister(_MAIN, $iRefresh)
+	AdlibRegister(_MAIN, $sRefreshMinutes * 60000)
 EndFunc
 
 ;Sort every array by length to move overrun to the end? What if there is multiple long lines?
@@ -964,6 +916,205 @@ Func _Hide()
 EndFunc
 #EndRegion GUI
 
+#Region SETTINGS-GUI
+Func _SettingsCreate()
+	Local $iGuiWidth = 430, $iGuiHeight = 220
+	$hGuiSettings = GUICreate("StreamHelper - Settings", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+	If @Compiled = False Then GUISetIcon(@ScriptDir & "\Svartnos.ico")
+
+	GUICtrlCreateTab(10, 10, $iGuiWidth - 20, $iGuiHeight - 20)
+
+	GUICtrlCreateTabItem("Settings")
+
+	GUICtrlCreateLabel("Minutes between refresh", 20, 40)
+	$idRefreshMinutes = GUICtrlCreateInput($sRefreshMinutes, 20, 60, 80)
+	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
+	GUICtrlSetLimit(-1, 120, 1)
+
+	GUICtrlCreateLabel("Check for updates", 20, 90)
+	$idUpdates = GUICtrlCreateCombo("", 20, 110, 80)
+	GUICtrlSetData(-1, "Never|Daily|Weekly|Monthly", $sUpdateCheck)
+
+	$idLog = GUICtrlCreateCheckbox("Save log to file (don't enable unless asked)", 20, 140)
+	If $sLog = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
+
+	GUICtrlCreateTabItem("Twitch")
+	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
+
+	GUICtrlCreateLabel(" ", 20, 70)
+	$idTwitchInput = GUICtrlCreateInput("", 20, 90, 190)
+	_GUICtrlEdit_SetCueBanner($idTwitchInput, "Username")
+	GUICtrlCreateButton("Get ID", 20, 120)
+	GUICtrlSetOnEvent(-1, _TwitchGetId)
+	GUICtrlCreateButton("Reset", 155, 120)
+	GUICtrlSetOnEvent(-1, _TwitchReset)
+
+	GUICtrlCreateLabel("Saved ID", 20, 160)
+	$idTwitchId = GUICtrlCreateInput($sTwitchId, 20, 180, 120, Default, $ES_READONLY)
+	GUICtrlCreateLabel("Saved Username", 155, 160)
+	$idTwitchName = GUICtrlCreateInput($sTwitchName, 155, 180, 120, Default, $ES_READONLY)
+
+	GUICtrlCreateTabItem("Mixer")
+	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
+
+	GUICtrlCreateLabel(" ", 20, 70)
+	$idMixerInput = GUICtrlCreateInput("", 20, 90, 190)
+	_GUICtrlEdit_SetCueBanner($idMixerInput, "Username")
+	GUICtrlCreateButton("Get ID", 20, 120)
+	GUICtrlSetOnEvent(-1, _MixerGetId)
+	GUICtrlCreateButton("Reset", 155, 120)
+	GUICtrlSetOnEvent(-1, _MixerReset)
+
+	GUICtrlCreateLabel("Saved ID", 20, 160)
+	$idMixerId = GUICtrlCreateInput($sMixerId, 20, 180, 120, Default, $ES_READONLY)
+	GUICtrlCreateLabel("Saved Username", 155, 160)
+	$idMixerName = GUICtrlCreateInput($sMixerName, 155, 180, 120, Default, $ES_READONLY)
+
+	GUICtrlCreateTabItem("Smashcast")
+	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
+
+	GUICtrlCreateLabel(" ", 20, 70)
+	$idSmashcastInput = GUICtrlCreateInput("", 20, 90, 190)
+	_GUICtrlEdit_SetCueBanner($idSmashcastInput, "Username")
+	GUICtrlCreateButton("Get ID", 20, 120)
+	GUICtrlSetOnEvent(-1, _SmashcastGetId)
+	GUICtrlCreateButton("Reset", 155, 120)
+	GUICtrlSetOnEvent(-1, _SmashcastReset)
+
+	GUICtrlCreateLabel("Saved ID", 20, 160)
+	$idSmashcastId = GUICtrlCreateInput($sSmashcastId, 20, 180, 120, Default, $ES_READONLY)
+	GUICtrlCreateLabel("Saved Username", 155, 160)
+	$idSmashcastName = GUICtrlCreateInput($sSmashcastName, 155, 180, 120, Default, $ES_READONLY)
+
+	GUICtrlCreateTabItem("")
+
+	GUISetOnEvent($GUI_EVENT_CLOSE, _SettingsHide)
+EndFunc
+
+Func _SettingsRefresh()
+	Local $sNew = GUICtrlRead($idRefreshMinutes)
+	If $sNew = $sRefreshMinutes Then Return
+	$sRefreshMinutes = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "RefreshMinutes", "REG_SZ", $sRefreshMinutes)
+EndFunc
+
+Func _SettingsUpdateCheck()
+	Local $sNew = GUICtrlRead($idUpdates)
+	If $sNew = $sUpdateCheck Then Return
+	$sUpdateCheck = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "UpdateCheck", "REG_SZ", $sUpdateCheck)
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", 0)
+EndFunc
+
+Func _SettingsLog()
+	Local $sNew = BitAND(GUICtrlRead($idLog), $GUI_CHECKED)
+	If $sNew = $sLog Then Return
+	$sLog = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "Log", "REG_SZ", $sLog)
+EndFunc
+
+Func _TwitchGetId()
+	$sUsername = GUICtrlRead($idTwitchInput)
+	If $sUsername = "" Then Return _GetErrored()
+	$sQuotedUsername = URLEncode($sUsername)
+
+	$oJSON = _TwitchNewDownload("users?login=" & $sQuotedUsername)
+	If IsObj($oJSON) = False Then Return _GetErrored()
+
+	$aData = Json_ObjGet($oJSON, "data")
+	If UBound($aData) <> 1 Then Return _GetErrored()
+	$iUserID = Json_ObjGet($aData[0], "id")
+
+	If $iUserID <> "" Then
+		_TwitchSet($iUserID, $sUsername)
+	Else
+		Return _GetErrored()
+	EndIf
+EndFunc
+
+Func _TwitchReset()
+	_TwitchSet("", "")
+EndFunc
+
+Func _TwitchSet($sId, $sName)
+	$sTwitchId = $sId
+	$sTwitchName = $sName
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchId", "REG_SZ", $sId)
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchName", "REG_SZ", $sName)
+	GUICtrlSetData($idTwitchId, $sId)
+	GUICtrlSetData($idTwitchName, $sName)
+EndFunc
+
+Func _MixerGetId()
+	$sUsername = GUICtrlRead($idMixerInput)
+	If $sUsername = "" Then Return _GetErrored()
+	$sQuotedUsername = URLEncode($sUsername)
+	$sUserUrl = "https://mixer.com/api/v1/channels/" & $sQuotedUsername
+	$iUserID = FetchItem($sUserUrl, "userId")
+
+	If $iUserID <> "" Then
+		_MixerSet($iUserID, $sUsername)
+	Else
+		Return _GetErrored()
+	EndIf
+EndFunc
+
+Func _MixerReset()
+	_MixerSet("", "")
+EndFunc
+
+Func _MixerSet($sId, $sName)
+	$sMixerId = $sId
+	$sMixerName = $sName
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "MixerId", "REG_SZ", $sId)
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "MixerName", "REG_SZ", $sName)
+	GUICtrlSetData($idMixerId, $sId)
+	GUICtrlSetData($idMixerName, $sName)
+EndFunc
+
+Func _SmashcastGetId()
+	$sUsername = GUICtrlRead($idSmashcastInput)
+	If $sUsername = "" Then Return _GetErrored()
+	$sQuotedUsername = URLEncode($sUsername)
+	$sUserUrl = "https://api.smashcast.tv/user/" & $sQuotedUsername
+	$iUserID = FetchItem($sUserUrl, "user_id")
+
+	If IsKeyword($iUserID) <> $KEYWORD_NULL Then
+		_SmashcastSet($iUserID, $sUsername)
+	Else
+		Return _GetErrored()
+	EndIf
+EndFunc
+
+Func _SmashcastReset()
+	_SmashcastSet("", "")
+EndFunc
+
+Func _SmashcastSet($sId, $sName)
+	$sSmashcastId = $sId
+	$sSmashcastName = $sName
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "SmashcastId", "REG_SZ", $sId)
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "SmashcastName", "REG_SZ", $sName)
+	GUICtrlSetData($idSmashcastId, $sId)
+	GUICtrlSetData($idSmashcastName, $sName)
+EndFunc
+
+Func _GetErrored()
+	MsgBox($MB_OK, @ScriptName, "ID not found, make sure you typed your username correctly and are connected to the internet", Default, $hGuiSettings)
+EndFunc
+
+Func _SettingsSaveAll()
+	_SettingsRefresh()
+	_SettingsUpdateCheck()
+	_SettingsLog()
+EndFunc
+
+Func _SettingsHide()
+	_SettingsSaveAll()
+	GUISetState(@SW_HIDE, $hGuiSettings)
+EndFunc
+#EndRegion
+
 #Region INTENRAL INTERLECT
 Func _CW($sMessage, $iJSON = False)
 	If $iJSON And $iPrintJSON = "-1" Then Return
@@ -1116,9 +1267,26 @@ Func _WaitForInternet()
 EndFunc
 
 Func _CheckUpdates()
+	Static Local $iRunOnce = False
+	If $iRunOnce = True Then Return
+	$iRunOnce = True
+
 	_CW("Updateing")
 	_ProgressSpecific("U")
-	$sCheckForUpdates = ""
+
+	Switch $sUpdateCheck
+		Case "Daily"
+			If $sCheckTime = @YDAY Then Return
+			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", @YDAY)
+		Case "Weekly"
+			If $sCheckTime = _WeekNumberISO() Then Return
+			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", _WeekNumberISO())
+		Case "Monthly"
+			If $sCheckTime = @MON Then Return
+			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", @MON)
+		Case Else
+			Return
+	EndSwitch
 
 	Local $dData = InetRead("https://api.github.com/repos/TzarAlkex/StreamHelper/releases/latest", $INET_FORCERELOAD)
 
