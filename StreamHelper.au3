@@ -265,6 +265,7 @@ Func _TwitchNewDownload($sUrl)
 	_WinHttpCloseHandle($hConnect)
 	_WinHttpCloseHandle($hOpen)
 
+	_CW(StringReplace(StringStripWS($asResponse[0], $STR_STRIPTRAILING), @CRLF, " \ "))
 	_CW($asResponse[1])
 
 	$oJSON = Json_Decode($asResponse[1])
@@ -1017,6 +1018,7 @@ EndFunc
 Func _TwitchGetId()
 	$sUsername = GUICtrlRead($idTwitchInput)
 	If $sUsername = "" Then Return _GetErrored()
+	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
 	$sQuotedUsername = URLEncode($sUsername)
 
 	$oJSON = _TwitchNewDownload("users?login=" & $sQuotedUsername)
@@ -1049,6 +1051,7 @@ EndFunc
 Func _MixerGetId()
 	$sUsername = GUICtrlRead($idMixerInput)
 	If $sUsername = "" Then Return _GetErrored()
+	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
 	$sQuotedUsername = URLEncode($sUsername)
 	$sUserUrl = "https://mixer.com/api/v1/channels/" & $sQuotedUsername
 	$iUserID = FetchItem($sUserUrl, "userId")
@@ -1076,6 +1079,7 @@ EndFunc
 Func _SmashcastGetId()
 	$sUsername = GUICtrlRead($idSmashcastInput)
 	If $sUsername = "" Then Return _GetErrored()
+	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
 	$sQuotedUsername = URLEncode($sUsername)
 	$sUserUrl = "https://api.smashcast.tv/user/" & $sQuotedUsername
 	$iUserID = FetchItem($sUserUrl, "user_id")
