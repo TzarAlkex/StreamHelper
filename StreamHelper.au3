@@ -288,57 +288,56 @@ Func _Smashcast()
 EndFunc
 
 Func _SmashcastGet()
-	$iLimit = 100
 	$iOffset = 0
 
-	Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $sSmashcastId & "&fast"
-	$oLivestream = FetchItems($sUrl, "livestream")
-	If UBound($oLivestream) = 0 Then Return
+	While 1
+		Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $sSmashcastId & "&fast&offset=" & $iOffset
+		$oLivestream = FetchItems($sUrl, "livestream")
+		If UBound($oLivestream) = 0 Then Return
 
-	For $iX = 0 To UBound($oLivestream) -1
-		$oChannel = Json_ObjGet($oLivestream[$iX], "channel")
-		$sUrl = Json_ObjGet($oChannel, "channel_link")
+		For $iX = 0 To UBound($oLivestream) -1
+			$oChannel = Json_ObjGet($oLivestream[$iX], "channel")
+			$sUrl = Json_ObjGet($oChannel, "channel_link")
 
-		$sDisplayName = Json_ObjGet($oLivestream[$iX], "media_display_name")
+			$sDisplayName = Json_ObjGet($oLivestream[$iX], "media_display_name")
 
-		$sStatus = Json_ObjGet($oLivestream[$iX], "media_status")
+			$sStatus = Json_ObjGet($oLivestream[$iX], "media_status")
 
-		;The website actually still says to use the hitbox url for images, prob a doc error but whatever
-		$sThumbnail = "http://edge.sf.hitbox.tv" & Json_ObjGet($oLivestream[$iX], "media_thumbnail")
+			;The documentation still says to use the hitbox domain for images
+			$sThumbnail = "http://edge.sf.hitbox.tv" & Json_ObjGet($oLivestream[$iX], "media_thumbnail")
 
-		$sGame = Json_ObjGet($oLivestream[$iX], "category_name")
+			$sGame = Json_ObjGet($oLivestream[$iX], "category_name")
 
-		$sCreated = Json_ObjGet($oLivestream[$iX], "media_live_since")
+			$sCreated = Json_ObjGet($oLivestream[$iX], "media_live_since")
 
-		$asSplit = StringSplit($sCreated, " ")
-		$asDate = StringSplit($asSplit[1], "-")
-		$asTime = StringSplit($asSplit[2], ":")
+			$asSplit = StringSplit($sCreated, " ")
+			$asDate = StringSplit($asSplit[1], "-")
+			$asTime = StringSplit($asSplit[2], ":")
 
-		$tSystemTime = DllStructCreate($tagSYSTEMTIME)
-		$tSystemTime.Year = $asDate[1]
-		$tSystemTime.Month = $asDate[2]
-		$tSystemTime.Day = $asDate[3]
-		$tSystemTime.Hour = $asTime[1]
-		$tSystemTime.Minute = $asTime[2]
-		$tSystemTime.Second = $asTime[3]
+			$tSystemTime = DllStructCreate($tagSYSTEMTIME)
+			$tSystemTime.Year = $asDate[1]
+			$tSystemTime.Month = $asDate[2]
+			$tSystemTime.Day = $asDate[3]
+			$tSystemTime.Hour = $asTime[1]
+			$tSystemTime.Minute = $asTime[2]
+			$tSystemTime.Second = $asTime[3]
 
-		$tFileTime = _Date_Time_SystemTimeToFileTime($tSystemTime)
-		$tLocalTime = _Date_Time_FileTimeToLocalFileTime($tFileTime)
-		$sTime = _Date_Time_FileTimeToStr($tLocalTime, 1)
-		$iHours = _DateDiff("h", $sTime, _NowCalc())
-		$iMinutes = _DateDiff("n", $sTime, _NowCalc())
-		$iMinutes -= $iHours * 60
+			$tFileTime = _Date_Time_SystemTimeToFileTime($tSystemTime)
+			$tLocalTime = _Date_Time_FileTimeToLocalFileTime($tFileTime)
+			$sTime = _Date_Time_FileTimeToStr($tLocalTime, 1)
+			$iHours = _DateDiff("h", $sTime, _NowCalc())
+			$iMinutes = _DateDiff("n", $sTime, _NowCalc())
+			$iMinutes -= $iHours * 60
 
-		$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
+			$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-		_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eSmashcast)
-	Next
+			_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eSmashcast)
+		Next
+		If UBound($oLivestream) <> 100 Then Return "Potato on a Stick"
+		$iOffset += 100
+	WEnd
 
 	Return "Potato on a Stick"
-EndFunc
-
-Func OPTIONS_OFFSET_LIMIT_SMASHCAST($iOffset, $iLimit)
-	Return '&offset=' & $iOffset & '&limit=' & $iLimit
 EndFunc
 #EndRegion
 
