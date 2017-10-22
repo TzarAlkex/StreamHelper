@@ -1151,6 +1151,7 @@ Func _DeleteOldLogs()
 	$iRunOnce = True
 
 	$asLogs = _FileListToArray(@ScriptDir, "log*.txt", $FLTA_FILES, True)
+	If @error Then Return
 	Local $asLogsTime[$asLogs[0]][2]
 	For $iX = 1 To $asLogs[0]
 		$asLogsTime[$iX -1][0] = FileGetTime($asLogs[$iX], $FT_CREATED, $FT_STRING)
