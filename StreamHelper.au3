@@ -1130,18 +1130,13 @@ EndFunc
 
 #Region INTENRAL INTERLECT
 Func _CW($sMessage)
-	If $sLog = 0 Then Return
+	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " " & $sMessage & @CRLF)
 
-	_DeleteOldLogs()
+	If $sLog = 1 Then
+		_DeleteOldLogs()
 
-	If @Compiled Then
-		Static Local $iFileExist = FileExists(@ScriptDir & "\log.txt")
-		If $iFileExist Then
-			Static Local $hLog = FileOpen(@ScriptDir & "\log" & @WDAY & ".txt", $FO_APPEND)
-			If $hLog Then _FileWriteLog($hLog, $sMessage)
-		EndIf
-	Else
-		ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " " & $sMessage & @CRLF)
+		Static Local $hLog = FileOpen(@ScriptDir & "\log" & @WDAY & ".txt", $FO_APPEND)
+		If $hLog Then _FileWriteLog($hLog, $sMessage)
 	EndIf
 EndFunc
 
