@@ -198,14 +198,15 @@ Func _TwitchNewGet()
 			$oChannel = Json_ObjGet($aoStreams[$iX], "channel")
 
 			$sUrl = Json_ObjGet($oChannel, "url")
-			$sDisplayName = Json_ObjGet($oChannel, "display_name")
+			$sName = Json_ObjGet($oChannel, "display_name")
+			If StringIsASCII($sName) = 0 Then $sName = Json_ObjGet($oChannel, "name")
 			$sGame = Json_ObjGet($oChannel, "game")
 			$sUserID = "T" & Json_ObjGet($oChannel, "_id")
 
 			Local $iFlags = $eIsStream
 			If Json_ObjGet($aoStreams[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
 
-			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID, $iFlags)
+			_StreamSet($sName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID, $iFlags)
 		Next
 		If UBound($aData) <> 100 Then Return "Potato on a Stick"
 	WEnd
@@ -245,11 +246,12 @@ Func _TwitchGetGames()
 			$oChannel2 = Json_ObjGet($oChannel[$iY], "channel")
 
 			$sUrl = Json_ObjGet($oChannel2, "url")
-			$sDisplayName = Json_ObjGet($oChannel2, "display_name")
+			$sName = Json_ObjGet($oChannel2, "display_name")
+			If StringIsASCII($sName) = 0 Then $sName = Json_ObjGet($oChannel, "name")
 			$sGame = Json_ObjGet($oChannel[$iY], "game")
 			$sUserID = "T" & Json_ObjGet($oChannel2, "_id")
 
-			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID)
+			_StreamSet($sName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID)
 		Next
 	Next
 EndFunc
