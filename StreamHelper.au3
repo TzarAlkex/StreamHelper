@@ -77,12 +77,21 @@ EndIf
 
 $iClosePreviousBeforePlaying = True
 
+$sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
+Global $sInstallType = _InstallType()
+_CW("Install type: " & $sInstallType)
+
+$sUpdateCheck = RegRead("HKCU\SOFTWARE\StreamHelper\", "UpdateCheck")
+If @error Then
+	$sUpdateCheck = "Daily"
+EndIf
+If $sInstallType = "AppX" Then
+	$sUpdateCheck = "Never"
+EndIf
+$sCheckTime = RegRead("HKCU\SOFTWARE\StreamHelper\", "CheckTime")
+If @error Then $sCheckTime = "0"
 $sRefreshMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "RefreshMinutes")
 If @error Then $sRefreshMinutes = 3
-$sUpdateCheck = RegRead("HKCU\SOFTWARE\StreamHelper\", "UpdateCheck")
-If @error Then $sUpdateCheck = "Daily"
-$sCheckTime = RegRead("HKCU\SOFTWARE\StreamHelper\", "CheckTime")
-$sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
 
 $sTwitchId = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchId")
 $sTwitchName = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchName")
@@ -952,9 +961,11 @@ Func _SettingsCreate()
 	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
 	GUICtrlSetLimit(-1, 120, 1)
 
-	GUICtrlCreateLabel("Check for updates", 20, 90)
-	$idUpdates = GUICtrlCreateCombo("", 20, 110, 80)
-	GUICtrlSetData(-1, "Never|Daily|Weekly|Monthly", $sUpdateCheck)
+	If $sInstallType <> "AppX" Then
+		GUICtrlCreateLabel("Check for updates", 20, 90)
+		$idUpdates = GUICtrlCreateCombo("", 20, 110, 80)
+		GUICtrlSetData(-1, "Never|Daily|Weekly|Monthly", $sUpdateCheck)
+	EndIf
 
 	$idLog = GUICtrlCreateCheckbox("Save log to file (don't enable unless asked)", 20, 140)
 	If $sLog = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
@@ -1141,6 +1152,19 @@ EndFunc
 #EndRegion
 
 #Region INTENRAL INTERLECT
+;Based on https://stackoverflow.com/a/39651735 and "Install type" from Paint.NET
+Func _InstallType()
+	Local $APPMODEL_ERROR_NO_PACKAGE = 15700
+	$hProcess = _WinAPI_OpenProcess($PROCESS_QUERY_LIMITED_INFORMATION, 0, @AutoItPID)
+	If @error Then Return "Classical"
+	$aResult = DllCall("Kernel32.dll", "LONG", "GetPackageFamilyName", "handle", $hProcess, "uint*", 0, "wstr", Null)
+	$iError = @error
+	_WinAPI_CloseHandle($hProcess)
+	If $iError Then Return "Classical"
+	If $aResult[0] = $APPMODEL_ERROR_NO_PACKAGE Then Return "Classical"
+	Return "AppX"
+EndFunc
+
 Func _CW($sMessage)
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " " & $sMessage & @CRLF)
 
@@ -1279,9 +1303,7 @@ Func _WaitForInternet()
 EndFunc
 
 Func _CheckUpdates()
-	Static Local $iRunOnce = False
-	If $iRunOnce = True Then Return
-	$iRunOnce = True
+	If $sInstallType = "AppX" Then Return
 
 	_CW("Updateing")
 	_ProgressSpecific("U")
