@@ -65,6 +65,12 @@ My only idea is that she went offline just as I started and that livestreamer ma
 #include "WinHttp.au3"
 #include <GuiMenu.au3>
 
+If _Singleton("AutoIt window with hopefully a unique title|Ketchup the second", 1) = 0 Then
+	$iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Ketchup the second")
+	_WinAPI_PostMessage(WinGetHandle("AutoIt window with hopefully a unique title|Senap the third"), $iWM, 0, 0)
+	Exit
+EndIf
+
 If (Not @Compiled) Then
 	TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
 EndIf
@@ -151,8 +157,10 @@ $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
 
 _MAIN()
 
-GUICreate("detect WM_POWERBROADCAST")
+GUICreate("AutoIt window with hopefully a unique title|Senap the third")
 GUIRegisterMsg($WM_POWERBROADCAST, "_PowerEvents")
+$iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Ketchup the second")
+GUIRegisterMsg($iWM, "_RemoteEvents")
 
 While 1
 	Sleep(3600000)
@@ -1255,6 +1263,13 @@ Func _PowerEvents($hWnd, $Msg, $wParam, $lParam)
 
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_PowerEvents
+
+Func _RemoteEvents($hWnd, $iMsg, $wParam, $lParam)
+	AdlibRegister(_MAIN)
+
+	;Don't bother with the internal message handler since it's my own message
+	Return
+EndFunc
 
 Func _WaitForInternet()
 	If _WinAPI_IsInternetConnected() Then
