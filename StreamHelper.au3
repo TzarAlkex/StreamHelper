@@ -454,8 +454,10 @@ Func _TrayRefresh()
 	For $iX = 0 To UBound($aStreams) -1
 		If $aStreams[$iX][$eOnline] = True Then
 			Local $sDisplayName = $aStreams[$iX][$eDisplayName]
-			If StringInStr($sFavoritesNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[F] " & $sDisplayName
-			If StringInStr($sIgnoreNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[i] " & $sDisplayName
+			If BitAND($aStreams[$iX][$eFlags], $eIsStream) Then
+				If StringInStr($sFavoritesNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[F] " & $sDisplayName
+				If StringInStr($sIgnoreNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[i] " & $sDisplayName
+			EndIf
 			If BitAND($aStreams[$iX][$eFlags], $eVodCast) Then $sDisplayName = "[v] " & $sDisplayName
 
 			Local $sTrayText = $sDisplayName
