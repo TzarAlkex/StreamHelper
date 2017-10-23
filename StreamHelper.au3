@@ -45,6 +45,26 @@ My only idea is that she went offline just as I started and that livestreamer ma
 
 #ce ----------------------------------------------------------------------------
 
+#include <AutoItConstants.au3>
+#include "Json.au3"
+#include <Array.au3>
+#include <InetConstants.au3>
+#include <Date.au3>
+#include <GDIPlus.au3>
+#include <WinAPIShellEx.au3>
+#include <WindowsConstants.au3>
+#include <WinAPIDiag.au3>
+#include <GUIConstantsEx.au3>
+#include <MsgBoxConstants.au3>
+#include <WinAPISys.au3>
+#include <GuiComboBox.au3>
+#include <Misc.au3>
+#include <File.au3>
+#include <GuiEdit.au3>
+#include <UpDownConstants.au3>
+#include "WinHttp.au3"
+#include <GuiMenu.au3>
+
 If (Not @Compiled) Then
 	TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
 EndIf
@@ -75,25 +95,6 @@ Global $sOldIgnoreNew = $sIgnoreNew
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
 Opt("GUIOnEventMode", 1)
-
-#include <AutoItConstants.au3>
-#include "Json.au3"
-#include <Array.au3>
-#include <InetConstants.au3>
-#include <Date.au3>
-#include <GDIPlus.au3>
-#include <WinAPIShellEx.au3>
-#include <WindowsConstants.au3>
-#include <WinAPIDiag.au3>
-#include <GUIConstantsEx.au3>
-#include <MsgBoxConstants.au3>
-#include <WinAPISys.au3>
-#include <GuiComboBox.au3>
-#include <Misc.au3>
-#include <File.au3>
-#include <GuiEdit.au3>
-#include <UpDownConstants.au3>
-#include "WinHttp.au3"
 
 TrayCreateItem("")
 Local $idRefresh = TrayCreateItem("Refresh")
@@ -467,7 +468,7 @@ Func _TrayRefresh()
 
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				$aStreams[$iX][$eTrayId] = TrayCreateItem($sTrayText, -1, 0)
-				If StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 And StringInStr($sDisplayName, "[v] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
+				If $aStreams[$iX][$eFlags] = $eIsStream And StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 And StringInStr($sDisplayName, "[v] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> True Then $NewText &= " | " & $aStreams[$iX][$eGame]
 					$sNew &= $NewText & @CRLF
@@ -1014,6 +1015,7 @@ Func _SettingsUpdateCheck()
 	Local $sNew = GUICtrlRead($idUpdates)
 	If $sNew = $sUpdateCheck Then Return
 	$sUpdateCheck = $sNew
+	$sCheckTime = 0
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "UpdateCheck", "REG_SZ", $sUpdateCheck)
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", 0)
 EndFunc
@@ -1273,12 +1275,15 @@ Func _CheckUpdates()
 		Case "Daily"
 			If $sCheckTime = @YDAY Then Return
 			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", @YDAY)
+			$sCheckTime = @YDAY
 		Case "Weekly"
 			If $sCheckTime = _WeekNumberISO() Then Return
 			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", _WeekNumberISO())
+			$sCheckTime = _WeekNumberISO()
 		Case "Monthly"
 			If $sCheckTime = @MON Then Return
 			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", @MON)
+			$sCheckTime = @MON
 		Case Else
 			Return
 	EndSwitch
@@ -1290,7 +1295,7 @@ Func _CheckUpdates()
 
 	$oJSON = Json_Decode($sJson)
 
-	If IsObj($oJSON) = False Then Return _StreamSet("Update check failed", "poopsicle", "", "", "", "", "", "", "", $eIsText)
+	If IsObj($oJSON) = False Then Return _StreamSet("Update check failed", "", "", "", "", "", "", "", "", $eIsText)
 
 	$sTag = Json_ObjGet($oJSON, "tag_name")
 
@@ -1298,9 +1303,16 @@ Func _CheckUpdates()
 	$iHigherVersion = _VersionCompare($sTag, $iInternalVersion)
 
 	If @error Then
-		_StreamSet("Update check failed", "poopsicle", "", "", "", "", "", "", "", $eIsText)
+		_StreamSet("Update check failed", "", "", "", "", "", "", "", "", $eIsText)
 	ElseIf $iHigherVersion = 1 Then
-		_StreamSet("Update found! Click to open website", "https://github.com/TzarAlkex/StreamHelper/releases", "", "", "", "", "", "", "", $eIsLink)
+		$hTray = TrayItemGetHandle(0)
+		$iCount = _GUICtrlMenu_GetItemCount($hTray)
+		ReDim $aStreams[UBound($aStreams) +1][$eMax]
+		$aStreams[UBound($aStreams) -1][$eDisplayName] = "Update found! Click to open website"
+		$aStreams[UBound($aStreams) -1][$eUrl] = "https://github.com/TzarAlkex/StreamHelper/releases"
+		$aStreams[UBound($aStreams) -1][$eTrayId] = TrayCreateItem("Update found! Click to open website", -1, $iCount -3)
+		$aStreams[UBound($aStreams) -1][$eFlags] = $eIsLink
+		TrayItemSetOnEvent( -1, _TrayStuff)
 	EndIf
 EndFunc
 #EndRegion
