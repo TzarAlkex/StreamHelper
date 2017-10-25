@@ -172,6 +172,8 @@ GUIRegisterMsg($WM_ENDSESSION, "_EndSessionEvents")
 $iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Ketchup the second")
 GUIRegisterMsg($iWM, "_RemoteEvents")
 
+_WinAPI_RegisterApplicationRestart($RESTART_NO_CRASH)
+
 While 1
 	Sleep(3600000)
 WEnd
