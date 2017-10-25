@@ -168,6 +168,7 @@ _MAIN()
 
 GUICreate("AutoIt window with hopefully a unique title|Senap the third")
 GUIRegisterMsg($WM_POWERBROADCAST, "_PowerEvents")
+GUIRegisterMsg($WM_ENDSESSION, "_EndSessionEvents")
 $iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Ketchup the second")
 GUIRegisterMsg($iWM, "_RemoteEvents")
 
@@ -1287,6 +1288,12 @@ Func _PowerEvents($hWnd, $Msg, $wParam, $lParam)
 
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_PowerEvents
+
+Func _EndSessionEvents($hWnd, $iMsg, $wParam, $lParam)
+	If $wParam = 1 Then Exit
+
+	Return $GUI_RUNDEFMSG
+EndFunc
 
 Func _RemoteEvents($hWnd, $iMsg, $wParam, $lParam)
 	AdlibRegister(_MAIN)
