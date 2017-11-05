@@ -153,6 +153,8 @@ Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStat
 Global Enum $eTwitch, $eSmashcast, $eMixer
 Global Enum Step *2 $eVodCast, $eIsLink, $eIsText, $eIsStream
 
+Global Enum $iStartupTaskStateError = -1, $iStartupTaskStateEnabled, $iStartupTaskStateDisabled, $iStartupTaskStateDisabledByUser
+
 Global $sNew
 Global $aStreams[0][$eMax]
 
@@ -175,7 +177,7 @@ Global $idLabel, $idQuality, $idUrl
 _GuiCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idUpdates, $idLog, $idTwitchInput, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName
+Global $idRefreshMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idTwitchInput, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -996,7 +998,24 @@ Func _SettingsCreate()
 		GUICtrlSetData(-1, "Never|Daily|Weekly|Monthly", $sUpdateCheck)
 	EndIf
 
-	$idLog = GUICtrlCreateCheckbox("Save log to file (don't enable unless asked)", 20, 140)
+	If $sInstallType = "AppX" Then
+		$iStatus = RunWait(@ScriptDir & "\CentennialStartupHelper.exe /status", @ScriptDir)
+		If $iStatus <> $iStartupTaskStateError Then
+			$idStartup = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
+			GUICtrlSetOnEvent(-1, _CentennialStartupSet)
+			$aiPos = ControlGetPos($hGuiSettings, "", $idStartup)
+			$idStartupTooltip = GUICtrlCreateLabel("", $aiPos[0], $aiPos[1], $aiPos[2], $aiPos[3])
+
+			_CentennialStartupStatus($iStatus)
+		EndIf
+	Else
+		$idStartupLegacy = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
+		GUICtrlSetOnEvent(-1, _LegacyStartupSet)
+		If FileExists(@StartupDir & "\StreamHelper.lnk") Then GUICtrlSetState(-1, $GUI_CHECKED)
+		If @Compiled = 0 Then GUICtrlSetState(-1, $GUI_DISABLE)
+	EndIf
+
+	$idLog = GUICtrlCreateCheckbox("Save log to file (don't enable unless asked)", 20, 170)
 	If $sLog = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
 
 	GUICtrlCreateTabItem("Twitch")
@@ -1066,6 +1085,44 @@ Func _SettingsUpdateCheck()
 	$sCheckTime = 0
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "UpdateCheck", "REG_SZ", $sUpdateCheck)
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", 0)
+EndFunc
+
+Func _CentennialStartupSet()
+	Local $iChecked = BitAND(GUICtrlRead($idStartup), $GUI_CHECKED)
+
+	Local $iStatus
+	If $iChecked Then
+		$iStatus = RunWait(@ScriptDir & "\CentennialStartupHelper.exe /enable", @ScriptDir)
+	Else
+		$iStatus = RunWait(@ScriptDir & "\CentennialStartupHelper.exe /disable", @ScriptDir)
+	EndIf
+	_CentennialStartupStatus($iStatus)
+EndFunc
+
+Func _CentennialStartupStatus($iStatus)
+	If $iStatus = $iStartupTaskStateError Then
+		GUICtrlSetState($idStartup, $GUI_INDETERMINATE)
+		GUICtrlSetTip($idStartupTooltip, "Error?")
+	ElseIf $iStatus = $iStartupTaskStateEnabled Then
+		GUICtrlSetState($idStartup, $GUI_CHECKED)
+		GUICtrlSetTip($idStartupTooltip, "")
+	ElseIf $iStatus = $iStartupTaskStateDisabled Then
+		GUICtrlSetState($idStartup, $GUI_UNCHECKED)
+		GUICtrlSetTip($idStartupTooltip, "")
+	ElseIf $iStatus = $iStartupTaskStateDisabledByUser Then
+		GUICtrlSetState($idStartup, $GUI_DISABLE)
+		GUICtrlSetTip($idStartupTooltip, "Can't set autostart if disabled from Task Manager. Enable from there first.")
+	EndIf
+EndFunc
+
+Func _LegacyStartupSet()
+	Local $iChecked = BitAND(GUICtrlRead($idStartupLegacy), $GUI_CHECKED)
+
+	If $iChecked Then
+		FileCreateShortcut(@AutoItExe, @StartupDir & "\StreamHelper.lnk")
+	Else
+		FileDelete(@StartupDir & "\StreamHelper.lnk")
+	EndIf
 EndFunc
 
 Func _SettingsLog()
