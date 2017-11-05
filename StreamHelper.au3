@@ -43,6 +43,17 @@ My only idea is that she went offline just as I started and that livestreamer ma
 
 *Add a check for when twitch says it returns x items and there is not x items in the response array (and log it!)
 
+2017-10-25 19:13:25 : myURL users/follows?from_id=37714348&first=100&after=eyJiIjpudWxsLCJhIjoiMTQ1NDcwNjQ0OTY2OTg5MDAwMCJ9
+2017-10-25 19:13:26 : HTTP/1.1 502 Bad Gateway \ Connection: keep-alive \ Date: Wed, 25 Oct 2017 17:13:26 GMT \ Content-Length: 138 \ Content-Type: text/html \ Server: awselb/2.0
+2017-10-25 19:13:26 : <html>
+<head><title>502 Bad Gateway</title></head>
+<body bgcolor="white">
+<center><h1>502 Bad Gateway</h1></center>
+</body>
+</html>
+
+wtf fix!
+
 #ce ----------------------------------------------------------------------------
 
 #include <AutoItConstants.au3>
@@ -287,6 +298,11 @@ Func _TwitchNewDownload($sUrl)
 
 	_WinHttpCloseHandle($hConnect)
 	_WinHttpCloseHandle($hOpen)
+
+	If $asResponse = 0 Then
+		_CW("_TwitchNewDownload failed")
+		Return
+	EndIf
 
 	_CW(StringReplace(StringStripWS($asResponse[0], $STR_STRIPTRAILING), @CRLF, " \ "))
 	_CW($asResponse[1])
