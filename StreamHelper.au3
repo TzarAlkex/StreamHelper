@@ -76,16 +76,6 @@ wtf fix!
 #include "WinHttp.au3"
 #include <GuiMenu.au3>
 
-If @Compiled Then
-	Local $aCmdLine = _WinAPI_CommandLineToArgv($CmdLineRaw)
-	If $aCmdLine[0] = 0 Or _ArraySearch($aCmdLine, "/woof") = -1 Then
-		$iPID = Run(@AutoItExe & " " & $CmdLineRaw & "/ErrorStdOut /woof", "", Default, $STDOUT_CHILD)
-		ProcessWaitClose($iPID)
-		Local $sOutput = StdoutRead($iPID)
-		MsgBox(0, @ScriptName, "I crashed. Sorry." & @CRLF & "If you want to help me fix whatever happened please send the following info back to me somehow:" & @CRLF & "(use ctrl+c to copy the text)" & @CRLF & @CRLF & StringReplace($sOutput, '"' & @AutoItExe & '" ', ""))
-	EndIf
-EndIf
-
 If _Singleton("AutoIt window with hopefully a unique title|Ketchup the second", 1) = 0 Then
 	$iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Ketchup the second")
 	_WinAPI_PostMessage(WinGetHandle("AutoIt window with hopefully a unique title|Senap the third"), $iWM, 0, 0)
