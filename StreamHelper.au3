@@ -89,15 +89,14 @@ EndIf
 $iClosePreviousBeforePlaying = True
 
 $sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
-Global $sInstallType = _InstallType()
-_CW("Install type: " & $sInstallType)
+_CW("Install type: " & _InstallType())
 
-$sUpdateCheck = RegRead("HKCU\SOFTWARE\StreamHelper\", "UpdateCheck")
-If @error Then
-	$sUpdateCheck = "Daily"
-EndIf
-If $sInstallType = "AppX" Then
+Global $sUpdateCheck
+If _InstallType() = "AppX" Then
 	$sUpdateCheck = "Never"
+Else
+	$sUpdateCheck = RegRead("HKCU\SOFTWARE\StreamHelper\", "UpdateCheck")
+	If @error Then $sUpdateCheck = "Daily"
 EndIf
 $sCheckTime = RegRead("HKCU\SOFTWARE\StreamHelper\", "CheckTime")
 If @error Then $sCheckTime = "0"
@@ -982,13 +981,13 @@ Func _SettingsCreate()
 	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
 	GUICtrlSetLimit(-1, 120, 1)
 
-	If $sInstallType <> "AppX" Then
+	If _InstallType() <> "AppX" Then
 		GUICtrlCreateLabel("Check for updates", 20, 90)
 		$idUpdates = GUICtrlCreateCombo("", 20, 110, 80)
 		GUICtrlSetData(-1, "Never|Daily|Weekly|Monthly", $sUpdateCheck)
 	EndIf
 
-	If $sInstallType = "AppX" Then
+	If _InstallType() = "AppX" Then
 		$iStatus = RunWait(@ScriptDir & "\CentennialStartupHelper.exe /status", @ScriptDir)
 		If $iStatus <> $iStartupTaskStateError Then
 			$idStartup = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
@@ -1228,8 +1227,13 @@ EndFunc
 #EndRegion
 
 #Region INTENRAL INTERLECT
-;Based on https://stackoverflow.com/a/39651735 and "Install type" from Paint.NET
 Func _InstallType()
+	Static Local $sInstallType = _InstallTypeEx()
+	Return $sInstallType
+EndFunc
+
+;Based on https://stackoverflow.com/a/39651735 and "Install type" from Paint.NET
+Func _InstallTypeEx()
 	Local $APPMODEL_ERROR_NO_PACKAGE = 15700
 	$hProcess = _WinAPI_OpenProcess($PROCESS_QUERY_LIMITED_INFORMATION, 0, @AutoItPID)
 	If @error Then Return "Classical"
@@ -1385,7 +1389,7 @@ Func _WaitForInternet()
 EndFunc
 
 Func _CheckUpdates()
-	If $sInstallType = "AppX" Then Return
+	If _InstallType() = "AppX" Then Return
 
 	_CW("Updateing")
 	_ProgressSpecific("U")
