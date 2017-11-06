@@ -979,7 +979,7 @@ Func _SettingsCreate()
 	GUICtrlCreateLabel("Minutes between refresh", 20, 40)
 	$idRefreshMinutes = GUICtrlCreateInput($sRefreshMinutes, 20, 60, 80)
 	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
-	GUICtrlSetLimit(-1, 120, 1)
+	GUICtrlSetLimit(-1, 120, 3)
 
 	If _InstallType() <> "AppX" Then
 		GUICtrlCreateLabel("Check for updates", 20, 90)
