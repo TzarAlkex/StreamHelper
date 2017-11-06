@@ -138,7 +138,7 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eMax
 Global Enum $eTwitch, $eSmashcast, $eMixer
 Global Enum Step *2 $eVodCast, $eIsLink, $eIsText, $eIsStream
 
@@ -195,19 +195,22 @@ Func _TwitchNew()
 	_CW("Twitching")
 	_ProgressSpecific("T")
 
-	_TwitchNewGet()
+	_TwitchGet()
 
 	_TwitchGetGames()
+
+	_TwitchProcessUserID()
+	_TwitchProcessGameID()
 
 	$iTrayRefresh = True
 EndFunc
 
-Func _TwitchNewGet()
+Func _TwitchGet()
 	$sCursor = ""
 
 	While True
 		$sUrl = "users/follows?from_id=" & $sTwitchId & "&first=100&after=" & $sCursor
-		$oJSON = _TwitchNewDownload($sUrl)
+		$oJSON = _TwitchFetch($sUrl)
 		If IsObj($oJSON) = False Then Return
 
 		$aData = Json_ObjGet($oJSON, "data")
@@ -219,27 +222,25 @@ Func _TwitchNewGet()
 		Local $sUsers = ""
 		For $iX = 0 To UBound($aData) -1
 			$sUser = Json_ObjGet($aData[$iX], "to_id")
-			$sUsers &= $sUser & ','
+			$sUsers &= "&user_id=" & $sUser
 		Next
+		$sUsers = StringTrimLeft($sUsers, 1)
 
-		$sUsers = StringTrimRight($sUsers, 1)
-		$sUrl = 'https://api.twitch.tv/kraken/streams/?channel=' & $sUsers & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
-		$aoStreams = FetchItems($sUrl, "streams")
-		If UBound($aoStreams) = 0 Then ExitLoop
+		$sUrl = "streams?" & $sUsers & "&first=100"
+		$oJSON = _TwitchFetch($sUrl)
+		If IsObj($oJSON) = False Then Return
 
-		For $iX = 0 To UBound($aoStreams) -1
-			$oChannel = Json_ObjGet($aoStreams[$iX], "channel")
+		$aData2 = Json_ObjGet($oJSON, "data")
+		If UBound($aData2) = 0 Then ContinueLoop
 
-			$sUrl = Json_ObjGet($oChannel, "url")
-			$sName = Json_ObjGet($oChannel, "display_name")
-			If StringIsASCII($sName) = 0 Then $sName = Json_ObjGet($oChannel, "name")
-			$sGame = Json_ObjGet($oChannel, "game")
-			$sUserID = "T" & Json_ObjGet($oChannel, "_id")
+		For $iX = 0 To UBound($aData2) -1
+			$sUserID = "T" & Json_ObjGet($aData2[$iX], "user_id")
+			$sGameID = Json_ObjGet($aData2[$iX], "game_id")
 
 			Local $iFlags = $eIsStream
-			If Json_ObjGet($aoStreams[$iX], "stream_type") = "watch_party" Then $iFlags = BitOR($iFlags, $eVodCast)
+			If Json_ObjGet($aData2[$iX], "type") = "vodcast" Then $iFlags = BitOR($iFlags, $eVodCast)
 
-			_StreamSet($sName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID, $iFlags)
+			_StreamSet(Null, Null, "", Null, "", "", "", $eTwitch, $sUserID, $iFlags, $sGameID)
 		Next
 		If UBound($aData) <> 100 Then Return "Potato on a Stick"
 	WEnd
@@ -249,7 +250,7 @@ EndFunc
 
 Func _TwitchGetGames()
 	$sUrl = "users?id=" & $sTwitchId
-	$oJSON = _TwitchNewDownload($sUrl)
+	$oJSON = _TwitchFetch($sUrl)
 	If IsObj($oJSON) = False Then Return
 
 	$aData = Json_ObjGet($oJSON, "data")
@@ -258,7 +259,7 @@ Func _TwitchGetGames()
 	$sUserName = Json_ObjGet($aData[0], "login")
 	If $sUserName = "" Then
 		Return
-	Else
+	ElseIf $sUserName <> $sTwitchName Then
 		RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchName", "REG_SZ", $sUsername)
 		$sTwitchName = $sUsername
 	EndIf
@@ -289,27 +290,86 @@ Func _TwitchGetGames()
 	Next
 EndFunc
 
-Func _TwitchNewDownload($sUrl)
-	_CW("myURL " & $sUrl)
+Func _TwitchProcessUserID()
+	Local $sUsers = "", $iCount = 0
+	For $iX = 0 To UBound($aStreams) -1
+		If $aStreams[$iX][$eDisplayName] <> "" And $aStreams[$iX][$eUrl] <> "" Then ContinueLoop
 
-	Local $hOpen = _WinHttpOpen()
-	Local $hConnect = _WinHttpConnect($hOpen, "api.twitch.tv")
+		$sUsers &= "&id=" & StringTrimLeft($aStreams[$iX][$eUserID], 1)
+		$iCount += 1
+		If $iCount = 100 Then ExitLoop
+	Next
+	$sUsers = StringTrimLeft($sUsers, 1)
 
-	$asResponse = _WinHttpSimpleSSLRequest($hConnect, Default, "helix/" & $sUrl, Default, Default, "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07", True)
+	If $iCount = 0 Then Return
 
-	_WinHttpCloseHandle($hConnect)
-	_WinHttpCloseHandle($hOpen)
+	$sUrl = "users?" & $sUsers
+	$oJSON = _TwitchFetch($sUrl)
+	If IsObj($oJSON) = False Then Return
 
-	If $asResponse = 0 Then
-		_CW("_TwitchNewDownload failed")
-		Return
-	EndIf
+	$aData = Json_ObjGet($oJSON, "data")
+	If UBound($aData) = 0 Then Return
 
-	_CW(StringReplace(StringStripWS($asResponse[0], $STR_STRIPTRAILING), @CRLF, " \ "))
-	_CW($asResponse[1])
+	For $iX = 0 To UBound($aData) -1
+		$sDisplayName = Json_ObjGet($aData[$iX], "display_name")
+		$sLogin = Json_ObjGet($aData[$iX], "login")
+		$sID = Json_ObjGet($aData[$iX], "id")
+		If StringIsASCII($sDisplayName) = 0 Then $sDisplayName = $sLogin
+		$sUrl = "https://www.twitch.tv/" & $sLogin
 
-	$oJSON = Json_Decode($asResponse[1])
-	Return $oJSON
+		For $iIndex = 0 To UBound($aStreams) -1
+			If $aStreams[$iIndex][$eUserID] = "T" & $sID Then
+				$aStreams[$iIndex][$eDisplayName] = $sDisplayName
+				$aStreams[$iIndex][$eUrl] = $sUrl
+
+				ExitLoop
+			EndIf
+		Next
+	Next
+EndFunc
+
+Func _TwitchProcessGameID()
+	Local $sGames = "", $iCount = 0
+	For $iX = 0 To UBound($aStreams) -1
+		If $aStreams[$iX][$eGame] <> "" Then ContinueLoop
+
+		For $iIndex = 0 To UBound($aStreams) -1
+			If $aStreams[$iIndex][$eGameID] = $aStreams[$iX][$eGameID] And $aStreams[$iIndex][$eGame] <> "" Then
+;~ 				If $iIndex = $iX Then ContinueLoop
+				$aStreams[$iX][$eGame] = $aStreams[$iIndex][$eGame]
+				ContinueLoop 2
+			EndIf
+		Next
+
+		$sGames &= "&id=" & $aStreams[$iX][$eGameID]
+		$iCount += 1
+		If $iCount = 100 Then ExitLoop
+	Next
+	$sGames = StringTrimLeft($sGames, 1)
+
+	If $iCount = 0 Then Return
+
+	$sUrl = "games?" & $sGames
+	$oJSON = _TwitchFetch($sUrl)
+	If IsObj($oJSON) = False Then Return
+
+	$aData = Json_ObjGet($oJSON, "data")
+	If UBound($aData) = 0 Then Return
+
+	For $iX = 0 To UBound($aData) -1
+		$sGame = Json_ObjGet($aData[$iX], "name")
+		$sID = Json_ObjGet($aData[$iX], "id")
+
+		For $iIndex = 0 To UBound($aStreams) -1
+			If $aStreams[$iIndex][$eGameID] = $sID Then
+				$aStreams[$iIndex][$eGame] = $sGame
+			EndIf
+		Next
+	Next
+EndFunc
+
+Func _TwitchFetch($sUrl)
+	Return _WinHttpFetch("api.twitch.tv", "helix/" & $sUrl, "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
 EndFunc
 #EndRegion TWITCH
 
@@ -421,6 +481,37 @@ EndFunc
 #EndRegion
 
 #Region COMMON
+Func _WinHttpFetch($sDomain, $sUrl, $sHeader)
+	_CW("_WinHttpFetch: " & $sDomain & "/" & $sUrl & " \ " & $sHeader)
+
+	Local $iTries = 0
+	Do
+		Sleep($iTries * 5000)
+
+		Local $hOpen = _WinHttpOpen()
+		Local $hConnect = _WinHttpConnect($hOpen, $sDomain)
+
+		$asResponse = _WinHttpSimpleSSLRequest($hConnect, Default, $sUrl, Default, Default, $sHeader, True)
+
+		_WinHttpCloseHandle($hConnect)
+		_WinHttpCloseHandle($hOpen)
+
+		$iTries += 1
+	Until (IsArray($asResponse) And StringSplit($asResponse[0], " ")[2] = 200) Or $iTries = 5
+
+	If $asResponse = 0 Then
+		_CW("_WinHttpFetch failed")
+		Return
+	EndIf
+
+	_CW("Succeeded/failed after " & $iTries & " tries")
+	_CW(StringReplace(StringStripWS($asResponse[0], $STR_STRIPTRAILING), @CRLF, " \ "))
+	_CW($asResponse[1])
+
+	$oJSON = Json_Decode($asResponse[1])
+	Return $oJSON
+EndFunc
+
 Func FetchItems($sUrl, $sKey)
 	$oJSON = getJson($sUrl)
 
@@ -1127,7 +1218,7 @@ Func _TwitchGetId()
 	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
 	$sQuotedUsername = URLEncode($sUsername)
 
-	$oJSON = _TwitchNewDownload("users?login=" & $sQuotedUsername)
+	$oJSON = _TwitchFetch("users?login=" & $sQuotedUsername)
 	If IsObj($oJSON) = False Then Return _GetErrored()
 
 	$aData = Json_ObjGet($oJSON, "data")
@@ -1277,20 +1368,24 @@ Func _DeleteOldLogs()
 	_CW("Deleted old logs")
 EndFunc
 
-Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID = "", $iFlags = $eIsStream)
-	_CW("Found streamer: " & $sDisplayName)
+Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID = "", $iFlags = $eIsStream, $iGameID = "")
+	If $sDisplayName <> "" Then
+		_CW("Found streamer: " & $sDisplayName)
+	Else
+		_CW("Found id: " & $iUserID)
+	EndIf
 
 	For $iIndex = 0 To UBound($aStreams) -1
-		If $aStreams[$iIndex][$eUrl] = $sUrl Then ExitLoop
+		If $aStreams[$iIndex][$eUserID] = $iUserID Then ExitLoop
 	Next
 	If $iIndex = UBound($aStreams) Then
 		ReDim $aStreams[$iIndex +1][$eMax]
 	EndIf
 
-	$aStreams[$iIndex][$eDisplayName] = $sDisplayName
-	$aStreams[$iIndex][$eUrl] = $sUrl
+	If $sDisplayName <> Null Then $aStreams[$iIndex][$eDisplayName] = $sDisplayName
+	If $sUrl <> Null Then $aStreams[$iIndex][$eUrl] = $sUrl
+	If $sGame <> Null Then $aStreams[$iIndex][$eGame] = $sGame
 	$aStreams[$iIndex][$ePreview] = $sThumbnail
-	$aStreams[$iIndex][$eGame] = $sGame
 	$aStreams[$iIndex][$eCreated] = $sCreated
 	$aStreams[$iIndex][$eTime] = $sTime
 	$aStreams[$iIndex][$eStatus] = $sStatus
@@ -1298,6 +1393,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eService] = $iService
 	$aStreams[$iIndex][$eFlags] = $iFlags
 	$aStreams[$iIndex][$eUserID] = $iUserID
+	$aStreams[$iIndex][$eGameID] = $iGameID
 
 	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
 ;~ 		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
