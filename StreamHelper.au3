@@ -387,8 +387,11 @@ Func _SmashcastGet()
 	$iOffset = 0
 
 	While 1
-		Local $sUrl = "https://api.smashcast.tv/media/live/list?follower_id=" & $sSmashcastId & "&start=" & $iOffset
-		$oLivestream = FetchItems($sUrl, "livestream")
+		Local $sUrl = "media/live/list?follower_id=" & $sSmashcastId & "&start=" & $iOffset
+		$oJSON = _SmashcastFetch($sUrl)
+		If IsObj($oJSON) = False Then Return
+
+		$oLivestream = Json_ObjGet($oJSON, "livestream")
 		If UBound($oLivestream) = 0 Then Return
 
 		For $iX = 0 To UBound($oLivestream) -1
@@ -436,6 +439,10 @@ Func _SmashcastGet()
 
 	Return "Potato on a Stick"
 EndFunc
+
+Func _SmashcastFetch($sUrl)
+	Return _WinHttpFetch("api.smashcast.tv", $sUrl, Default)
+EndFunc
 #EndRegion
 
 #Region MIXER
@@ -452,8 +459,8 @@ Func _MixerGet()
 	$iOffset = 0
 
 	While 1
-		Local $sUrl = "https://mixer.com/api/v1/users/" & $sMixerId & "/follows?page=" & $iOffset & "&limit=100&where=online:eq:1&fields=user,token,type&noCount=1"
-		$oFollows = getJson($sUrl)
+		Local $sUrl = "users/" & $sMixerId & "/follows?page=" & $iOffset & "&limit=100&where=online:eq:1&fields=user,token,type&noCount=1"
+		$oFollows = _MixerFetch($sUrl)
 		If UBound($oFollows) = 0 Then Return
 
 		For $iX = 0 To UBound($oFollows) -1
@@ -477,6 +484,10 @@ Func _MixerGet()
 	WEnd
 
 	Return "Potato on a Stick"
+EndFunc
+
+Func _MixerFetch($sUrl)
+	Return _WinHttpFetch("mixer.com", "api/v1/" & $sUrl, Default)
 EndFunc
 #EndRegion
 
@@ -1250,8 +1261,10 @@ Func _MixerGetId()
 	If $sUsername = "" Then Return _GetErrored()
 	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
 	$sQuotedUsername = URLEncode($sUsername)
-	$sUserUrl = "https://mixer.com/api/v1/channels/" & $sQuotedUsername
-	$iUserID = FetchItem($sUserUrl, "userId")
+
+	$oJSON = _MixerFetch("channels/" & $sQuotedUsername)
+	If IsObj($oJSON) = False Then Return _GetErrored()
+	$iUserID = Json_ObjGet($oJSON, "userId")
 
 	If $iUserID <> "" Then
 		_MixerSet($iUserID, $sUsername)
@@ -1278,8 +1291,10 @@ Func _SmashcastGetId()
 	If $sUsername = "" Then Return _GetErrored()
 	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
 	$sQuotedUsername = URLEncode($sUsername)
-	$sUserUrl = "https://api.smashcast.tv/user/" & $sQuotedUsername
-	$iUserID = FetchItem($sUserUrl, "user_id")
+
+	$oJSON = _SmashcastFetch("user/" & $sQuotedUsername)
+	If IsObj($oJSON) = False Then Return _GetErrored()
+	$iUserID = Json_ObjGet($oJSON, "user_id")
 
 	If IsKeyword($iUserID) <> $KEYWORD_NULL Then
 		_SmashcastSet($iUserID, $sUsername)
