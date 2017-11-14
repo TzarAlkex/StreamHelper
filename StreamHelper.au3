@@ -59,7 +59,6 @@ wtf fix!
 #include <AutoItConstants.au3>
 #include "Json.au3"
 #include <Array.au3>
-#include <InetConstants.au3>
 #include <Date.au3>
 #include <GDIPlus.au3>
 #include <WinAPIShellEx.au3>
@@ -266,17 +265,20 @@ Func _TwitchGetGames()
 		$sTwitchName = $sUsername
 	EndIf
 
-	Local $sGamesUrl = "https://api.twitch.tv/api/users/" & $sUsername & "/follows/games/live?client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
+	$oJSON = _WinHttpFetch("api.twitch.tv", "api/users/" & $sUsername & "/follows/games/live", "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
+	If IsObj($oJSON) = False Then Return
 
-	$avTemp = FetchItems($sGamesUrl, "follows")
+	$avTemp = Json_ObjGet($oJSON, "follows")
 	If UBound($avTemp) = 0 Then Return
 
 	For $iX = 0 To UBound($avTemp) -1
 		$oGame = Json_ObjGet($avTemp[$iX], "game")
 		$sName = Json_ObjGet($oGame, "name")
 
-		$sUrl = 'https://api.twitch.tv/kraken/streams/?game=' & $sName & "&client_id=i8funp15gnh1lfy1uzr1231ef1dxg07&api_version=5"
-		$oChannel = FetchItems($sUrl, "streams")
+		$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/streams/?game=" & $sName, "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
+		If IsObj($oJSON) = False Then Return
+
+		$oChannel = Json_ObjGet($oJSON, "streams")
 
 		For $iY = 0 To UBound($oChannel) -1
 			$oChannel2 = Json_ObjGet($oChannel[$iY], "channel")
@@ -522,50 +524,6 @@ Func _WinHttpFetch($sDomain, $sUrl, $sHeader)
 	_CW($asResponse[1])
 
 	$oJSON = Json_Decode($asResponse[1])
-	Return $oJSON
-EndFunc
-
-Func FetchItems($sUrl, $sKey)
-	$oJSON = getJson($sUrl)
-
-	If IsObj($oJSON) = False Then Return ""
-
-	$aFollows = Json_ObjGet($oJSON, $sKey)
-	If UBound($aFollows) > 0 Then
-		Return $aFollows
-	Else
-		Return ""
-	EndIf
-EndFunc
-
-Func FetchItem($sUrl, $sKey)
-	$oJSON = getJson($sUrl)
-
-	If IsObj($oJSON) = False Then Return ""
-
-	$aFollows = Json_ObjGet($oJSON, $sKey)
-	Return $aFollows
-EndFunc
-
-Func getJson($sUrl)
-	_CW("myURL " & $sUrl)
-
-	Local $sJson, $iError
-	For $iX = 1 To 3
-		$dJsonString = InetRead($sUrl, $INET_FORCERELOAD)
-		$iError = @error
-		_CW("Inet @error:" & $iError & " @extended: " & @extended & " BinaryLen: " & BinaryLen($dJsonString) & " StringLen: " & StringLen(BinaryToString($dJsonString)))
-		If $iError = 0 Then ExitLoop
-		If $iError = 13 Then ExitLoop   ;error 13 seems to mean the server rejected the download so no need to repeat
-	Next
-	If $iError Then _CW("All downloads failed")
-	If $dJsonString = "" Then Return
-
-	_CW($dJsonString)
-	$sJson = BinaryToString($dJsonString)
-	_CW($sJson)
-
-	$oJSON = Json_Decode($sJson)
 	Return $oJSON
 EndFunc
 
@@ -1544,30 +1502,25 @@ Func _CheckUpdates($iForce = False)
 	_ProgressSpecific("U")
 
 	If (Not $iForce) Then
-	Switch $sUpdateCheck
-		Case "Daily"
+		Switch $sUpdateCheck
+			Case "Daily"
 			If $sCheckTime = @YDAY Then Return
 			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", @YDAY)
 			$sCheckTime = @YDAY
-		Case "Weekly"
+			Case "Weekly"
 			If $sCheckTime = _WeekNumberISO() Then Return
 			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", _WeekNumberISO())
 			$sCheckTime = _WeekNumberISO()
-		Case "Monthly"
+			Case "Monthly"
 			If $sCheckTime = @MON Then Return
 			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", @MON)
 			$sCheckTime = @MON
-		Case Else
-			Return
-	EndSwitch
+			Case Else
+				Return
+		EndSwitch
 	EndIf
 
-	Local $dData = InetRead("https://api.github.com/repos/TzarAlkex/StreamHelper/releases/latest", $INET_FORCERELOAD)
-
-	$sJson = BinaryToString($dData)
-	_CW($sJson)
-
-	$oJSON = Json_Decode($sJson)
+	$oJSON = _WinHttpFetch("api.github.com", "repos/TzarAlkex/StreamHelper/releases/latest", Default)
 
 	If IsObj($oJSON) = False Then
 		_OtherSet("Update check failed", $eIsText)
