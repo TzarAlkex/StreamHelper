@@ -1087,6 +1087,8 @@ Func _SettingsCreate()
 		GUICtrlCreateLabel("Check for updates", 20, 90)
 		$idUpdates = GUICtrlCreateCombo("", 20, 110, 80)
 		GUICtrlSetData(-1, "Never|Daily|Weekly|Monthly", $sUpdateCheck)
+		GUICtrlCreateButton("Check now", 110, 110)
+		GUICtrlSetOnEvent(-1, _CheckNow)
 	EndIf
 
 	If _InstallType() = "AppX" Then
@@ -1167,6 +1169,15 @@ Func _SettingsRefresh()
 	If $sNew = $sRefreshMinutes Then Return
 	$sRefreshMinutes = $sNew
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "RefreshMinutes", "REG_SZ", $sRefreshMinutes)
+EndFunc
+
+Func _CheckNow()
+	_CheckUpdates(True)
+	If (Not @Compiled) Then
+		TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
+	Else
+		TraySetIcon()
+	EndIf
 EndFunc
 
 Func _SettingsUpdateCheck()
@@ -1499,12 +1510,24 @@ Func _WaitForInternet()
 	EndIf
 EndFunc
 
-Func _CheckUpdates()
+Func _OtherSet($sText, $iFlags, $sUrl = "", $fFunc = "")
+	$hTray = TrayItemGetHandle(0)
+	$iCount = _GUICtrlMenu_GetItemCount($hTray)
+	ReDim $aStreams[UBound($aStreams) +1][$eMax]
+	$aStreams[UBound($aStreams) -1][$eDisplayName] = $sText
+	If $sUrl <> "" Then $aStreams[UBound($aStreams) -1][$eUrl] = $sUrl
+	$aStreams[UBound($aStreams) -1][$eTrayId] = TrayCreateItem($sText, -1, $iCount -3)
+	$aStreams[UBound($aStreams) -1][$eFlags] = $iFlags
+	If $fFunc <> "" Then TrayItemSetOnEvent(-1, $fFunc)
+EndFunc
+
+Func _CheckUpdates($iForce = False)
 	If _InstallType() = "AppX" Then Return
 
 	_CW("Updateing")
 	_ProgressSpecific("U")
 
+	If (Not $iForce) Then
 	Switch $sUpdateCheck
 		Case "Daily"
 			If $sCheckTime = @YDAY Then Return
@@ -1521,6 +1544,7 @@ Func _CheckUpdates()
 		Case Else
 			Return
 	EndSwitch
+	EndIf
 
 	Local $dData = InetRead("https://api.github.com/repos/TzarAlkex/StreamHelper/releases/latest", $INET_FORCERELOAD)
 
@@ -1529,7 +1553,10 @@ Func _CheckUpdates()
 
 	$oJSON = Json_Decode($sJson)
 
-	If IsObj($oJSON) = False Then Return _StreamSet("Update check failed", "", "", "", "", "", "", "", "", $eIsText)
+	If IsObj($oJSON) = False Then
+		_OtherSet("Update check failed", $eIsText)
+		Return
+	EndIf
 
 	$sTag = Json_ObjGet($oJSON, "tag_name")
 
@@ -1537,16 +1564,11 @@ Func _CheckUpdates()
 	$iHigherVersion = _VersionCompare($sTag, $iInternalVersion)
 
 	If @error Then
-		_StreamSet("Update check failed", "", "", "", "", "", "", "", "", $eIsText)
+		_OtherSet("Update check failed", $eIsText)
+		Return
 	ElseIf $iHigherVersion = 1 Then
-		$hTray = TrayItemGetHandle(0)
-		$iCount = _GUICtrlMenu_GetItemCount($hTray)
-		ReDim $aStreams[UBound($aStreams) +1][$eMax]
-		$aStreams[UBound($aStreams) -1][$eDisplayName] = "Update found! Click to open website"
-		$aStreams[UBound($aStreams) -1][$eUrl] = "https://github.com/TzarAlkex/StreamHelper/releases"
-		$aStreams[UBound($aStreams) -1][$eTrayId] = TrayCreateItem("Update found! Click to open website", -1, $iCount -3)
-		$aStreams[UBound($aStreams) -1][$eFlags] = $eIsLink
-		TrayItemSetOnEvent( -1, _TrayStuff)
+		_OtherSet("Update found! Click to open website", $eIsLink, "https://github.com/TzarAlkex/StreamHelper/releases", _TrayStuff)
+		Return
 	EndIf
 EndFunc
 #EndRegion
