@@ -568,12 +568,21 @@ Func _TrayRefresh()
 
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				$aStreams[$iX][$eTrayId] = TrayCreateItem($sTrayText, -1, 0)
-				If $aStreams[$iX][$eFlags] = $eIsStream And StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 And StringInStr($sDisplayName, "[v] ", $STR_CASESENSE, 1, 1, 8) = 0 And TimerDiff($aStreams[$iX][$eTimer]) > $sIgnoreMinutes * 1000 Then
+				If $aStreams[$iX][$eFlags] = $eIsStream And StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 And StringInStr($sDisplayName, "[v] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> True Then $NewText &= " | " & $aStreams[$iX][$eGame]
-					$sNew &= $NewText & @CRLF
 
+					If $sIgnoreMinutes * 1000 > 0 Then
+						If TimerDiff($aStreams[$iX][$eTimer]) > $sIgnoreMinutes * 1000 Then
+							$aStreams[$iX][$eTimer] = TimerInit()
+
+							$sNew &= $NewText & @CRLF
 					If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
+				EndIf
+					Else
+						$sNew &= $NewText & @CRLF
+						If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
+					EndIf
 				EndIf
 				TrayItemSetOnEvent( -1, _TrayStuff)
 			Else
@@ -1400,7 +1409,6 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eFlags] = $iFlags
 	$aStreams[$iIndex][$eUserID] = $iUserID
 	$aStreams[$iIndex][$eGameID] = $iGameID
-	$aStreams[$iIndex][$eTimer] = TimerInit()
 
 	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
 ;~ 		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
