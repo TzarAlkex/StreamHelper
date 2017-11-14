@@ -241,7 +241,7 @@ Func _TwitchGet()
 			Local $iFlags = $eIsStream
 			If Json_ObjGet($aData2[$iX], "type") = "vodcast" Then $iFlags = BitOR($iFlags, $eVodCast)
 
-			_StreamSet(Null, Null, "", Null, "", "", "", $eTwitch, $sUserID, $iFlags, $sGameID)
+			_StreamSet("", "", "", "", "", "", "", $eTwitch, $sUserID, $iFlags, $sGameID)
 		Next
 		If UBound($aData) <> 100 Then Return "Potato on a Stick"
 	WEnd
@@ -297,6 +297,7 @@ EndFunc
 Func _TwitchProcessUserID()
 	Local $sUsers = "", $iCount = 0
 	For $iX = 0 To UBound($aStreams) -1
+		If $aStreams[$iX][$eService] <> $eTwitch Then ContinueLoop
 		If $aStreams[$iX][$eDisplayName] <> "" And $aStreams[$iX][$eUrl] <> "" Then ContinueLoop
 
 		$sUsers &= "&id=" & StringTrimLeft($aStreams[$iX][$eUserID], 1)
@@ -335,11 +336,11 @@ EndFunc
 Func _TwitchProcessGameID()
 	Local $sGames = "", $iCount = 0
 	For $iX = 0 To UBound($aStreams) -1
+		If $aStreams[$iX][$eService] <> $eTwitch Then ContinueLoop
 		If $aStreams[$iX][$eGame] <> "" Then ContinueLoop
 
 		For $iIndex = 0 To UBound($aStreams) -1
 			If $aStreams[$iIndex][$eGameID] = $aStreams[$iX][$eGameID] And $aStreams[$iIndex][$eGame] <> "" Then
-;~ 				If $iIndex = $iX Then ContinueLoop
 				$aStreams[$iX][$eGame] = $aStreams[$iIndex][$eGame]
 				ContinueLoop 2
 			EndIf
@@ -501,7 +502,7 @@ Func _WinHttpFetch($sDomain, $sUrl, $sHeader)
 
 	Local $iTries = 0
 	Do
-		Sleep($iTries * 5000)
+		Sleep($iTries * 6000)
 
 		Local $hOpen = _WinHttpOpen()
 		Local $hConnect = _WinHttpConnect($hOpen, $sDomain)
@@ -512,7 +513,7 @@ Func _WinHttpFetch($sDomain, $sUrl, $sHeader)
 		_WinHttpCloseHandle($hOpen)
 
 		$iTries += 1
-	Until (IsArray($asResponse) And StringSplit($asResponse[0], " ")[2] = 200) Or $iTries = 5
+	Until (IsArray($asResponse) And StringSplit($asResponse[0], " ")[2] = 200) Or $iTries = 6
 
 	If $asResponse = 0 Then
 		_CW("_WinHttpFetch failed")
@@ -1381,9 +1382,15 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 		ReDim $aStreams[$iIndex +1][$eMax]
 	EndIf
 
-	If $sDisplayName <> Null Then $aStreams[$iIndex][$eDisplayName] = $sDisplayName
-	If $sUrl <> Null Then $aStreams[$iIndex][$eUrl] = $sUrl
-	If $sGame <> Null Then $aStreams[$iIndex][$eGame] = $sGame
+	If $iService = $eTwitch Then
+		If $aStreams[$iIndex][$eGameID] <> $iGameID Then
+			$aStreams[$iIndex][$eGame] = ""
+		EndIf
+	EndIf
+
+	If $sDisplayName <> "" Then $aStreams[$iIndex][$eDisplayName] = $sDisplayName
+	If $sUrl <> "" Then $aStreams[$iIndex][$eUrl] = $sUrl
+	If $sGame <> "" Then $aStreams[$iIndex][$eGame] = $sGame
 	$aStreams[$iIndex][$ePreview] = $sThumbnail
 	$aStreams[$iIndex][$eCreated] = $sCreated
 	$aStreams[$iIndex][$eTime] = $sTime
@@ -1495,6 +1502,15 @@ Func _OtherSet($sText, $iFlags, $sUrl = "", $fFunc = "")
 	If $fFunc <> "" Then TrayItemSetOnEvent(-1, $fFunc)
 EndFunc
 
+Func _ShouldSkipUpdate($sUpdateCheck, $iTime)
+	If $sCheckTime = $iTime Then
+		_CW("Skipping because the " & $sUpdateCheck & " update check has already been run")
+		Return 1
+	EndIf
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", $iTime)
+	$sCheckTime = $iTime
+EndFunc
+
 Func _CheckUpdates($iForce = False)
 	If _InstallType() = "AppX" Then Return
 
@@ -1504,17 +1520,11 @@ Func _CheckUpdates($iForce = False)
 	If (Not $iForce) Then
 		Switch $sUpdateCheck
 			Case "Daily"
-			If $sCheckTime = @YDAY Then Return
-			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", @YDAY)
-			$sCheckTime = @YDAY
+				If _ShouldSkipUpdate($sUpdateCheck, @YDAY) Then Return
 			Case "Weekly"
-			If $sCheckTime = _WeekNumberISO() Then Return
-			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", _WeekNumberISO())
-			$sCheckTime = _WeekNumberISO()
+				If _ShouldSkipUpdate($sUpdateCheck, _WeekNumberISO()) Then Return
 			Case "Monthly"
-			If $sCheckTime = @MON Then Return
-			RegWrite("HKCU\SOFTWARE\StreamHelper\", "CheckTime", "REG_SZ", @MON)
-			$sCheckTime = @MON
+				If _ShouldSkipUpdate($sUpdateCheck, @MON) Then Return
 			Case Else
 				Return
 		EndSwitch
