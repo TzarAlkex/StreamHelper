@@ -102,6 +102,8 @@ $sCheckTime = RegRead("HKCU\SOFTWARE\StreamHelper\", "CheckTime")
 If @error Then $sCheckTime = "0"
 $sRefreshMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "RefreshMinutes")
 If @error Then $sRefreshMinutes = 3
+$sIgnoreMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "IgnoreMinutes")
+If @error Then $sIgnoreMinutes = 0
 
 $sTwitchId = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchId")
 $sTwitchName = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchName")
@@ -138,7 +140,7 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eTimer, $eMax
 Global Enum $eTwitch, $eSmashcast, $eMixer
 Global Enum Step *2 $eVodCast, $eIsLink, $eIsText, $eIsStream
 
@@ -166,7 +168,7 @@ Global $idLabel, $idQuality, $idUrl
 _GuiCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idTwitchInput, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idTwitchInput, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -607,7 +609,7 @@ Func _TrayRefresh()
 
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				$aStreams[$iX][$eTrayId] = TrayCreateItem($sTrayText, -1, 0)
-				If $aStreams[$iX][$eFlags] = $eIsStream And StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 And StringInStr($sDisplayName, "[v] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
+				If $aStreams[$iX][$eFlags] = $eIsStream And StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 And StringInStr($sDisplayName, "[v] ", $STR_CASESENSE, 1, 1, 8) = 0 And TimerDiff($aStreams[$iX][$eTimer]) > $sIgnoreMinutes * 1000 Then
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> True Then $NewText &= " | " & $aStreams[$iX][$eGame]
 					$sNew &= $NewText & @CRLF
@@ -1083,6 +1085,11 @@ Func _SettingsCreate()
 	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
 	GUICtrlSetLimit(-1, 120, 3)
 
+	GUICtrlCreateLabel("Minutes to ignore repeat notifications", 155, 40)
+	$idIgnoreMinutes = GUICtrlCreateInput($sIgnoreMinutes, 155, 60, 80)
+	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
+	GUICtrlSetLimit(-1, 120, 3)
+
 	If _InstallType() <> "AppX" Then
 		GUICtrlCreateLabel("Check for updates", 20, 90)
 		$idUpdates = GUICtrlCreateCombo("", 20, 110, 80)
@@ -1169,6 +1176,13 @@ Func _SettingsRefresh()
 	If $sNew = $sRefreshMinutes Then Return
 	$sRefreshMinutes = $sNew
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "RefreshMinutes", "REG_SZ", $sRefreshMinutes)
+EndFunc
+
+Func _SettingsIgnore()
+	Local $sNew = GUICtrlRead($idIgnoreMinutes)
+	If $sNew = $sIgnoreMinutes Then Return
+	$sIgnoreMinutes = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "IgnoreMinutes", "REG_SZ", $sIgnoreMinutes)
 EndFunc
 
 Func _CheckNow()
@@ -1333,6 +1347,7 @@ EndFunc
 
 Func _SettingsSaveAll()
 	_SettingsRefresh()
+	_SettingsIgnore()
 	_SettingsUpdateCheck()
 	_SettingsLog()
 EndFunc
@@ -1420,6 +1435,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eFlags] = $iFlags
 	$aStreams[$iIndex][$eUserID] = $iUserID
 	$aStreams[$iIndex][$eGameID] = $iGameID
+	$aStreams[$iIndex][$eTimer] = TimerInit()
 
 	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
 ;~ 		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
