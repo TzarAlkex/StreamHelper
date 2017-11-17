@@ -572,8 +572,8 @@ Func _TrayRefresh()
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> True Then $NewText &= " | " & $aStreams[$iX][$eGame]
 
-					If $sIgnoreMinutes * 1000 > 0 Then
-						If TimerDiff($aStreams[$iX][$eTimer]) > $sIgnoreMinutes * 1000 Then
+					If $sIgnoreMinutes > 0 Then
+						If TimerDiff($aStreams[$iX][$eTimer]) * 1000 * 60 > $sIgnoreMinutes Then
 							$aStreams[$iX][$eTimer] = TimerInit()
 
 							$sNew &= $NewText & @CRLF
