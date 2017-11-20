@@ -278,16 +278,16 @@ Func _TwitchGetGames()
 		$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/streams/?game=" & $sName, "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
 		If IsObj($oJSON) = False Then Return
 
-		$oChannel = Json_ObjGet($oJSON, "streams")
+		$oStreams = Json_ObjGet($oJSON, "streams")
 
-		For $iY = 0 To UBound($oChannel) -1
-			$oChannel2 = Json_ObjGet($oChannel[$iY], "channel")
+		For $iY = 0 To UBound($oStreams) -1
+			$oChannel = Json_ObjGet($oStreams[$iY], "channel")
 
-			$sUrl = Json_ObjGet($oChannel2, "url")
-			$sName = Json_ObjGet($oChannel2, "display_name")
+			$sUrl = Json_ObjGet($oChannel, "url")
+			$sName = Json_ObjGet($oChannel, "display_name")
 			If StringIsASCII($sName) = 0 Then $sName = Json_ObjGet($oChannel, "name")
-			$sGame = Json_ObjGet($oChannel[$iY], "game")
-			$sUserID = "T" & Json_ObjGet($oChannel2, "_id")
+			$sGame = Json_ObjGet($oStreams[$iY], "game")
+			$sUserID = "T" & Json_ObjGet($oChannel, "_id")
 
 			_StreamSet($sName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID)
 		Next
