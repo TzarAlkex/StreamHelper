@@ -339,8 +339,13 @@ Func _TwitchProcessGameID()
 		If $aStreams[$iX][$eService] <> $eTwitch Then ContinueLoop
 		If $aStreams[$iX][$eGame] <> "" Then ContinueLoop
 
+		If $aStreams[$iX][$eGameID] == "" Then
+			$aStreams[$iX][$eGame] = "No game selected"
+			ContinueLoop
+		EndIf
+
 		For $iIndex = 0 To UBound($aStreams) -1
-			If $aStreams[$iIndex][$eGameID] = $aStreams[$iX][$eGameID] And $aStreams[$iIndex][$eGame] <> "" Then
+			If $aStreams[$iIndex][$eGameID] == $aStreams[$iX][$eGameID] And $aStreams[$iIndex][$eGame] <> "" Then
 				$aStreams[$iX][$eGame] = $aStreams[$iIndex][$eGame]
 				ContinueLoop 2
 			EndIf
