@@ -139,7 +139,7 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eTimer, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eTimer, $eStreamID, $eOldStreamID, $eMax
 Global Enum $eTwitch, $eSmashcast, $eMixer
 Global Enum Step *2 $eVodCast, $eIsLink, $eIsText, $eIsStream
 
@@ -235,13 +235,14 @@ Func _TwitchGet()
 		If UBound($aData2) = 0 Then ContinueLoop
 
 		For $iX = 0 To UBound($aData2) -1
+			$sStreamID = Json_ObjGet($aData2[$iX], "id")
 			$sUserID = "T" & Json_ObjGet($aData2[$iX], "user_id")
 			$sGameID = Json_ObjGet($aData2[$iX], "game_id")
 
 			Local $iFlags = $eIsStream
 			If Json_ObjGet($aData2[$iX], "type") = "vodcast" Then $iFlags = BitOR($iFlags, $eVodCast)
 
-			_StreamSet("", "", "", "", "", "", "", $eTwitch, $sUserID, $iFlags, $sGameID)
+			_StreamSet("", "", "", "", "", "", "", $eTwitch, $sUserID, $sStreamID, $iFlags, $sGameID)
 		Next
 		If UBound($aData) <> 100 Then Return "Potato on a Stick"
 	WEnd
@@ -281,15 +282,16 @@ Func _TwitchGetGames()
 		$oStreams = Json_ObjGet($oJSON, "streams")
 
 		For $iY = 0 To UBound($oStreams) -1
-			$oChannel = Json_ObjGet($oStreams[$iY], "channel")
+			$sStreamID = Json_ObjGet($oStreams[$iY], "_id")
 
+			$oChannel = Json_ObjGet($oStreams[$iY], "channel")
 			$sUrl = Json_ObjGet($oChannel, "url")
 			$sName = Json_ObjGet($oChannel, "display_name")
 			If StringIsASCII($sName) = 0 Then $sName = Json_ObjGet($oChannel, "name")
-			$sGame = Json_ObjGet($oStreams[$iY], "game")
+			$sGame = Json_ObjGet($oChannel, "game")
 			$sUserID = "T" & Json_ObjGet($oChannel, "_id")
 
-			_StreamSet($sName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID)
+			_StreamSet($sName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID, $sStreamID)
 		Next
 	Next
 EndFunc
@@ -418,6 +420,8 @@ Func _SmashcastGet()
 
 			$sGame = Json_ObjGet($oLivestream[$iX], "category_name")
 
+			$sStreamID = Json_ObjGet($oLivestream[$iX], "media_id")
+
 			$sCreated = Json_ObjGet($oLivestream[$iX], "media_live_since")
 
 			$asSplit = StringSplit($sCreated, " ")
@@ -441,7 +445,7 @@ Func _SmashcastGet()
 
 			$sTime = StringFormat("%02i:%02i", $iHours, $iMinutes)
 
-			_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eSmashcast, $sUserID)
+			_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $eSmashcast, $sUserID, $sStreamID)
 		Next
 		If UBound($oLivestream) <> 100 Then Return "Potato on a Stick"
 		$iOffset += 100
@@ -577,16 +581,15 @@ Func _TrayRefresh()
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $aStreams[$iX][$eGame] <> "" And $bBlobFirstRun <> True Then $NewText &= " | " & $aStreams[$iX][$eGame]
 
-					If $sIgnoreMinutes > 0 Then
-						If TimerDiff($aStreams[$iX][$eTimer]) * 1000 * 60 > $sIgnoreMinutes Then
+					If $aStreams[$iX][$eStreamID] = 404 Or $aStreams[$iX][$eStreamID] <> $aStreams[$iX][$eOldStreamID] Then
+						$aStreams[$iX][$eOldStreamID] = $aStreams[$iX][$eStreamID]
+
+						If $sIgnoreMinutes = 0 Or TimerDiff($aStreams[$iX][$eTimer]) * 1000 * 60 > $sIgnoreMinutes Then
 							$aStreams[$iX][$eTimer] = TimerInit()
 
 							$sNew &= $NewText & @CRLF
-					If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
-				EndIf
-					Else
-						$sNew &= $NewText & @CRLF
-						If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
+							If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
+						EndIf
 					EndIf
 				EndIf
 				TrayItemSetOnEvent( -1, _TrayStuff)
@@ -1382,7 +1385,7 @@ Func _DeleteOldLogs()
 	_CW("Deleted old logs")
 EndFunc
 
-Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID = "", $iFlags = $eIsStream, $iGameID = "")
+Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID, $sStreamID = 404, $iFlags = $eIsStream, $iGameID = "")
 	If $sDisplayName <> "" Then
 		_CW("Found streamer: " & $sDisplayName)
 	Else
@@ -1414,6 +1417,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eFlags] = $iFlags
 	$aStreams[$iIndex][$eUserID] = $iUserID
 	$aStreams[$iIndex][$eGameID] = $iGameID
+	$aStreams[$iIndex][$eStreamID] = $sStreamID
 
 	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
 ;~ 		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
