@@ -573,6 +573,8 @@ Func _TrayRefresh()
 			Local $sTrayText = $sDisplayName
 			If $aStreams[$iX][$eGame] <> "" Then $sTrayText &= " | " & $aStreams[$iX][$eGame]
 
+			$sTrayText = StringReplace($sTrayText, "&", "&&")
+
 			$aStreams[$iX][$eOnline] = False
 
 			If $aStreams[$iX][$eTrayId] = 0 Then
