@@ -2,8 +2,8 @@
 #AutoIt3Wrapper_Icon=Svartnos.ico
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Description=StreamHelper
-#AutoIt3Wrapper_Res_Fileversion=1.1.0.0
-#AutoIt3Wrapper_Res_ProductVersion=1.1.0.0
+#AutoIt3Wrapper_Res_Fileversion=1.2.0.0
+#AutoIt3Wrapper_Res_ProductVersion=1.2.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=My right shoe
 #AutoIt3Wrapper_Run_Au3Stripper=y
 #Au3Stripper_Parameters=/so /mi=100
