@@ -54,6 +54,10 @@ My only idea is that she went offline just as I started and that livestreamer ma
 
 wtf fix!
 
+*Notifications are not optimal (only 4 rows are seen, so if there's more than 4 streams you just don't see the extras)
+
+*the fav sound plays without notification when using _TrayTipThis4() (maybe a bug if there's only 1 item in changed list?) (unknown if it happens on new streams also).
+
 #ce ----------------------------------------------------------------------------
 
 #include <AutoItConstants.au3>
@@ -807,17 +811,7 @@ Func _MAIN()
 
 	If $sChanged <> "" Then
 		If @OSBuild >= 10240 Then
-			$iSkipped = 0
-			While StringLen($sChanged) > 140
-				$iPos = StringInStr($sChanged, @CRLF, $STR_CASESENSE, -1)
-				$sChanged = StringLeft($sChanged, $iPos -1)
-				$iSkipped += 1
-			WEnd
-			If $iSkipped > 0 Then
-				$sChanged &= @CRLF & "+" & $iSkipped & " more"
-			EndIf
-
-			TrayTip("Changed game", $sChanged, 10)
+			_TrayTipThis5($sNew)
 		Else
 			$iSkipped = 0
 			While StringLen($sChanged) > 240
@@ -845,17 +839,7 @@ Func _MAIN()
 			If StringLen($sReplaced) <> $iReplacedLength Then $sReplaced &= "..."
 			TrayTip("Now streaming", $sReplaced, 10)
 		ElseIf @OSBuild >= 10240 Then
-			$iSkipped = 0
-			While StringLen($sNew) > 140
-				$iPos = StringInStr($sNew, @CRLF, $STR_CASESENSE, -1)
-				$sNew = StringLeft($sNew, $iPos -1)
-				$iSkipped += 1
-			WEnd
-			If $iSkipped > 0 Then
-				$sNew &= @CRLF & "+" & $iSkipped & " more"
-			EndIf
-
-			TrayTip("Now streaming", $sNew, 10)
+			_TrayTipThis5($sNew)
 		Else
 			$iSkipped = 0
 			While StringLen($sNew) > 240
@@ -918,6 +902,39 @@ Func _TrayTipThis3($sPeople, $sDesc, $iLines)
 		Next
 		$sText = StringTrimRight($sText, 2)
 		TrayTip($sDesc, $sText, 10)
+	Next
+EndFunc
+
+Func _TrayTipThis4($sPeople, $iLines = 1)
+	$asSplit = StringSplit($sPeople, @CRLF, $STR_ENTIRESPLIT)
+
+	For $iX = 1 To $asSplit[0] Step $iLines
+		Local $sText = ""
+		If $iLines > 1 Then
+			$sText &= $asSplit[$iX] & @CRLF
+			If $iX <> $asSplit[0] Then $sText &= $asSplit[$iX+1] & @CRLF
+		Else
+			$sText &= $asSplit[$iX] & @CRLF
+		EndIf
+		$sText = StringTrimRight($sText, 2)
+		If $asSplit[0] - $iX - ($iLines - 1) <= 0 Then
+			TrayTip("Now streaming", $sText, 10)
+		Else
+			TrayTip("Now streaming (" & $asSplit[0] - $iX - ($iLines - 1) & " more)", $sText, 10)
+		EndIf
+	Next
+EndFunc
+
+Func _TrayTipThis5($sPeople)
+	$asSplit = StringSplit($sPeople, @CRLF, $STR_ENTIRESPLIT)
+
+	For $iX = 1 To $asSplit[0]
+		Local $sText = $asSplit[$iX]
+		If $asSplit[0] - $iX <= 0 Then
+			TrayTip("Now streaming", $sText, 10)
+		Else
+			TrayTip("Now streaming (" & $asSplit[0] - $iX & " more)", $sText, 10)
+		EndIf
 	Next
 EndFunc
 
