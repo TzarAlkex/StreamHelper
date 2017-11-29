@@ -1570,13 +1570,9 @@ Func _CheckUpdates($iForce = False)
 
 	$sTag = Json_ObjGet($oJSON, "tag_name")
 
-	$iInternalVersion = "v1.2"
-	$iHigherVersion = _VersionCompare($sTag, $iInternalVersion)
+	$iInternalVersion = "1.2.0.0"
 
-	If @error Then
-		_OtherSet("Update check failed", $eIsText)
-		Return
-	ElseIf $iHigherVersion = 1 Then
+	If $iInternalVersion <> $sTag Then
 		_OtherSet("Update found! Click to open website", $eIsLink, "https://github.com/TzarAlkex/StreamHelper/releases", _TrayStuff)
 		Return
 	EndIf
