@@ -781,11 +781,6 @@ EndFunc
 Func _MAIN()
 	AdlibUnRegister(_MAIN)
 
-	If (Not _WinAPI_IsInternetConnected()) Then
-		AdlibRegister(_WaitForInternet)
-		Return
-	EndIf
-
 	Global $sNew = "", $sChanged = ""
 	_CheckUpdates()
 
