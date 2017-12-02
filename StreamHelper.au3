@@ -1522,15 +1522,14 @@ Func _WaitForInternet()
 	EndIf
 EndFunc
 
-Func _OtherSet($sText, $iFlags, $sUrl = "", $fFunc = "")
+Func _OtherSet($sText, $iFlags, $sUrl = "")
 	$hTray = TrayItemGetHandle(0)
 	$iCount = _GUICtrlMenu_GetItemCount($hTray)
 	ReDim $aStreams[UBound($aStreams) +1][$eMax]
 	$aStreams[UBound($aStreams) -1][$eDisplayName] = $sText
-	If $sUrl <> "" Then $aStreams[UBound($aStreams) -1][$eUrl] = $sUrl
 	$aStreams[UBound($aStreams) -1][$eTrayId] = TrayCreateItem($sText, -1, $iCount -3)
 	$aStreams[UBound($aStreams) -1][$eFlags] = $iFlags
-	If $fFunc <> "" Then TrayItemSetOnEvent(-1, $fFunc)
+	If $sUrl <> "" Then $aStreams[UBound($aStreams) -1][$eUrl] = $sUrl
 EndFunc
 
 Func _ShouldSkipUpdate($sUpdateCheck, $iTime)
@@ -1573,7 +1572,8 @@ Func _CheckUpdates($iForce = False)
 	$iInternalVersion = "1.2.0.0"
 
 	If $iInternalVersion <> $sTag Then
-		_OtherSet("Update found! Click to open website", $eIsLink, "https://github.com/TzarAlkex/StreamHelper/releases", _TrayStuff)
+		_OtherSet("Update found! Click to open website", $eIsLink, "https://github.com/TzarAlkex/StreamHelper/releases")
+		TrayItemSetOnEvent(-1, _TrayStuff)
 		Return
 	EndIf
 EndFunc
