@@ -19,10 +19,10 @@ I highly recommend installing [Streamlink](https://streamlink.github.io/) to get
 
 Look at their [Streamlink - User guide](https://streamlink.github.io/#user-guide) for install help and how to configure it to use your video player. If using with Twitch, you may want to [authenticate Streamlink](https://streamlink.github.io/cli.html#authenticating-with-twitch).
 
-If [Streamlink](https://streamlink.github.io/) is found on your computer, it will be used for playing and downloading streams. Using the "Play from clipboard" functionality, you can use Streamhelper to launch streams or download from any sites supported by [Streamlink](https://streamlink.github.io/) (YMMV, I have only tested a few of the ~180 or so sites listed by [Streamlink - Plugins](https://streamlink.github.io/plugin_matrix.html) as supported).
+If Streamlink is found on your computer, it will be used for playing and downloading streams. Using the "Play from clipboard" functionality, you can use Streamhelper to launch streams or download from any sites supported by Streamlink (YMMV, I have only tested a few of the ~180 or so sites listed by [Streamlink - Plugins](https://streamlink.github.io/plugin_matrix.html) as supported).
 
-If [Streamlink](https://streamlink.github.io/) is not found streams will open in your browser. Downloading is not available without [Streamlink](https://streamlink.github.io/).
+If Streamlink is not found streams will open in your browser. Downloading is not available without Streamlink.
 
-Needless to say, I highly recommend installing [Streamlink](https://streamlink.github.io/) so you get the best usage from Streamhelper.
+Needless to say, I highly recommend installing Streamlink so you get the best usage from this.
 
 Twitch and Hitbox (now Smashcast) API's were largely implemented by glancing at the python-twitch and Hitboxy python libs.
