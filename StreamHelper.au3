@@ -236,7 +236,10 @@ Func _TwitchGet()
 		If IsObj($oJSON) = False Then Return
 
 		$aData2 = Json_ObjGet($oJSON, "data")
-		If UBound($aData2) = 0 Then ContinueLoop
+		If UBound($aData2) = 0 Then
+			If UBound($aData) <> 100 Then Return "Potato on a Stick"
+			ContinueLoop
+		EndIf
 
 		For $iX = 0 To UBound($aData2) -1
 			$sStreamID = Json_ObjGet($aData2[$iX], "id")
