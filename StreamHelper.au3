@@ -607,8 +607,8 @@ Func _TrayRefresh()
 
 				Local $NewText = $aStreams[$iX][$eDisplayName]
 				If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
-				$sChanged &= $NewText & @CRLF
 
+				$sChanged &= $NewText & @CRLF
 				If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
 			EndIf
 		Else
@@ -800,6 +800,9 @@ Func _MAIN()
 	Else
 		TraySetIcon()
 	EndIf
+
+	_CW("New streamer: " & StringReplace($sNew, @CRLF, ", "))
+	_CW("Streamer changed game: " & StringReplace($sChanged, @CRLF, ", "))
 
 	If $bFavoriteFound = True Then
 		SoundPlay(@ScriptDir & "\Authentic A-10 Warthog sounds TM.wav")
