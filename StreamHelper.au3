@@ -56,8 +56,6 @@ wtf fix!
 
 *Notifications are not optimal (only 4 rows are seen, so if there's more than 4 streams you just don't see the extras)
 
-*the fav sound plays without notification when using _TrayTipThis4() (maybe a bug if there's only 1 item in changed list?) (unknown if it happens on new streams also).
-
 #ce ----------------------------------------------------------------------------
 
 #include <AutoItConstants.au3>
@@ -796,6 +794,7 @@ Func _MAIN()
 
 	;https://www.autoitscript.com/forum/topic/146955-solved-remove-crlf-at-the-end-of-text-file/?do=findComment&comment=1041088
 	If StringRight($sNew, 2) = @CRLF Then $sNew = StringTrimRight($sNew, 2)
+	If StringRight($sChanged, 2) = @CRLF Then $sChanged = StringTrimRight($sChanged, 2)
 	If (Not @Compiled) Then
 		TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
 	Else
@@ -809,7 +808,7 @@ Func _MAIN()
 
 	If $sChanged <> "" Then
 		If @OSBuild >= 10240 Then
-			_TrayTipThis5($sNew)
+			_TrayTipThis5($sChanged, "Changed game")
 		Else
 			$iSkipped = 0
 			While StringLen($sChanged) > 240
@@ -837,7 +836,7 @@ Func _MAIN()
 			If StringLen($sReplaced) <> $iReplacedLength Then $sReplaced &= "..."
 			TrayTip("Now streaming", $sReplaced, 10)
 		ElseIf @OSBuild >= 10240 Then
-			_TrayTipThis5($sNew)
+			_TrayTipThis5($sNew, "Now streaming")
 		Else
 			$iSkipped = 0
 			While StringLen($sNew) > 240
@@ -923,15 +922,15 @@ Func _TrayTipThis4($sPeople, $iLines = 1)
 	Next
 EndFunc
 
-Func _TrayTipThis5($sPeople)
+Func _TrayTipThis5($sPeople, $sText)
 	$asSplit = StringSplit($sPeople, @CRLF, $STR_ENTIRESPLIT)
 
-	For $iX = 1 To $asSplit[0]
-		Local $sText = $asSplit[$iX]
-		If $asSplit[0] - $iX <= 0 Then
-			TrayTip("Now streaming", $sText, 10)
+	For $iX = $asSplit[0] To 1 Step -1
+		Local $sName = $asSplit[$iX]
+		If $iX = 1 Then
+			TrayTip($sText, $sName, 10)
 		Else
-			TrayTip("Now streaming (" & $asSplit[0] - $iX & " more)", $sText, 10)
+			TrayTip($sText & " (" & $iX -1 & " more)", $sName, 10)
 		EndIf
 	Next
 EndFunc
