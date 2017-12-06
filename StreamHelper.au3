@@ -56,6 +56,12 @@ wtf fix!
 
 *Notifications are not optimal (only 4 rows are seen, so if there's more than 4 streams you just don't see the extras)
 
+*Check if AutoIt can use the appx protocol
+ms-appx:///Relative/Path/To/Content.jpg
+
+*Remake icon?
+*Or redo in better quality (Square310x310Logo.scale-400.png is just a resized Square310x310Logo.scale-200.png)
+
 #ce ----------------------------------------------------------------------------
 
 #include <AutoItConstants.au3>
@@ -1378,7 +1384,7 @@ Func _CW($sMessage)
 	If $sLog = 1 Then
 		_DeleteOldLogs()
 
-		Static Local $hLog = FileOpen(@ScriptDir & "\log" & @WDAY & ".txt", $FO_APPEND)
+		Static Local $hLog = FileOpen(@LocalAppDataDir & "\StreamHelper\logs\log" & @WDAY & ".txt", $FO_APPEND + $FO_CREATEPATH)
 		If $hLog Then _FileWriteLog($hLog, $sMessage)
 	EndIf
 EndFunc
@@ -1388,7 +1394,7 @@ Func _DeleteOldLogs()
 	If $iRunOnce = True Then Return
 	$iRunOnce = True
 
-	$asLogs = _FileListToArray(@ScriptDir, "log*.txt", $FLTA_FILES, True)
+	$asLogs = _FileListToArray(@LocalAppDataDir & "\StreamHelper\logs", "log*.txt", $FLTA_FILES, True)
 	If @error Then Return
 	Local $asLogsTime[$asLogs[0]][2]
 	For $iX = 1 To $asLogs[0]
