@@ -89,6 +89,7 @@ If _Singleton("AutoIt window with hopefully a unique title|Ketchup the second", 
 	Exit
 EndIf
 
+TraySetToolTip("StreamHelper")
 If (Not @Compiled) Then
 	TraySetIcon(@ScriptDir & "\Svartnos.ico", -1)
 EndIf
