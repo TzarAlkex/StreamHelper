@@ -152,7 +152,7 @@ Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStat
 Global Enum $eTwitch, $eSmashcast, $eMixer
 Global Enum Step *2 $eVodCast, $eIsLink, $eIsText, $eIsStream
 
-Global Enum $iStartupTaskStateError = -1, $iStartupTaskStateEnabled, $iStartupTaskStateDisabled, $iStartupTaskStateDisabledByUser
+Global Enum $iStartupTaskStateError = -1, $iStartupTaskStateDisabled, $iStartupTaskStateDisabledByUser, $iStartupTaskStateEnabled, $iStartupTaskStateDisabledByPolicy, $iStartupTaskStateEnabledByPolicy
 
 Global $sNew
 Global $aStreams[0][$eMax]
@@ -1221,15 +1221,21 @@ Func _CentennialStartupStatus($iStatus)
 	If $iStatus = $iStartupTaskStateError Then
 		GUICtrlSetState($idStartup, $GUI_INDETERMINATE)
 		GUICtrlSetTip($idStartupTooltip, "Error?")
-	ElseIf $iStatus = $iStartupTaskStateEnabled Then
-		GUICtrlSetState($idStartup, $GUI_CHECKED)
-		GUICtrlSetTip($idStartupTooltip, "")
 	ElseIf $iStatus = $iStartupTaskStateDisabled Then
 		GUICtrlSetState($idStartup, $GUI_UNCHECKED)
 		GUICtrlSetTip($idStartupTooltip, "")
 	ElseIf $iStatus = $iStartupTaskStateDisabledByUser Then
 		GUICtrlSetState($idStartup, $GUI_DISABLE)
 		GUICtrlSetTip($idStartupTooltip, "Can't set autostart if disabled from Task Manager. Enable from there first.")
+	ElseIf $iStatus = $iStartupTaskStateEnabled Then
+		GUICtrlSetState($idStartup, $GUI_CHECKED)
+		GUICtrlSetTip($idStartupTooltip, "")
+	ElseIf $iStatus = $iStartupTaskStateDisabledByPolicy Then
+		GUICtrlSetState($idStartup, $GUI_DISABLE)
+		GUICtrlSetTip($idStartupTooltip, "The task is disabled by the administrator or group policy.")
+	ElseIf $iStatus = $iStartupTaskStateEnabledByPolicy Then
+		GUICtrlSetState($idStartup, $GUI_DISABLE)
+		GUICtrlSetTip($idStartupTooltip, "The task is enabled by the administrator or group policy.")
 	EndIf
 EndFunc
 
