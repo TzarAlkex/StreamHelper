@@ -1,11 +1,17 @@
 # StreamHelper
 
-![Screenshot #1](https://raw.githubusercontent.com/TzarAlkex/StreamHelper/master/Screenshot1.png "Screenshot #1")
-![Screenshot #2](https://raw.githubusercontent.com/TzarAlkex/StreamHelper/master/Screenshot2.png "Screenshot #2")
-![Screenshot #3](https://raw.githubusercontent.com/TzarAlkex/StreamHelper/master/Screenshot3.png "Screenshot #3")
-![Screenshot #4](https://raw.githubusercontent.com/TzarAlkex/StreamHelper/master/Screenshot4.png "Screenshot #4")
+### A desktop notifier for Twitch and Mixer
 
-A desktop notifier for Twitch, Mixer and Smashcast.
+![Screenshot #1](./Screenshot1.png?raw=true "Screenshot #1")
+![Screenshot #2](./Screenshot2.png?raw=true "Screenshot #2")
+![Screenshot #3](./Screenshot3.png?raw=true "Screenshot #3")
+![Screenshot #4](./Screenshot4.png?raw=true "Screenshot #4")
+
+## Install
+
+Download StreamHelper from the [Microsoft Store](https://www.microsoft.com/store/apps/9P776V8N7B5B) or [GitHub](https://github.com/TzarAlkex/StreamHelper/releases/latest)
+
+## Description
 
 Simply add your username in the settings for the respective service, click "Get ID", and it will start looking for streams from the people you follow (also followed games on Twitch).
 
@@ -19,10 +25,29 @@ I highly recommend installing [Streamlink](https://streamlink.github.io/) to get
 
 Look at their [Streamlink - User guide](https://streamlink.github.io/#user-guide) for install help and how to configure it to use your video player. If using with Twitch, you may want to [authenticate Streamlink](https://streamlink.github.io/cli.html#authenticating-with-twitch).
 
-If Streamlink is found on your computer, it will be used for playing and downloading streams. Using the "Play from clipboard" functionality, you can use Streamhelper to launch streams or download from any sites supported by Streamlink (YMMV, I have only tested a few of the ~180 or so sites listed by [Streamlink - Plugins](https://streamlink.github.io/plugin_matrix.html) as supported).
+If Streamlink is found on your computer, it will be used for playing and downloading streams. Using the "Play from clipboard" functionality, you can use Streamhelper to launch streams or download from sites supported by Streamlink (YMMV, see [Streamlink - Plugins](https://streamlink.github.io/plugin_matrix.html)).
 
 If Streamlink is not found streams will open in your browser. Downloading is not available without Streamlink.
 
-Needless to say, I highly recommend installing Streamlink so you get the best usage from this.
-
 Twitch and Hitbox (now Smashcast) API's were largely implemented by glancing at the python-twitch and Hitboxy python libs.
+
+## Compile or Run from source
+
+1. Install AutoIt v3 (and optionally SciTE4AutoIt3 for the best experience) from http://autoitscript.com/
+2. Open "StreamHelper.au3" in SciTE and click Tools > Compile or Go
+
+## Credits
+
+Made by Alexander Samuelsson
+
+### Uses code from
+
+Ward - https://www.autoitscript.com/forum/topic/148114-jsmn-a-non-strict-json-udf/
+
+trancexx - https://www.autoitscript.com/forum/topic/84133-winhttp-functions/
+
+KaFu - https://www.autoitscript.com/forum/topic/95850-url-encoding/?do=findComment&comment=689045
+
+Mat - https://www.autoitscript.com/forum/topic/115222-set-the-tray-icon-as-a-hicon/
+
+SmOke_N - https://www.autoitscript.com/forum/topic/95383-sorting-numbers/?do=findComment&comment=685701
