@@ -2,7 +2,7 @@
 *log*.txt
 *.zip
 *.py
-*test.au3
+*test*
 *.orig
 *.json
 *_stripped.au3
