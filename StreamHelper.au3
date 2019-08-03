@@ -82,6 +82,7 @@ ms-appx:///Relative/Path/To/Content.jpg
 #include <UpDownConstants.au3>
 #include "WinHttp.au3"
 #include <GuiMenu.au3>
+#include <String.au3>
 
 If _Singleton("AutoIt window with hopefully a unique title|Ketchup the second", 1) = 0 Then
 	$iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Ketchup the second")
@@ -119,6 +120,8 @@ $sMixerId = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerId")
 $sMixerName = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerName")
 $sSmashcastId = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastId")
 $sSmashcastName = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastName")
+$sYoutubeId = RegRead("HKCU\SOFTWARE\StreamHelper\", "YoutubeId")
+$sYoutubeName = RegRead("HKCU\SOFTWARE\StreamHelper\", "YoutubeName")
 
 Global $sFavoritesNew = RegRead("HKCU\SOFTWARE\StreamHelper\", "Favorites")
 If $sFavoritesNew <> "" Then $sFavoritesNew &= @LF
@@ -149,7 +152,7 @@ Local $idExit = TrayCreateItem("Exit")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
 Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eTimer, $eStreamID, $eOldStreamID, $eMax
-Global Enum $eTwitch, $eSmashcast, $eMixer
+Global Enum $eTwitch, $eSmashcast, $eMixer, $eYoutube
 Global Enum Step *2 $eVodCast, $eIsLink, $eIsText, $eIsStream
 
 Global Enum $iStartupTaskStateError = -1, $iStartupTaskStateDisabled, $iStartupTaskStateDisabledByUser, $iStartupTaskStateEnabled, $iStartupTaskStateDisabledByPolicy, $iStartupTaskStateEnabledByPolicy
@@ -176,7 +179,7 @@ Global $idLabel, $idQuality, $idUrl
 _GuiCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idTwitchInput, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idTwitchInput, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -467,7 +470,7 @@ Func _SmashcastGet()
 EndFunc
 
 Func _SmashcastFetch($sUrl)
-	Return _WinHttpFetch("api.smashcast.tv", $sUrl, Default)
+	Return _WinHttpFetch("api.smashcast.tv", $sUrl)
 EndFunc
 #EndRegion
 
@@ -513,12 +516,74 @@ Func _MixerGet()
 EndFunc
 
 Func _MixerFetch($sUrl)
-	Return _WinHttpFetch("mixer.com", "api/v1/" & $sUrl, Default)
+	Return _WinHttpFetch("mixer.com", "api/v1/" & $sUrl)
+EndFunc
+#EndRegion
+
+#Region YOUTUBE
+Func _Youtube()
+	_CW("Youtubeing")
+	_ProgressSpecific("Y")
+
+	_YoutubeGet()
+
+	$iTrayRefresh = True
+EndFunc
+
+Func _YoutubeGet()
+	Local $sPageToken = ""
+
+	While 1
+		Local $sUrl = "subscriptions?part=snippet&channelId=" & $sYoutubeId & "&maxResults=50&pageToken=" & $sPageToken & "&fields=items%2Fsnippet%2FresourceId%2FchannelId%2CnextPageToken"
+		$oChannels = _YoutubeFetch($sUrl)
+		If IsObj($oChannels) = False Then Return
+		$aItems = Json_ObjGet($oChannels, "items")
+		If UBound($aItems) = 0 Then Return
+
+		$sPageToken = Json_ObjGet($oChannels, "nextPageToken")
+
+		For $iX = 0 To UBound($aItems) -1
+			$oSnippet = Json_ObjGet($aItems[$iX], "snippet")
+			$oResourceId = Json_ObjGet($oSnippet, "resourceId")
+			$sChannelId = Json_ObjGet($oResourceId, "channelId")
+			$sUserID = "Y" & $sChannelId
+
+			$sUrl = "search?part=snippet&channelId=" & $sChannelId & "&eventType=live&type=video&fields=items(id%2FvideoId%2Csnippet(channelTitle%2Ctitle))"
+			$oChannels = _YoutubeFetch($sUrl)
+			If IsObj($oChannels) = False Then ContinueLoop
+			$aItem = Json_ObjGet($oChannels, "items")
+			If UBound($aItem) = 0 Then ContinueLoop
+
+			$oID = Json_ObjGet($aItem[0], "id")
+			$sUrl = "https://www.youtube.com/watch?v=" & Json_ObjGet($oID, "videoId")
+
+			$oSnippet = Json_ObjGet($aItem[0], "snippet")
+			$sGame = Json_ObjGet($oSnippet, "title")
+			$sDisplayName = Json_ObjGet($oSnippet, "channelTitle")
+
+			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", "", $eYoutube, $sUserID)
+		Next
+
+		If $sPageToken = "" Then ExitLoop
+	WEnd
+
+	Return "Potato on a Stick"
+EndFunc
+
+Func _YoutubeFetch($sUrl)
+	Static Local $vCache[0][2]
+	Local $vRet = _WinHttpFetch("www.googleapis.com", "youtube/v3/" & $sUrl & "&key={YOUR_API_KEY}", Default, 2)
+	Local $oJSON = $vRet[0]
+	Local $sHeader = $vRet[1]
+	Local $sETag = _StringBetween($sHeader, 'ETag: "', '"')
+	Local $vToCache[1][2] = [[$sETag[0], $oJSON]]
+	_ArrayAdd($vCache, $vToCache)
+	Return $oJSON
 EndFunc
 #EndRegion
 
 #Region COMMON
-Func _WinHttpFetch($sDomain, $sUrl, $sHeader)
+Func _WinHttpFetch($sDomain, $sUrl, $sHeader = Default, $sReturnFormat = Default)
 	_CW("_WinHttpFetch: " & $sDomain & "/" & $sUrl & " \ " & $sHeader)
 
 	Local $iTries = 0
@@ -546,7 +611,13 @@ Func _WinHttpFetch($sDomain, $sUrl, $sHeader)
 	_CW($asResponse[1])
 
 	$oJSON = Json_Decode($asResponse[1])
-	Return $oJSON
+
+	If $sReturnFormat = Default Then
+		Return $oJSON
+	Else
+		Local $vRet[2] = [$oJSON, $asResponse[0]]
+		Return $vRet
+	EndIf
 EndFunc
 
 ;From https://www.autoitscript.com/forum/topic/95850-url-encoding/?do=findComment&comment=689045
@@ -795,6 +866,7 @@ Func _MAIN()
 	If $sTwitchId <> "" Then _TwitchNew()
 	If $sMixerId <> "" Then _Mixer()
 	If $sSmashcastId <> "" Then _Smashcast()
+	If $sYoutubeId <> "" Then _Youtube()
 
 	_CW("Getters done")
 	_TrayRefresh()
@@ -1168,6 +1240,22 @@ Func _SettingsCreate()
 	GUICtrlCreateLabel("Saved Username", 155, 160)
 	$idSmashcastName = GUICtrlCreateInput($sSmashcastName, 155, 180, 120, Default, $ES_READONLY)
 
+	GUICtrlCreateTabItem("Youtube")
+	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
+
+	GUICtrlCreateLabel(" ", 20, 70)
+	$idYoutubeInput = GUICtrlCreateInput("", 20, 90, 190)
+	_GUICtrlEdit_SetCueBanner($idYoutubeInput, "Username")
+	GUICtrlCreateButton("Get ID", 20, 120)
+	GUICtrlSetOnEvent(-1, _YoutubeGetId)
+	GUICtrlCreateButton("Reset", 155, 120)
+	GUICtrlSetOnEvent(-1, _YoutubeReset)
+
+	GUICtrlCreateLabel("Saved ID", 20, 160)
+	$idYoutubeId = GUICtrlCreateInput($sYoutubeId, 20, 180, 120, Default, $ES_READONLY)
+	GUICtrlCreateLabel("Saved Username", 155, 160)
+	$idYoutubeName = GUICtrlCreateInput($sYoutubeName, 155, 180, 120, Default, $ES_READONLY)
+
 	GUICtrlCreateTabItem("")
 
 	GUISetOnEvent($GUI_EVENT_CLOSE, _SettingsHide)
@@ -1347,6 +1435,53 @@ Func _SmashcastSet($sId, $sName)
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "SmashcastName", "REG_SZ", $sName)
 	GUICtrlSetData($idSmashcastId, $sId)
 	GUICtrlSetData($idSmashcastName, $sName)
+EndFunc
+
+Func _YoutubeGetId()
+	$sUsername = GUICtrlRead($idYoutubeInput)
+	If $sUsername = "" Then Return _GetErrored()
+	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
+	$sQuotedUsername = URLEncode($sUsername)
+
+	Switch True
+		Case True
+			$oJSON = _YoutubeFetch("channels?part=snippet&forUsername=" & $sQuotedUsername & "&fields=items(id%2Csnippet%2Ftitle)")
+			If IsObj($oJSON) = False Then ContinueCase
+			$aItems = Json_ObjGet($oJSON, "items")
+			If UBound($aItems) <> 1 Then ContinueCase
+
+			$sID = Json_ObjGet($aItems[0], "id")
+			$oSnippet = Json_ObjGet($aItems[0], "snippet")
+			$sUsername = Json_ObjGet($oSnippet, "title")
+		Case False
+			$oJSON = _YoutubeFetch("channels?part=snippet&id=" & $sQuotedUsername & "&fields=items(id%2Csnippet%2Ftitle)")
+			If IsObj($oJSON) = False Then Return _GetErrored()
+			$aItems = Json_ObjGet($oJSON, "items")
+			If UBound($aItems) <> 1 Then Return _GetErrored()
+
+			$sID = Json_ObjGet($aItems[0], "id")
+			$oSnippet = Json_ObjGet($aItems[0], "snippet")
+			$sUsername = Json_ObjGet($oSnippet, "title")
+	EndSwitch
+
+	If $sID <> "" Then
+		_YoutubeSet($sID, $sUsername)
+	Else
+		Return _GetErrored()
+	EndIf
+EndFunc
+
+Func _YoutubeReset()
+	_YoutubeSet("", "")
+EndFunc
+
+Func _YoutubeSet($sId, $sName)
+	$sYoutubeId = $sId
+	$sYoutubeName = $sName
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "YoutubeId", "REG_SZ", $sId)
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "YoutubeName", "REG_SZ", $sName)
+	GUICtrlSetData($idYoutubeId, $sId)
+	GUICtrlSetData($idYoutubeName, $sName)
 EndFunc
 
 Func _GetErrored()
@@ -1578,7 +1713,7 @@ Func _CheckUpdates($iForce = False)
 		EndSwitch
 	EndIf
 
-	$oJSON = _WinHttpFetch("api.github.com", "repos/TzarAlkex/StreamHelper/releases/latest", Default)
+	$oJSON = _WinHttpFetch("api.github.com", "repos/TzarAlkex/StreamHelper/releases/latest")
 
 	If IsObj($oJSON) = False Then
 		_OtherSet("Update check failed", $eIsText)
