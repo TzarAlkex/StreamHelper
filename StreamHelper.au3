@@ -114,14 +114,20 @@ If @error Then $sRefreshMinutes = 3
 $sIgnoreMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "IgnoreMinutes")
 If @error Then $sIgnoreMinutes = 0
 
+Global $iSmashcastEnable = False, $iYoutubeEnable = False
+
 $sTwitchId = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchId")
 $sTwitchName = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchName")
 $sMixerId = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerId")
 $sMixerName = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerName")
-$sSmashcastId = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastId")
-$sSmashcastName = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastName")
-$sYoutubeId = RegRead("HKCU\SOFTWARE\StreamHelper\", "YoutubeId")
-$sYoutubeName = RegRead("HKCU\SOFTWARE\StreamHelper\", "YoutubeName")
+If $iSmashcastEnable Then
+	$sSmashcastId = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastId")
+	$sSmashcastName = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastName")
+EndIf
+If $iYoutubeEnable Then
+	$sYoutubeId = RegRead("HKCU\SOFTWARE\StreamHelper\", "YoutubeId")
+	$sYoutubeName = RegRead("HKCU\SOFTWARE\StreamHelper\", "YoutubeName")
+EndIf
 
 Global $sFavoritesNew = RegRead("HKCU\SOFTWARE\StreamHelper\", "Favorites")
 If $sFavoritesNew <> "" Then $sFavoritesNew &= @LF
@@ -865,8 +871,8 @@ Func _MAIN()
 
 	If $sTwitchId <> "" Then _TwitchNew()
 	If $sMixerId <> "" Then _Mixer()
-	If $sSmashcastId <> "" Then _Smashcast()
-	If $sYoutubeId <> "" Then _Youtube()
+	If $iSmashcastEnable And $sSmashcastId <> "" Then _Smashcast()
+	If $iYoutubeEnable And $sYoutubeId <> "" Then _Youtube()
 
 	_CW("Getters done")
 	_TrayRefresh()
@@ -1224,37 +1230,41 @@ Func _SettingsCreate()
 	GUICtrlCreateLabel("Saved Username", 155, 160)
 	$idMixerName = GUICtrlCreateInput($sMixerName, 155, 180, 120, Default, $ES_READONLY)
 
-	GUICtrlCreateTabItem("Smashcast")
-	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
+	If $iSmashcastEnable Then
+		GUICtrlCreateTabItem("Smashcast")
+		GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
 
-	GUICtrlCreateLabel(" ", 20, 70)
-	$idSmashcastInput = GUICtrlCreateInput("", 20, 90, 190)
-	_GUICtrlEdit_SetCueBanner($idSmashcastInput, "Username")
-	GUICtrlCreateButton("Get ID", 20, 120)
-	GUICtrlSetOnEvent(-1, _SmashcastGetId)
-	GUICtrlCreateButton("Reset", 155, 120)
-	GUICtrlSetOnEvent(-1, _SmashcastReset)
+		GUICtrlCreateLabel(" ", 20, 70)
+		$idSmashcastInput = GUICtrlCreateInput("", 20, 90, 190)
+		_GUICtrlEdit_SetCueBanner($idSmashcastInput, "Username")
+		GUICtrlCreateButton("Get ID", 20, 120)
+		GUICtrlSetOnEvent(-1, _SmashcastGetId)
+		GUICtrlCreateButton("Reset", 155, 120)
+		GUICtrlSetOnEvent(-1, _SmashcastReset)
 
-	GUICtrlCreateLabel("Saved ID", 20, 160)
-	$idSmashcastId = GUICtrlCreateInput($sSmashcastId, 20, 180, 120, Default, $ES_READONLY)
-	GUICtrlCreateLabel("Saved Username", 155, 160)
-	$idSmashcastName = GUICtrlCreateInput($sSmashcastName, 155, 180, 120, Default, $ES_READONLY)
+		GUICtrlCreateLabel("Saved ID", 20, 160)
+		$idSmashcastId = GUICtrlCreateInput($sSmashcastId, 20, 180, 120, Default, $ES_READONLY)
+		GUICtrlCreateLabel("Saved Username", 155, 160)
+		$idSmashcastName = GUICtrlCreateInput($sSmashcastName, 155, 180, 120, Default, $ES_READONLY)
+	EndIf
 
-	GUICtrlCreateTabItem("Youtube")
-	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
+	If $iYoutubeEnable Then
+		GUICtrlCreateTabItem("Youtube")
+		GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
 
-	GUICtrlCreateLabel(" ", 20, 70)
-	$idYoutubeInput = GUICtrlCreateInput("", 20, 90, 190)
-	_GUICtrlEdit_SetCueBanner($idYoutubeInput, "Username")
-	GUICtrlCreateButton("Get ID", 20, 120)
-	GUICtrlSetOnEvent(-1, _YoutubeGetId)
-	GUICtrlCreateButton("Reset", 155, 120)
-	GUICtrlSetOnEvent(-1, _YoutubeReset)
+		GUICtrlCreateLabel(" ", 20, 70)
+		$idYoutubeInput = GUICtrlCreateInput("", 20, 90, 190)
+		_GUICtrlEdit_SetCueBanner($idYoutubeInput, "Username")
+		GUICtrlCreateButton("Get ID", 20, 120)
+		GUICtrlSetOnEvent(-1, _YoutubeGetId)
+		GUICtrlCreateButton("Reset", 155, 120)
+		GUICtrlSetOnEvent(-1, _YoutubeReset)
 
-	GUICtrlCreateLabel("Saved ID", 20, 160)
-	$idYoutubeId = GUICtrlCreateInput($sYoutubeId, 20, 180, 120, Default, $ES_READONLY)
-	GUICtrlCreateLabel("Saved Username", 155, 160)
-	$idYoutubeName = GUICtrlCreateInput($sYoutubeName, 155, 180, 120, Default, $ES_READONLY)
+		GUICtrlCreateLabel("Saved ID", 20, 160)
+		$idYoutubeId = GUICtrlCreateInput($sYoutubeId, 20, 180, 120, Default, $ES_READONLY)
+		GUICtrlCreateLabel("Saved Username", 155, 160)
+		$idYoutubeName = GUICtrlCreateInput($sYoutubeName, 155, 180, 120, Default, $ES_READONLY)
+	EndIf
 
 	GUICtrlCreateTabItem("")
 
