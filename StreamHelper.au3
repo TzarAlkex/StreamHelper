@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Res_Description=StreamHelper
 #AutoIt3Wrapper_Res_Fileversion=1.2.0.0
 #AutoIt3Wrapper_Res_ProductVersion=1.2.0.0
-#AutoIt3Wrapper_Res_LegalCopyright=My right shoe
+#AutoIt3Wrapper_Res_LegalCopyright=Alexander Samuelsson
 #AutoIt3Wrapper_Run_Au3Stripper=y
 #Au3Stripper_Parameters=/so /mi=100
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -61,6 +61,50 @@ ms-appx:///Relative/Path/To/Content.jpg
 
 *Remake icon?
 *Or redo in better quality (Square310x310Logo.scale-400.png is just a resized Square310x310Logo.scale-200.png)
+
+*I'm pretty sure it just notified me of an ignored streamer changing game, verify and fix?
+
+*Switch URL encoding UDF?
+"Secondly, the best version I've seen has be ProgAndy's which features in the WinHTTP UDF."
+https://www.autoitscript.com/forum/topic/95850-url-encoding/?do=findComment&comment=1019203
+
+*Look at possibility to get streams from friends.
+
+#cs
+/// <summary>
+/// Redirect user to Windows Store and open the review window for current App
+/// </summary>
+/// <returns>Task</returns>
+public static async Task OpenStoreReviewAsync()
+{
+	var pfn = Package.Current.Id.FamilyName;
+	await Launcher.LaunchUriAsync(new Uri("ms-windows-store://review/?PFN=" + pfn));
+}
+#ce
+
+#cs
+wintoast.exe --appname "Git for Windows" \
+				--appid GitForWindows.Updater \
+				--image /mingw$bit/share/git/git-for-windows.ico \
+				--text "Download and install $name$warn?" \
+				--action Yes --action No --expirems 15000
+#ce
+
+*https://docs.microsoft.com/en-us/windows/uwp/design/shell/tiles-and-notifications/adaptive-interactive-toasts
+
+*https://blogs.msdn.microsoft.com/lucian/2015/10/23/how-to-call-uwp-apis-from-a-desktop-vbc-app/
+
+*https://docs.microsoft.com/en-us/uwp/api/windows.applicationmodel.startuptaskstate
+
+*use mailgun for gathering feedback and logs?
+https://www.mailgun.com/
+https://documentation.mailgun.com/en/latest/index.html
+
+*move Reset-button to the right of the username editbox?
+*Change button to say "Forget ID & Username"?
+
+*Make myself a install button to put on websites like http://vidcoder.net/ have
+ms-windows-store://pdp/?productid=*12LETTERSANDNUMBERS*
 
 #ce ----------------------------------------------------------------------------
 
