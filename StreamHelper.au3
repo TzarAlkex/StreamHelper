@@ -195,6 +195,9 @@ TrayCreateItem("")
 Local $idSettings = TrayCreateItem("Settings")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
+Local $idFeedback = TrayCreateItem("Send feedback")
+TrayItemSetOnEvent( -1, _TrayStuff)
+
 Local $idAbout = TrayCreateItem("About")
 TrayItemSetOnEvent( -1, _TrayStuff)
 
@@ -224,9 +227,10 @@ AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the secon
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 Global $avDownloads[1][2]
 
-Global $hGuiClipboard
+Global $hGuiClipboard, $hGuiFeedback
 Global $idLabel, $idQuality, $idUrl
 _GuiCreate()
+_FeedbackCreate()
 
 Global $hGuiSettings
 Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idTwitchInput, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
@@ -750,8 +754,16 @@ EndFunc
 
 Func _TrayStuff()
 	Switch @TRAY_ID
+		Case $idRefresh
+			_MAIN()
+		Case $idClipboard
+			Local $sClipboard = ClipGet()
+			Local $asStream[] = [$sClipboard]
+			_ClipboardGo($asStream)
 		Case $idSettings
 			If Not GUISetState(@SW_SHOW, $hGuiSettings) Then WinActivate($hGuiSettings)
+		Case $idFeedback
+			If Not GUISetState(@SW_SHOW, $hGuiFeedback) Then WinActivate($hGuiFeedback)
 		Case $idAbout
 			Local $asText[] = ["I am unfinished", _
 			"Ouch", _
@@ -790,12 +802,6 @@ Func _TrayStuff()
 
 			$iRandom = Random(0, UBound($asText) -1, 1)
 			MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
-		Case $idRefresh
-			_MAIN()
-		Case $idClipboard
-			Local $sClipboard = ClipGet()
-			Local $asStream[] = [$sClipboard]
-			_ClipboardGo($asStream)
 		Case $idExit
 			Exit
 		Case Else
@@ -1193,6 +1199,31 @@ Func _Hide()
 	GUISetState(@SW_HIDE, $hGuiClipboard)
 EndFunc
 #EndRegion GUI
+
+#Region FEEDBACK-GUI
+Func _FeedbackCreate()
+	$hGuiFeedback = GUICreate("Feedback", 320, 50, -1, -1, -1)
+
+	GUICtrlCreateButton("Open Feedback Hub", 10, 10, 145, 30)
+	GUICtrlSetOnEvent(-1, _FeedbackFeedbackHub)
+	GUICtrlCreateButton("Open GitHub in browser", 165, 10, 145, 30)
+	GUICtrlSetOnEvent(-1, _FeedbackGithub)
+
+	GUISetOnEvent($GUI_EVENT_CLOSE, _FeedbackHide)
+EndFunc
+
+Func _FeedbackFeedbackHub()
+	ShellExecute("windows-feedback:///?appid=11146AlexanderSamuelsson.StreamHelper_b4j1319m6fkgc!StreamHelper")
+EndFunc
+
+Func _FeedbackGithub()
+	ShellExecute("https://github.com/TzarAlkex/StreamHelper/issues")
+EndFunc
+
+Func _FeedbackHide()
+	GUISetState(@SW_HIDE, $hGuiFeedback)
+EndFunc
+#EndRegion FEEDBACK-GUI
 
 #Region SETTINGS-GUI
 Func _SettingsCreate()
