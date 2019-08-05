@@ -940,7 +940,7 @@ Func _MAIN()
 	_CW("Streamer changed game: " & StringReplace($sChanged, @CRLF, ", "))
 
 	If $bFavoriteFound = True Then
-		SoundPlay(@ScriptDir & "\Authentic A-10 Warthog sounds TM.wav")
+		_WinAPI_PlaySound(@ScriptDir & "\Authentic A-10 Warthog sounds TM.wav", $SND_ASYNC)
 		$bFavoriteFound = False
 	EndIf
 
