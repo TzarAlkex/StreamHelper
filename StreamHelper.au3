@@ -133,6 +133,8 @@ EndIf
 $iClosePreviousBeforePlaying = True
 
 $sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
+$sTwitchFollowedGames = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchFollowedGames")
+If @error Then $sTwitchFollowedGames = "1"
 _CW("Install type: " & _InstallType())
 
 Global $sUpdateCheck
@@ -224,7 +226,7 @@ _GuiCreate()
 _FeedbackCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idTwitchInput, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idTwitchInput, $idTwitchFollowedGames, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -255,7 +257,7 @@ Func _TwitchNew()
 
 	_TwitchGet()
 
-	_TwitchGetGames()
+	If BitAND(GUICtrlRead($idTwitchFollowedGames), $GUI_CHECKED) Then _TwitchGetGames()
 
 	_TwitchProcessUserID()
 	_TwitchProcessGameID()
@@ -1273,6 +1275,9 @@ Func _SettingsCreate()
 	GUICtrlCreateButton("Get ID", 220, 87)
 	GUICtrlSetOnEvent(-1, _TwitchGetId)
 
+	$idTwitchFollowedGames = GUICtrlCreateCheckbox("Get followed games", 270, 40)
+	If $sTwitchFollowedGames = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
+
 	GUICtrlCreateLabel("Saved ID", 20, 160)
 	$idTwitchId = GUICtrlCreateInput($sTwitchId, 20, 180, 120, Default, $ES_READONLY)
 	GUICtrlCreateLabel("Saved Username", 155, 160)
@@ -1418,6 +1423,13 @@ Func _SettingsLog()
 	If $sNew = $sLog Then Return
 	$sLog = $sNew
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "Log", "REG_SZ", $sLog)
+EndFunc
+
+Func _TwitchSettingFollowedGames()
+	Local $sNew = BitAND(GUICtrlRead($idTwitchFollowedGames), $GUI_CHECKED)
+	If $sNew = $sTwitchFollowedGames Then Return
+	$sTwitchFollowedGames = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchFollowedGames", "REG_SZ", $sTwitchFollowedGames)
 EndFunc
 
 Func _TwitchGetId()
@@ -1569,6 +1581,7 @@ Func _SettingsSaveAll()
 	_SettingsIgnore()
 	_SettingsUpdateCheck()
 	_SettingsLog()
+	_TwitchSettingFollowedGames()
 EndFunc
 
 Func _SettingsHide()
