@@ -19,11 +19,6 @@
 
 
 
-Activate Twitch support on streamlink by running the following in cmd:
-streamlink --twitch-oauth-authenticate
-
-
-
 Todo:
 *Add back the quality stuff in the array now that Twitch changed how they allocate transcoding to non-partners?
 *Always save quality stuff to array for partners?
@@ -32,11 +27,6 @@ Todo:
 *BroccoliCat on twitch doesn't load properly on source quality in livestreamer.
 Increase the timer wait thing in the config file?
 I have increased multiple seconds, difference is questionable?
-(needs to be verified if it still happens with streamlink!)
-
-*ItsNatashaFFS sometimes just doesn't open with livestreamer.
-The cmd and python processes start but just doesn't seem to do anything.
-My only idea is that she went offline just as I started and that livestreamer maybe doesn't handle offline streams well.
 (needs to be verified if it still happens with streamlink!)
 
 *Favs changing games make the sound but not the notification?
@@ -58,6 +48,7 @@ wtf fix!
 
 *Check if AutoIt can use the appx protocol
 ms-appx:///Relative/Path/To/Content.jpg
+NO IT CAN NOT!!
 
 *Remake icon?
 *Or redo in better quality (Square310x310Logo.scale-400.png is just a resized Square310x310Logo.scale-200.png)
