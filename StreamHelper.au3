@@ -1,3 +1,6 @@
+#cs
+[FakeIniSectionName]
+#ce
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Svartnos.ico
 #AutoIt3Wrapper_UseX64=n
@@ -219,6 +222,13 @@ Global Const $PBT_APMRESUMEAUTOMATIC =  0x12
 AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the second")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 Global $avDownloads[1][2]
+
+Global $sInternalVersion
+If @Compiled Then
+	$sInternalVersion = FileGetVersion(@AutoItExe)
+Else
+	$sInternalVersion = IniRead(@ScriptFullPath, "FakeIniSectionName", "#AutoIt3Wrapper_Res_Fileversion", "0.0.0.0")
+EndIf
 
 Global $hGuiClipboard, $hGuiFeedback
 Global $idLabel, $idQuality, $idUrl
@@ -1221,7 +1231,7 @@ EndFunc
 #Region SETTINGS-GUI
 Func _SettingsCreate()
 	Local $iGuiWidth = 430, $iGuiHeight = 220
-	$hGuiSettings = GUICreate("StreamHelper - Settings", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+	$hGuiSettings = GUICreate(StringTrimRight(@ScriptName, 4) & " " & $sInternalVersion & " - Settings", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 	If @Compiled = False Then GUISetIcon(@ScriptDir & "\Svartnos.ico")
 
 	GUICtrlCreateTab(10, 10, $iGuiWidth - 20, $iGuiHeight - 20)
@@ -1804,16 +1814,15 @@ Func _CheckUpdates($iForce = False)
 
 	$oJSON = _WinHttpFetch("api.github.com", "repos/TzarAlkex/StreamHelper/releases/latest")
 
-	If IsObj($oJSON) = False Then
+	If Json_IsObject($oJSON) = False Then
 		_OtherSet("Update check failed", $eIsText)
 		Return
 	EndIf
 
 	$sTag = Json_ObjGet($oJSON, "tag_name")
+	If StringIsDigit(StringLeft($sTag, 1)) = False Then $sTag = StringTrimLeft($sTag, 1)   ;remove the "v" in front of versions
 
-	$iInternalVersion = "1.2.0.0"
-
-	If $iInternalVersion <> $sTag Then
+	If _VersionCompare($sInternalVersion, $sTag) = -1 Then   ;if github is greater
 		_OtherSet("Update found! Click to open website", $eIsLink, "https://github.com/TzarAlkex/StreamHelper/releases")
 		TrayItemSetOnEvent(-1, _TrayStuff)
 		Return
