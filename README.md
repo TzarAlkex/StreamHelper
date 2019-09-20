@@ -51,3 +51,5 @@ KaFu - https://www.autoitscript.com/forum/topic/95850-url-encoding/?do=findComme
 Mat - https://www.autoitscript.com/forum/topic/115222-set-the-tray-icon-as-a-hicon/
 
 SmOke_N - https://www.autoitscript.com/forum/topic/95383-sorting-numbers/?do=findComment&comment=685701
+
+jchd - https://www.autoitscript.com/forum/topic/195291-datetime-conversion-issue/?do=findComment&comment=1400353
