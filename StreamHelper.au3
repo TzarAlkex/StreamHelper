@@ -916,7 +916,7 @@ Func _TrayStuff()
 					Local $NewText = $sDisplayName
 					If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
 					TrayItemSetText($aStreams[$iX][$eTrayId], $NewText)
-				ElseIf $iStreamlinkInstalled And $aStreams[$iX][$eService] <> $eMixer Then
+				ElseIf $iStreamlinkInstalled Then
 					_StreamlinkPlay($sUrl)
 				Else
 					ShellExecute($sUrl)
