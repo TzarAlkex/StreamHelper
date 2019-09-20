@@ -1173,11 +1173,7 @@ EndFunc
 Func _GuiCreate()
 	Local $iGuiWidth = 510, $iGuiHeight = 70
 
-	If Random(0, 1, 1) Then
-		$hGuiClipboard = GUICreate("To infinity... and beyond!", $iGuiWidth, $iGuiHeight, -1, -1, -1)
-	Else
-		$hGuiClipboard = GUICreate("Copy Streamlink compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
-	EndIf
+	$hGuiClipboard = GUICreate("Copy Streamlink compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 
 	$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
 	$idQuality = GUICtrlCreateCombo("", 70, 40, 160, 20)
@@ -1276,6 +1272,12 @@ Func _ClipboardGo($asStream)
 	_GUICtrlComboBox_ResetContent($idQuality)
 
 	If Not GUISetState(@SW_SHOW, $hGuiClipboard) Then WinActivate($hGuiClipboard)
+
+	If Random(0, 9, 1) = 9 Then
+		WinSetTitle($hGuiClipboard, "", "To infinity... and beyond!")
+	Else
+		WinSetTitle($hGuiClipboard, "", "Copy Streamlink compatible link to clipboard")
+	EndIf
 
 	$asQualities = _GetQualities($sUrl)
 	$sQualities = _ArrayToString($asQualities)
