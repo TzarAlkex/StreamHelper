@@ -702,9 +702,9 @@ EndFunc
 
 #Region COMMON
 Func _WinHttpFetch($sDomain, $sUrl, $sHeader = Default, $sReturnFormat = Default)
-	_CW("_WinHttpFetch: " & $sDomain & "/" & $sUrl & " \ " & $sHeader)
+	_CW("_WinHttpFetch: " & $sDomain & "/" & $sUrl & " \ " & StringReplace($sHeader, @CRLF, " \ "))
 
-	Local $iTries = 0
+	Local $iTries = 0, $asResponse
 	Do
 		Sleep($iTries * 6000)
 
@@ -717,7 +717,7 @@ Func _WinHttpFetch($sDomain, $sUrl, $sHeader = Default, $sReturnFormat = Default
 		_WinHttpCloseHandle($hOpen)
 
 		$iTries += 1
-	Until (IsArray($asResponse) And StringSplit($asResponse[0], " ")[2] = 200) Or $iTries = 6
+	Until (IsArray($asResponse) And (StringSplit($asResponse[0], " ")[2] = 200 Or StringSplit($asResponse[0], " ")[2] = 404)) Or $iTries = 6
 
 	If $asResponse = 0 Then
 		_CW("_WinHttpFetch failed")
@@ -1577,7 +1577,7 @@ Func _MixerGetId()
 	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
 	$sQuotedUsername = URLEncode($sUsername)
 
-	$oJSON = _MixerFetch("channels/" & $sQuotedUsername)
+	$oJSON = _MixerFetch("channels/" & $sQuotedUsername & "?fields=userId")
 	If IsObj($oJSON) = False Then Return _GetErrored()
 	$iUserID = Json_ObjGet($oJSON, "userId")
 
@@ -1716,6 +1716,7 @@ Func _InstallTypeEx()
 EndFunc
 
 Func _CW($sMessage)
+	If IsArray($sMessage) Then $sMessage = _ArrayToString($sMessage, " :: ")
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " " & $sMessage & @CRLF)
 
 	If $sLog = 1 Then
