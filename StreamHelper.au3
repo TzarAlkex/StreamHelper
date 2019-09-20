@@ -364,7 +364,7 @@ Func _TwitchGetGames()
 		$oGame = Json_ObjGet($avTemp[$iX], "game")
 		$sName = Json_ObjGet($oGame, "name")
 
-		$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/streams/?game=" & $sName, "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
+		$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/streams/?game=" & $sName, "Accept: application/vnd.twitchtv.v5+json" & @CRLF & "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
 		If IsObj($oJSON) = False Then Return
 
 		$oStreams = Json_ObjGet($oJSON, "streams")
