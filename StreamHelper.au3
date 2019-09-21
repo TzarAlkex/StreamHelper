@@ -7,8 +7,10 @@
 #AutoIt3Wrapper_Res_Description=StreamHelper
 #AutoIt3Wrapper_Res_Fileversion=1.2.0.0
 #AutoIt3Wrapper_Res_ProductVersion=1.2.0.0
-#AutoIt3Wrapper_Res_LegalCopyright=Alexander Samuelsson
+#AutoIt3Wrapper_Res_LegalCopyright=©2015-2019 Alexander Samuelsson
+#AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #AutoIt3Wrapper_Run_Au3Stripper=y
+#AutoIt3Wrapper_Au3Stripper_OnError=ForceUse
 #Au3Stripper_Parameters=/so /mi=100
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
