@@ -122,11 +122,13 @@ ms-windows-store://pdp/?productid=*12LETTERSANDNUMBERS*
 #include <GuiMenu.au3>
 #include <String.au3>
 
-If _Singleton("AutoIt window with hopefully a unique title|Ketchup the second", 1) = 0 Then
-	$iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Ketchup the second")
-	_WinAPI_PostMessage(WinGetHandle("AutoIt window with hopefully a unique title|Senap the third"), $iWM, 0, 0)
-	Exit
-EndIf
+$iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Singleton")
+_WinAPI_PostMessage($HWND_BROADCAST, $iWM, 0x1234, 0xABCD)
+
+GUICreate("AutoIt window with hopefully a unique title|Senap the third")
+GUIRegisterMsg($WM_POWERBROADCAST, "_PowerEvents")
+GUIRegisterMsg($WM_ENDSESSION, "_EndSessionEvents")
+GUIRegisterMsg($iWM, "_RemoteEvents")
 
 TraySetToolTip("StreamHelper")
 If (Not @Compiled) Then
@@ -247,12 +249,6 @@ $hImage = _GDIPlus_BitmapCreateFromHBITMAP($hBitmap)
 $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
 
 _MAIN()
-
-GUICreate("AutoIt window with hopefully a unique title|Senap the third")
-GUIRegisterMsg($WM_POWERBROADCAST, "_PowerEvents")
-GUIRegisterMsg($WM_ENDSESSION, "_EndSessionEvents")
-$iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Ketchup the second")
-GUIRegisterMsg($iWM, "_RemoteEvents")
 
 _WinAPI_RegisterApplicationRestart($RESTART_NO_CRASH)
 
@@ -927,6 +923,7 @@ EndFunc
 
 Func _StreamlinkPlay($sUrl, $sQuality = "")
 	Static Local $iPID = 0
+
 	;_GuiPlay can send empty $sQuality so conversion has to be done
 	If $sQuality = "" Then $sQuality = "best"
 
@@ -1877,7 +1874,7 @@ Func _EndSessionEvents($hWnd, $iMsg, $wParam, $lParam)
 EndFunc
 
 Func _RemoteEvents($hWnd, $iMsg, $wParam, $lParam)
-	AdlibRegister(_MAIN)
+	If $wParam = 0x1234 And $lParam = 0xABCD Then Exit
 
 	;Don't bother with the internal message handler since it's my own message
 	Return
