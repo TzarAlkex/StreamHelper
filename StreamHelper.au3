@@ -252,6 +252,10 @@ _MAIN()
 
 _WinAPI_RegisterApplicationRestart($RESTART_NO_CRASH)
 
+If FileExists(@LocalAppDataDir & "\StreamHelper\arraydebug") Then
+	HotKeySet("{PAUSE}", _ArrayDebug)
+EndIf
+
 While 1
 	Sleep(3600000)
 WEnd
@@ -756,9 +760,16 @@ EndFunc   ;==>URLEncode
 
 #Region GUI
 Func _TrayRefresh()
+	Static Local $iRandomStreams = FileExists(@LocalAppDataDir & "\StreamHelper\randomstreams")
+
 	_ArraySort($aStreams, 1)
 
 	For $iX = 0 To UBound($aStreams) -1
+		If $iRandomStreams Then
+			If Random(0, 1, 1) Then
+				$aStreams[$iX][$eOnline] = False
+			EndIf
+		EndIf
 		If $aStreams[$iX][$eOnline] = True Then
 			Local $sDisplayName = $aStreams[$iX][$eDisplayName]
 			If BitAND($aStreams[$iX][$eFlags], $eIsStream) Then
@@ -1856,6 +1867,10 @@ Func _ArraySortNum(ByRef $n_array, $i_descending = 0, $i_start = 0)
         $n_array[$i_se] = $i_hld
     Next
 EndFunc   ;==>_ArraySortNum
+
+Func _ArrayDebug()
+	_ArrayDisplay($aStreams)
+EndFunc
 
 Func _PowerEvents($hWnd, $Msg, $wParam, $lParam)
 	Switch $wParam
