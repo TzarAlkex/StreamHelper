@@ -1332,6 +1332,7 @@ Func _SettingsCreate()
 
 	GUICtrlCreateTab(10, 10, $iGuiWidth - 20, $iGuiHeight - 20)
 
+
 	GUICtrlCreateTabItem("Settings")
 
 	GUICtrlCreateLabel("Minutes between refresh", 20, 40)
@@ -1372,6 +1373,10 @@ Func _SettingsCreate()
 	$idLog = GUICtrlCreateCheckbox("Save log to file (don't enable unless asked)", 20, 170)
 	If $sLog = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
 
+	GUICtrlCreateButton("Open log folder", $iGuiWidth -100, 170)
+	GUICtrlSetOnEvent(-1, _LogFolderOpen)
+
+
 	GUICtrlCreateTabItem("Twitch")
 	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
 
@@ -1391,6 +1396,7 @@ Func _SettingsCreate()
 	GUICtrlCreateButton("Forget ID && Username", 290, 177)
 	GUICtrlSetOnEvent(-1, _TwitchReset)
 
+
 	GUICtrlCreateTabItem("Mixer")
 	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
 
@@ -1406,6 +1412,7 @@ Func _SettingsCreate()
 	$idMixerName = GUICtrlCreateInput($sMixerName, 155, 180, 120, Default, $ES_READONLY)
 	GUICtrlCreateButton("Forget ID && Username", 290, 177)
 	GUICtrlSetOnEvent(-1, _MixerReset)
+
 
 	If $iSmashcastEnable Then
 		GUICtrlCreateTabItem("Smashcast")
@@ -1425,6 +1432,7 @@ Func _SettingsCreate()
 		$idSmashcastName = GUICtrlCreateInput($sSmashcastName, 155, 180, 120, Default, $ES_READONLY)
 	EndIf
 
+
 	If $iYoutubeEnable Then
 		GUICtrlCreateTabItem("Youtube")
 		GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
@@ -1442,6 +1450,7 @@ Func _SettingsCreate()
 		GUICtrlCreateLabel("Saved Username", 155, 160)
 		$idYoutubeName = GUICtrlCreateInput($sYoutubeName, 155, 180, 120, Default, $ES_READONLY)
 	EndIf
+
 
 	GUICtrlCreateTabItem("")
 
@@ -1746,6 +1755,10 @@ Func _DeleteOldLogs()
 	Next
 
 	_CW("Deleted old logs")
+EndFunc
+
+Func _LogFolderOpen()
+	ShellExecute(@LocalAppDataDir & "\StreamHelper\logs")
 EndFunc
 
 Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID, $sStreamID = 404, $iFlags = $eIsStream, $iGameID = "", $iChannelID = "")
