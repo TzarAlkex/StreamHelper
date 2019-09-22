@@ -785,7 +785,7 @@ Func _TrayRefresh()
 
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				$aStreams[$iX][$eTrayId] = TrayCreateItem($sTrayText, -1, 0)
-				If $aStreams[$iX][$eFlags] = $eIsStream And StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 And StringInStr($sDisplayName, "[v] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
+				If $aStreams[$iX][$eFlags] = $eIsStream And StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $bBlobFirstRun <> True Then $NewText &= " - " & $aStreams[$iX][$eGame] & "@CRLF" & $aStreams[$iX][$eStatus]
 
@@ -806,9 +806,11 @@ Func _TrayRefresh()
 
 				TrayItemSetText($aStreams[$iX][$eTrayId], $sTrayText)
 
-				Local $NewText = $aStreams[$iX][$eDisplayName] & " - " & $aStreams[$iX][$eGame] & " - " & $aStreams[$iX][$eTime] & "@CRLF" & $aStreams[$iX][$eStatus]
+				If StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
+					Local $NewText = $aStreams[$iX][$eDisplayName] & " - " & $aStreams[$iX][$eGame] & " - " & $aStreams[$iX][$eTime] & "@CRLF" & $aStreams[$iX][$eStatus]
+					$sChanged &= $NewText & @CRLF
+				EndIf
 
-				$sChanged &= $NewText & @CRLF
 				If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
 			EndIf
 		Else
