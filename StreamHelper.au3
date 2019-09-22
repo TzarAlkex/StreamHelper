@@ -206,7 +206,7 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 
 Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eChannelID, $eTimer, $eStreamID, $eOldStreamID, $eMax
 Global Enum $eTwitch, $eSmashcast, $eMixer, $eYoutube
-Global Enum Step *2 $eVodCast, $eIsLink, $eIsText, $eIsStream
+Global Enum Step *2 $eIsLink, $eIsText, $eIsStream
 
 Global Enum $iStartupTaskStateError = -1, $iStartupTaskStateDisabled, $iStartupTaskStateDisabledByUser, $iStartupTaskStateEnabled, $iStartupTaskStateDisabledByPolicy, $iStartupTaskStateEnabledByPolicy
 
@@ -329,10 +329,7 @@ Func _TwitchGet()
 			$sTimeDiffMin = _DateDiff("n", $sTimeAdded, $sNow)
 			$sTime2 = StringFormat("%02s:%02s", $sTimeDiffHour, $sTimeDiffMin)
 
-			Local $iFlags = $eIsStream
-			If Json_ObjGet($aData2[$iX], "type") = "vodcast" Then $iFlags = BitOR($iFlags, $eVodCast)
-
-			_StreamSet("", "", "", "", "", $sTime2, $sTitle, $eTwitch, $sUserID, $sStreamID, $iFlags, $sGameID)
+			_StreamSet("", "", "", "", "", $sTime2, $sTitle, $eTwitch, $sUserID, $sStreamID, Default, $sGameID)
 		Next
 		If UBound($aData) <> 100 Then Return "Potato on a Stick"
 	WEnd
@@ -778,7 +775,6 @@ Func _TrayRefresh()
 				If StringInStr($sFavoritesNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[F] " & $sDisplayName
 				If StringInStr($sIgnoreNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[i] " & $sDisplayName
 			EndIf
-			If BitAND($aStreams[$iX][$eFlags], $eVodCast) Then $sDisplayName = "[v] " & $sDisplayName
 
 			Local $sTrayText = $sDisplayName
 			If $aStreams[$iX][$eGame] <> "" Then $sTrayText &= " | " & $aStreams[$iX][$eGame]
