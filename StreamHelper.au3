@@ -633,7 +633,7 @@ Func _IsoDateTimeToZulu($s)
 EndFunc
 
 Func _MixerFetch($sUrl)
-	Return _WinHttpFetch("mixer.com", "api/v1/" & $sUrl)
+	Return _WinHttpFetch("mixer.com", "api/v1/" & $sUrl, "Client-ID: " & "6ee47799a507377ec662f421b8bc5eb59f486781c92f6742")
 EndFunc
 #EndRegion
 
