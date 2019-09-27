@@ -173,12 +173,9 @@ If $iYoutubeEnable Then
 	$sYoutubeName = RegRead("HKCU\SOFTWARE\StreamHelper\", "YoutubeName")
 EndIf
 
-Global $sFavoritesNew = RegRead("HKCU\SOFTWARE\StreamHelper\", "Favorites")
-If $sFavoritesNew <> "" Then $sFavoritesNew &= @LF
-Global $sOldFavoritesNew = $sFavoritesNew
-Global $sIgnoreNew = RegRead("HKCU\SOFTWARE\StreamHelper\", "Ignore")
-If $sIgnoreNew <> "" Then $sIgnoreNew &= @LF
-Global $sOldIgnoreNew = $sIgnoreNew
+_Upgrade()
+Global $sFavoritesNew = _EnumValues("Favorite")
+Global $sIgnoreNew = _EnumValues("Ignore")
 
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
@@ -876,17 +873,14 @@ Func _TrayStuff()
 		Case $idExit
 			Exit
 		Case Else
-			Local $sUrl   ;Remove this variable?
-
 			For $iX = 0 To UBound($aStreams) -1
 				If $aStreams[$iX][$eTrayId] = @TRAY_ID Then
-					$sUrl = $aStreams[$iX][$eUrl]
 					ExitLoop
 				EndIf
 			Next
 
 			If BitAND($aStreams[$iX][$eFlags], $eIsLink) = $eIsLink Then
-				ShellExecute($sUrl)
+				ShellExecute($aStreams[$iX][$eUrl])
 			ElseIf BitAND($aStreams[$iX][$eFlags], $eIsText) = $eIsText Then
 				Return
 			ElseIf BitAND($aStreams[$iX][$eFlags], $eIsStream) = $eIsStream Then
@@ -894,24 +888,19 @@ Func _TrayStuff()
 					Local $asStream[] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
 					_ClipboardGo($asStream)
 				ElseIf _IsPressed("11") Then
-					$sUserID = $aStreams[$iX][$eUserID] & @LF
+					$sUserID = $aStreams[$iX][$eUserID]
 
-					If StringInStr($sFavoritesNew, $sUserID) Then
-						$sFavoritesNew = StringReplace($sFavoritesNew, $sUserID, "")
-						$sIgnoreNew &= $sUserID
-					ElseIf StringInStr($sIgnoreNew, $sUserID) Then
-						$sIgnoreNew = StringReplace($sIgnoreNew, $sUserID, "")
-					Else
-						$sFavoritesNew &= $sUserID
-					EndIf
-
-					If $sFavoritesNew <> $sOldFavoritesNew Then
-						RegWrite("HKCU\SOFTWARE\StreamHelper\", "Favorites", "REG_MULTI_SZ", StringStripWS($sFavoritesNew, $STR_STRIPTRAILING))
-						$sOldFavoritesNew = $sFavoritesNew
-					EndIf
-					If $sIgnoreNew <> $sOldIgnoreNew Then
-						RegWrite("HKCU\SOFTWARE\StreamHelper\", "Ignore", "REG_MULTI_SZ", StringStripWS($sIgnoreNew, $STR_STRIPTRAILING))
-						$sOldIgnoreNew = $sIgnoreNew
+					If StringInStr($sFavoritesNew, $sUserID) Then   ; if fav then move to ignore
+						$sFavoritesNew = StringReplace($sFavoritesNew, $sUserID & @LF, "")
+						RegDelete("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID)
+						$sIgnoreNew &= $sUserID & @LF
+						RegWrite("HKCU\SOFTWARE\StreamHelper\Ignore\", $sUserID, "REG_SZ", "")
+					ElseIf StringInStr($sIgnoreNew, $sUserID) Then   ; if ignore then make nothing
+						$sIgnoreNew = StringReplace($sIgnoreNew, $sUserID & @LF, "")
+						RegDelete("HKCU\SOFTWARE\StreamHelper\Ignore\", $sUserID)
+					Else   ; if nothing then fav
+						$sFavoritesNew &= $sUserID & @LF
+						RegWrite("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID, "REG_SZ", "")
 					EndIf
 
 					Local $sDisplayName = $aStreams[$iX][$eDisplayName]
@@ -924,9 +913,9 @@ Func _TrayStuff()
 					If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
 					TrayItemSetText($aStreams[$iX][$eTrayId], $NewText)
 				ElseIf $iStreamlinkInstalled Then
-					_StreamlinkPlay($sUrl)
+					_StreamlinkPlay($aStreams[$iX][$eUrl])
 				Else
-					ShellExecute($sUrl)
+					ShellExecute($aStreams[$iX][$eUrl])
 				EndIf
 			EndIf
 	EndSwitch
@@ -1742,6 +1731,42 @@ Func _CW($sMessage)
 		Static Local $hLog = FileOpen(@LocalAppDataDir & "\StreamHelper\logs\log" & @WDAY & ".txt", $FO_APPEND + $FO_CREATEPATH)
 		If $hLog Then _FileWriteLog($hLog, $sMessage)
 	EndIf
+EndFunc
+
+Func _Upgrade()
+	_1200()
+EndFunc
+
+Func _1200()
+	If RegRead("HKCU\SOFTWARE\StreamHelper\", "MigratedFavorites") = "" Then
+		Local $sFavorites = RegRead("HKCU\SOFTWARE\StreamHelper\", "Favorites")
+		Local $asFavorites = StringSplit($sFavorites, @LF)
+		For $iX = 1 To $asFavorites[0]
+			RegWrite("HKCU\SOFTWARE\StreamHelper\Favorite\", $asFavorites[$iX], "REG_SZ", "")
+		Next
+		RegDelete("HKCU\SOFTWARE\StreamHelper\", "Favorites")
+
+		Local $sIgnores = RegRead("HKCU\SOFTWARE\StreamHelper\", "Ignore")
+		Local $asIgnores = StringSplit($sIgnores, @LF)
+		For $iX = 1 To $asIgnores[0]
+			RegWrite("HKCU\SOFTWARE\StreamHelper\Ignore\", $asIgnores[$iX], "REG_SZ", "")
+		Next
+		RegDelete("HKCU\SOFTWARE\StreamHelper\", "Ignore")
+
+		RegWrite("HKCU\SOFTWARE\StreamHelper\", "MigratedFavorites", "REG_SZ", "1")
+	EndIf
+EndFunc
+
+Func _EnumValues($sKey)
+	Local $sKeyValue = "", $sValues
+
+	For $iX = 1 To 9999
+		$sKeyValue = RegEnumVal("HKCU\SOFTWARE\StreamHelper\" & $sKey, $iX)
+		If @error Then ExitLoop
+		$sValues &= $sKeyValue & @LF
+	Next
+
+	Return $sValues
 EndFunc
 
 Func _DeleteOldLogs()
