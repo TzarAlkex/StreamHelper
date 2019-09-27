@@ -102,6 +102,12 @@ https://documentation.mailgun.com/en/latest/index.html
 *Make myself a install button to put on websites like http://vidcoder.net/ have
 ms-windows-store://pdp/?productid=*12LETTERSANDNUMBERS*
 
+*Detect if Tc is installed and enable a "Open chat in Tc" button on the "Play from clipboard"-window.
+.\Tc.exe --channel="swebliss"
+So stupid, --channel only works if Tc is not already running. And there isn't even a very nice way to close it to make a hack around it.
+
+*remove $eTime, use $eCreated and generate time live on tooltip show instead
+
 #ce ----------------------------------------------------------------------------
 
 #include <AutoItConstants.au3>

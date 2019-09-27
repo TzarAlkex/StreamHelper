@@ -2,10 +2,11 @@
 
 ### A desktop notifier for Twitch and Mixer
 
-![Screenshot #1](./Screenshot1.png?raw=true "Screenshot #1")
-![Screenshot #2](./Screenshot2.png?raw=true "Screenshot #2")
 ![Screenshot #3](./Screenshot3.png?raw=true "Screenshot #3")
 ![Screenshot #4](./Screenshot4.png?raw=true "Screenshot #4")
+![Screenshot #1](./Screenshot1.png?raw=true "Screenshot #1")
+![Screenshot #5](./Screenshot5.png?raw=true "Screenshot #5")
+![Screenshot #2](./Screenshot2.png?raw=true "Screenshot #2")
 
 ## Install
 
@@ -13,11 +14,11 @@ Download StreamHelper from the [Microsoft Store](https://www.microsoft.com/store
 
 ## Description
 
-Simply add your username in the settings for the respective service, click "Get ID", and it will start looking for streams from the people you follow (also followed games on Twitch).
+Add your username in the settings for the respective service, click "Get ID", and it will start looking for streams from the people you follow (also followed games on Twitch).
 
 All functionality is by the tray icon.
 * Click a stream to play.
-* Ctrl+click a stream to mark as favorite (plays extra "alarm" sound so it's harder to miss), click again to mark as ignore (no notification), click again to go back to normal.
+* Ctrl+click a stream to mark as favorite (plays extra "alarm" sound so it's harder to miss), Ctrl+click again to mark as ignore (no notification), Ctrl+click again to go back to normal.
 * Shift+click a stream in the list to open it in the "Play from clipboard" window.
 
 I highly recommend installing [Streamlink](https://streamlink.github.io/) to get the most use of Streamhelper. Description from their website:
