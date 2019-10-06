@@ -21,12 +21,12 @@ All functionality is by the tray icon.
 * Ctrl+click a stream to mark as favorite (plays extra "alarm" sound so it's harder to miss), Ctrl+click again to mark as ignore (no notification), Ctrl+click again to go back to normal.
 * Shift+click a stream in the list to open it in the "Play from clipboard" window.
 
-I highly recommend installing [Streamlink](https://streamlink.github.io/) to get the most use of Streamhelper. Description from their website:
+I highly recommend installing [Streamlink](https://streamlink.github.io/) to get the most use of StreamHelper. Description from their website:
 > Streamlink is a command-line utility that pipes video streams from various services into a video player, such as VLC. The main purpose of Streamlink is to allow the user to avoid buggy and CPU heavy flash plugins but still be able to enjoy various streamed content.
 
 Look at their [Streamlink - User guide](https://streamlink.github.io/#user-guide) for install help and how to configure it to use your video player. If using with Twitch, you may want to [authenticate Streamlink](https://streamlink.github.io/cli.html#authenticating-with-twitch).
 
-If Streamlink is found on your computer, it will be used for playing and downloading streams. Using the "Play from clipboard" functionality, you can use Streamhelper to launch streams or download from sites supported by Streamlink (YMMV, see [Streamlink - Plugins](https://streamlink.github.io/plugin_matrix.html)).
+If Streamlink is found on your computer, it will be used for playing and downloading streams. Using the "Play from clipboard" functionality, you can use StreamHelper to launch streams or download from sites supported by Streamlink (YMMV, see [Streamlink - Plugins](https://streamlink.github.io/plugin_matrix.html)).
 
 If Streamlink is not found streams will open in your browser. Downloading is not available without Streamlink.
 
