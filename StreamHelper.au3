@@ -108,6 +108,8 @@ So stupid, --channel only works if Tc is not already running. And there isn't ev
 
 *remove $eTime, use $eCreated and generate time live on tooltip show instead
 
+*add >:( to random places
+
 #ce ----------------------------------------------------------------------------
 
 #include <AutoItConstants.au3>
@@ -243,7 +245,7 @@ _GuiCreate()
 _FeedbackCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idTwitchInput, $idTwitchFollowedGames, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchInput, $idTwitchFollowedGames, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -845,6 +847,7 @@ Func _TrayStuff()
 			Local $asStream[] = [$sClipboard]
 			_ClipboardGo($asStream)
 		Case $idSettings
+			GUICtrlSetData($idLogDelete, "Delete logs (" & _LogSize() & " MB)")
 			If Not GUISetState(@SW_SHOW, $hGuiSettings) Then WinActivate($hGuiSettings)
 		Case $idFeedback
 			If Not GUISetState(@SW_SHOW, $hGuiFeedback) Then WinActivate($hGuiFeedback)
@@ -1386,8 +1389,11 @@ Func _SettingsCreate()
 	$idLog = GUICtrlCreateCheckbox("Save log to file (don't enable unless asked)", 20, 170)
 	If $sLog = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
 
-	GUICtrlCreateButton("Open log folder", $iGuiWidth -100, 170)
+	GUICtrlCreateButton("Open log folder", $iGuiWidth - 100, 140)
 	GUICtrlSetOnEvent(-1, _LogFolderOpen)
+
+	$idLogDelete = GUICtrlCreateButton("Delete logs (" & _LogSize() & " MB)", $iGuiWidth - 115, 170)
+	GUICtrlSetOnEvent(-1, _LogFolderDelete)
 
 
 	GUICtrlCreateTabItem("Twitch")
@@ -1737,7 +1743,7 @@ Func _InstallTypeEx()
 	Return "AppX"
 EndFunc
 
-Func _CW($sMessage)
+Func _CW($sMessage, $iReset = False)
 	If IsArray($sMessage) Then $sMessage = _ArrayToString($sMessage, " :: ")
 	ConsoleWrite(@HOUR & ":" & @MIN & ":" & @SEC & " " & $sMessage & @CRLF)
 
@@ -1745,6 +1751,11 @@ Func _CW($sMessage)
 		_DeleteOldLogs()
 
 		Static Local $hLog = FileOpen(@LocalAppDataDir & "\StreamHelper\logs\log" & @WDAY & ".txt", $FO_APPEND + $FO_CREATEPATH)
+		If $iReset Then
+			FileClose($hLog)
+			$hLog = FileOpen(@LocalAppDataDir & "\StreamHelper\logs\log" & @WDAY & ".txt", $FO_APPEND + $FO_CREATEPATH)
+		EndIf
+
 		If $hLog Then _FileWriteLog($hLog, $sMessage)
 	EndIf
 EndFunc
@@ -1806,8 +1817,26 @@ Func _DeleteOldLogs()
 	_CW("Deleted old logs")
 EndFunc
 
+Func _LogSize()
+	$asLogs = _FileListToArray(@LocalAppDataDir & "\StreamHelper\logs", "log*.txt", $FLTA_FILES, True)
+	If @error Then Return 0
+
+	Local $iSize = 0
+	For $iX = 1 To $asLogs[0]
+		$iSize += FileGetSize($asLogs[$iX])
+	Next
+
+	Return Ceiling($iSize / 1048576)
+EndFunc
+
 Func _LogFolderOpen()
 	ShellExecute(@LocalAppDataDir & "\StreamHelper\logs")
+EndFunc
+
+Func _LogFolderDelete()
+	DirRemove(@LocalAppDataDir & "\StreamHelper\logs", $DIR_REMOVE)
+
+	_CW("Deleted all(?) logs", True)
 EndFunc
 
 Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID, $sStreamID = 404, $iFlags = $eIsStream, $iGameID = "", $iChannelID = "")
