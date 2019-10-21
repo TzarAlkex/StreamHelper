@@ -433,6 +433,15 @@ Func _TwitchProcessGameID()
 		If $aStreams[$iX][$eGame] <> "" Then ContinueLoop
 		If $aStreams[$iX][$eOnline] <> True Then ContinueLoop
 
+		If $aStreams[$iX][$eGameID] == "0" Then
+			$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/channels/" & StringTrimLeft($aStreams[$iX][$eUserID], 1), "Accept: application/vnd.twitchtv.v5+json" & @CRLF & "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
+			If IsObj($oJSON) = False Then Return
+
+			$sGame = Json_ObjGet($oJSON, "game")
+			$aStreams[$iX][$eGame] = $sGame
+			ContinueLoop
+		EndIf
+
 		If $aStreams[$iX][$eGameID] == "" Then
 			$aStreams[$iX][$eGame] = "No game selected"
 			ContinueLoop
@@ -774,6 +783,7 @@ Func _TrayRefresh()
 		EndIf
 		If $aStreams[$iX][$eOnline] = True Then
 			Local $sDisplayName = $aStreams[$iX][$eDisplayName]
+
 			If BitAND($aStreams[$iX][$eFlags], $eIsStream) Then
 				If StringInStr($sFavoritesNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[F] " & $sDisplayName
 				If StringInStr($sIgnoreNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[i] " & $sDisplayName
