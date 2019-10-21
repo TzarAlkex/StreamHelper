@@ -1343,7 +1343,7 @@ EndFunc
 #Region SETTINGS-GUI
 Func _SettingsCreate()
 	Local $iGuiWidth = 430, $iGuiHeight = 220
-	$hGuiSettings = GUICreate(StringTrimRight(@ScriptName, 4) & " " & $sInternalVersion & " - Settings", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+	$hGuiSettings = GUICreate(StringTrimRight(@ScriptName, 4) & " " & $sInternalVersion & " (" & _InstallType() & " version)" & " - Settings", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 	If @Compiled = False Then GUISetIcon(@ScriptDir & "\Svartnos.ico")
 
 	GUICtrlCreateTab(10, 10, $iGuiWidth - 20, $iGuiHeight - 20)
