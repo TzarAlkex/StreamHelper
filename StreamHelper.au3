@@ -1392,7 +1392,7 @@ Func _SettingsCreate()
 	GUICtrlCreateButton("Open log folder", $iGuiWidth - 100, 140)
 	GUICtrlSetOnEvent(-1, _LogFolderOpen)
 
-	$idLogDelete = GUICtrlCreateButton("Delete logs (" & _LogSize() & " MB)", $iGuiWidth - 115, 170)
+	$idLogDelete = GUICtrlCreateButton("Delete logs (XXX MB)", $iGuiWidth - 135, 170)
 	GUICtrlSetOnEvent(-1, _LogFolderDelete)
 
 
