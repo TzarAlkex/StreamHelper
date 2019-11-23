@@ -166,7 +166,7 @@ If @error Then $sRefreshMinutes = 3
 $sIgnoreMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "IgnoreMinutes")
 If @error Then $sIgnoreMinutes = 0
 
-Global $iSmashcastEnable = False, $iYoutubeEnable = False
+Global $iSmashcastEnable = False, $iYoutubeEnable = False, $bTwitchFollowedGamesEnable = False
 
 $sTwitchId = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchId")
 $sTwitchName = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchName")
@@ -274,7 +274,7 @@ Func _TwitchNew()
 
 	_TwitchGet()
 
-	If BitAND(GUICtrlRead($idTwitchFollowedGames), $GUI_CHECKED) Then _TwitchGetGames()
+	If $bTwitchFollowedGamesEnable And BitAND(GUICtrlRead($idTwitchFollowedGames), $GUI_CHECKED) Then _TwitchGetGames()
 
 	_TwitchProcessUserID()
 	_TwitchProcessGameID()
@@ -1405,8 +1405,10 @@ Func _SettingsCreate()
 	GUICtrlCreateButton("Get ID", 220, 87)
 	GUICtrlSetOnEvent(-1, _TwitchGetId)
 
-	$idTwitchFollowedGames = GUICtrlCreateCheckbox("Get followed games", 270, 40)
-	If $sTwitchFollowedGames = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
+	If $bTwitchFollowedGamesEnable Then
+		$idTwitchFollowedGames = GUICtrlCreateCheckbox("Get followed games", 270, 40)
+		If $sTwitchFollowedGames = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
+	EndIf
 
 	GUICtrlCreateLabel("Saved ID", 20, 160)
 	$idTwitchId = GUICtrlCreateInput($sTwitchId, 20, 180, 120, Default, $ES_READONLY)
