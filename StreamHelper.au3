@@ -147,13 +147,18 @@ EndIf
 
 $iClosePreviousBeforePlaying = True
 
+Global Enum $eAppX, $eClassic
+Global $asInstallType[2]
+$asInstallType[$eAppX] = "AppX"
+$asInstallType[$eClassic] = "Classic"
+
 $sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
 $sTwitchFollowedGames = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchFollowedGames")
 If @error Then $sTwitchFollowedGames = "1"
 _CW("Install type: " & _InstallType())
 
 Global $sUpdateCheck
-If _InstallType() = "AppX" Then
+If _InstallType() = $asInstallType[$eAppX] Then
 	$sUpdateCheck = "Never"
 Else
 	$sUpdateCheck = RegRead("HKCU\SOFTWARE\StreamHelper\", "UpdateCheck")
@@ -1343,7 +1348,7 @@ EndFunc
 #Region SETTINGS-GUI
 Func _SettingsCreate()
 	Local $iGuiWidth = 430, $iGuiHeight = 220
-	$hGuiSettings = GUICreate(StringTrimRight(@ScriptName, 4) & " " & $sInternalVersion & " (" & _InstallType() & " version)" & " - Settings", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+	$hGuiSettings = GUICreate(StringTrimRight(@ScriptName, 4) & " " & $sInternalVersion & " (" & _InstallType() & ")" & "", $iGuiWidth, $iGuiHeight, -1, -1, -1)
 	If @Compiled = False Then GUISetIcon(@ScriptDir & "\Svartnos.ico")
 
 	GUICtrlCreateTab(10, 10, $iGuiWidth - 20, $iGuiHeight - 20)
@@ -1361,7 +1366,7 @@ Func _SettingsCreate()
 	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
 	GUICtrlSetLimit(-1, 120, 3)
 
-	If _InstallType() <> "AppX" Then
+	If _InstallType() <> $asInstallType[$eAppX] Then
 		GUICtrlCreateLabel("Check for updates", 20, 90)
 		$idUpdates = GUICtrlCreateCombo("", 20, 110, 80)
 		GUICtrlSetData(-1, "Never|Daily|Weekly|Monthly", $sUpdateCheck)
@@ -1369,7 +1374,7 @@ Func _SettingsCreate()
 		GUICtrlSetOnEvent(-1, _CheckNow)
 	EndIf
 
-	If _InstallType() = "AppX" Then
+	If _InstallType() = $asInstallType[$eAppX] Then
 		$iStatus = RunWait(@ScriptDir & "\CentennialStartupHelper.exe /status", @ScriptDir)
 		If $iStatus <> $iStartupTaskStateError Then
 			$idStartup = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
@@ -1382,8 +1387,15 @@ Func _SettingsCreate()
 	Else
 		$idStartupLegacy = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
 		GUICtrlSetOnEvent(-1, _LegacyStartupSet)
+
 		If FileExists(@StartupDir & "\StreamHelper.lnk") Then GUICtrlSetState(-1, $GUI_CHECKED)
-		If @Compiled = 0 Then GUICtrlSetState(-1, $GUI_DISABLE)
+
+		If @Compiled = 0 Then
+			GUICtrlSetState(-1, $GUI_DISABLE)
+			$aiPos = ControlGetPos($hGuiSettings, "", $idStartupLegacy)
+			GUICtrlCreateLabel("", $aiPos[0], $aiPos[1], $aiPos[2], $aiPos[3])
+			GUICtrlSetTip(-1, "Not available while running from source")
+		EndIf
 	EndIf
 
 	$idLog = GUICtrlCreateCheckbox("Save log to file (don't enable unless asked)", 20, 170)
@@ -1736,13 +1748,15 @@ EndFunc
 Func _InstallTypeEx()
 	Local $APPMODEL_ERROR_NO_PACKAGE = 15700
 	$hProcess = _WinAPI_OpenProcess($PROCESS_QUERY_LIMITED_INFORMATION, 0, @AutoItPID)
-	If @error Then Return "Classical"
+	If @error Then Return $asInstallType[$eClassic]
+
 	$aResult = DllCall("Kernel32.dll", "LONG", "GetPackageFamilyName", "handle", $hProcess, "uint*", 0, "wstr", Null)
 	$iError = @error
 	_WinAPI_CloseHandle($hProcess)
-	If $iError Then Return "Classical"
-	If $aResult[0] = $APPMODEL_ERROR_NO_PACKAGE Then Return "Classical"
-	Return "AppX"
+	If $iError Then Return $asInstallType[$eClassic]
+	If $aResult[0] = $APPMODEL_ERROR_NO_PACKAGE Then Return $asInstallType[$eClassic]
+
+	Return $asInstallType[$eAppX]
 EndFunc
 
 Func _CW($sMessage, $iReset = False)
@@ -1994,7 +2008,7 @@ Func _ShouldSkipUpdate($sUpdateCheck, $iTime)
 EndFunc
 
 Func _CheckUpdates($iForce = False)
-	If _InstallType() = "AppX" Then Return
+	If _InstallType() = $asInstallType[$eAppX] Then Return
 
 	_CW("Updateing")
 	_ProgressSpecific("U")
