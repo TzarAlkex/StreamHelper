@@ -131,6 +131,7 @@ So stupid, --channel only works if Tc is not already running. And there isn't ev
 #include "WinHttp.au3"
 #include <GuiMenu.au3>
 #include <String.au3>
+#include "APIStuff.au3"
 
 $iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Singleton")
 _WinAPI_PostMessage($HWND_BROADCAST, $iWM, 0x1234, 0xABCD)
@@ -175,6 +176,7 @@ Global $iSmashcastEnable = False, $iYoutubeEnable = False, $bTwitchFollowedGames
 
 $sTwitchId = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchId")
 $sTwitchName = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchName")
+$sTwitchToken = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchToken")
 $sMixerId = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerId")
 $sMixerName = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerName")
 If $iSmashcastEnable Then
@@ -250,7 +252,7 @@ _GuiCreate()
 _FeedbackCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchInput, $idTwitchFollowedGames, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchFollowedGames, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -363,7 +365,7 @@ Func _TwitchGetGames()
 		$sTwitchName = $sUsername
 	EndIf
 
-	$oJSON = _WinHttpFetch("api.twitch.tv", "api/users/" & $sUsername & "/follows/games/live", "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
+	$oJSON = _WinHttpFetch("api.twitch.tv", "api/users/" & $sUsername & "/follows/games/live", "Client-ID: " & $sTwitchClientID)
 	If IsObj($oJSON) = False Then Return
 
 	$avTemp = Json_ObjGet($oJSON, "follows")
@@ -373,7 +375,7 @@ Func _TwitchGetGames()
 		$oGame = Json_ObjGet($avTemp[$iX], "game")
 		$sName = Json_ObjGet($oGame, "name")
 
-		$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/streams/?game=" & $sName, "Accept: application/vnd.twitchtv.v5+json" & @CRLF & "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
+		$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/streams/?game=" & $sName, "Accept: application/vnd.twitchtv.v5+json" & @CRLF & "Client-ID: " & $sTwitchClientID)
 		If IsObj($oJSON) = False Then Return
 
 		$oStreams = Json_ObjGet($oJSON, "streams")
@@ -441,7 +443,7 @@ Func _TwitchProcessGameID()
 		If $aStreams[$iX][$eOnline] <> True Then ContinueLoop
 
 		If $aStreams[$iX][$eGameID] == "0" Then
-			$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/channels/" & StringTrimLeft($aStreams[$iX][$eUserID], 1), "Accept: application/vnd.twitchtv.v5+json" & @CRLF & "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
+			$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/channels/" & StringTrimLeft($aStreams[$iX][$eUserID], 1), "Accept: application/vnd.twitchtv.v5+json" & @CRLF & "Client-ID: " & $sTwitchClientID & @CRLF & "Authorization: OAuth " & $sTwitchToken)
 			If IsObj($oJSON) = False Then Return
 
 			$sGame = Json_ObjGet($oJSON, "game")
@@ -488,8 +490,9 @@ Func _TwitchProcessGameID()
 	Next
 EndFunc
 
+;~ add &api_version=5 ??
 Func _TwitchFetch($sUrl)
-	Return _WinHttpFetch("api.twitch.tv", "helix/" & $sUrl, "Client-ID: " & "i8funp15gnh1lfy1uzr1231ef1dxg07")
+	Return _WinHttpFetch("api.twitch.tv", "helix/" & $sUrl, "Client-ID: " & $sTwitchClientID & @CRLF & "Authorization: Bearer " & $sTwitchToken)
 EndFunc
 #EndRegion TWITCH
 
@@ -652,7 +655,7 @@ Func _IsoDateTimeToZulu($s)
 EndFunc
 
 Func _MixerFetch($sUrl)
-	Return _WinHttpFetch("mixer.com", "api/v1/" & $sUrl, "Client-ID: " & "6ee47799a507377ec662f421b8bc5eb59f486781c92f6742")
+	Return _WinHttpFetch("mixer.com", "api/v1/" & $sUrl, "Client-ID: " & $sMixerClientID)
 EndFunc
 #EndRegion
 
@@ -1409,13 +1412,13 @@ Func _SettingsCreate()
 
 
 	GUICtrlCreateTabItem("Twitch")
-	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
+	GUICtrlCreateLabel('1. Click "Log in (Opens in browser)"' & @CRLF & "2. After login, select all the text in the textbox and copy it" & @CRLF & '3. Click "Paste login info"', 20, 40)
 
 	GUICtrlCreateLabel(" ", 20, 70)
-	$idTwitchInput = GUICtrlCreateInput("", 20, 90, 190)
-	_GUICtrlEdit_SetCueBanner($idTwitchInput, "Username")
-	GUICtrlCreateButton("Get ID", 220, 87)
-	GUICtrlSetOnEvent(-1, _TwitchGetId)
+	GUICtrlCreateButton("Log in (Opens in browser)", 20, 90, 190)
+	GUICtrlSetOnEvent(-1, _TwitchLogIn)
+	GUICtrlCreateButton("Paste login info", 220, 90, 140)
+	GUICtrlSetOnEvent(-1, _TwitchGetInfo)
 
 	If $bTwitchFollowedGamesEnable Then
 		$idTwitchFollowedGames = GUICtrlCreateCheckbox("Get followed games", 270, 40)
@@ -1580,35 +1583,32 @@ Func _TwitchSettingFollowedGames()
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchFollowedGames", "REG_SZ", $sTwitchFollowedGames)
 EndFunc
 
-Func _TwitchGetId()
-	$sUsername = GUICtrlRead($idTwitchInput)
-	If $sUsername = "" Then Return _GetErrored()
-	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
-	$sQuotedUsername = URLEncode($sUsername)
+Func _TwitchLogIn()
+	ShellExecute("https://id.twitch.tv/oauth2/authorize?client_id=" & $sTwitchClientID & "&redirect_uri=" & $sTwitchRedirectURI & "&response_type=token")
+EndFunc
 
-	$oJSON = _TwitchFetch("users?login=" & $sQuotedUsername)
-	If IsObj($oJSON) = False Then Return _GetErrored()
+Func _TwitchGetInfo()
+	Local $sClipboard = ClipGet()
+	Local $asLogin = StringSplit($sClipboard, ";")
 
-	$aData = Json_ObjGet($oJSON, "data")
-	If UBound($aData) <> 1 Then Return _GetErrored()
-	$iUserID = Json_ObjGet($aData[0], "id")
-
-	If $iUserID <> "" Then
-		_TwitchSet($iUserID, $sUsername)
+	If UBound($asLogin) = 4 Then
+		_TwitchSet($asLogin[1], $asLogin[2], $asLogin[3])
 	Else
-		Return _GetErrored()
+		MsgBox($MB_OK, @ScriptName, "Invalid data", Default, $hGuiSettings)
 	EndIf
 EndFunc
 
 Func _TwitchReset()
-	_TwitchSet("", "")
+	_TwitchSet("", "", "")
 EndFunc
 
-Func _TwitchSet($sId, $sName)
+Func _TwitchSet($sId, $sName, $sToken)
 	$sTwitchId = $sId
 	$sTwitchName = $sName
+	$sTwitchToken = $sToken
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchId", "REG_SZ", $sId)
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchName", "REG_SZ", $sName)
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchToken", "REG_SZ", $sToken)
 	GUICtrlSetData($idTwitchId, $sId)
 	GUICtrlSetData($idTwitchName, $sName)
 EndFunc

@@ -35,7 +35,8 @@ Twitch and Hitbox (now Smashcast) API's were largely implemented by glancing at 
 ## Compile or Run from source
 
 1. Install AutoIt v3 (and optionally SciTE4AutoIt3 for the best experience) from http://autoitscript.com/
-2. Open "StreamHelper.au3" in SciTE and click Tools > Compile or Go
+2. Set your own client-ids and redirect-uri in APIStuff.au3 and /docs/login/index.html
+3. Open "StreamHelper.au3" in SciTE and click Tools > Compile or Go
 
 ## Credits
 

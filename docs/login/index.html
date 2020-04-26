@@ -1,0 +1,52 @@
+<html>
+
+<head>
+	<title>StreamHelper OAuth Login</title>
+</head>
+
+<body>
+	<div id="user_data"></div>
+
+	<script type="text/javascript">
+		var client_id = 'i8funp15gnh1lfy1uzr1231ef1dxg07';
+		var redirect = 'https://tzaralkex.github.io/streamhelper/login/';
+
+		if (document.location.hash) {
+			var parsedHash = new URLSearchParams(window.location.hash.substr(1));
+			var access_token = parsedHash.get('access_token');
+
+			if (access_token) {
+				document.getElementById('user_data').textContent = 'Loading';
+
+				// call API
+				fetch(
+					'https://api.twitch.tv/helix/users',
+					{
+						"headers": {
+							"Client-ID": client_id,
+							"Authorization": "Bearer " + access_token
+						}
+					}
+				)
+					.then(resp => resp.json())
+					.then(resp => {
+						document.getElementById('user_data').innerHTML = '<p>Copy the text below and press the<br>"Paste login info" button in StreamHelper</p>';
+						var edit = document.createElement('textarea');
+						document.getElementById('user_data').append(edit);
+
+						data = resp.data[0];
+						userID = data.id;
+						username = data.login;
+
+						edit.textContent = userID + ';' + username + ';' + access_token + ';' + client_id;
+					})
+					.catch(err => {
+						console.log(err);
+						document.getElementById('user_data').textContent = 'Error getting user ID. Refresh and try again';
+					});
+			}
+		}
+	</script>
+</body>
+
+</html>
