@@ -189,8 +189,7 @@ If $iYoutubeEnable Then
 EndIf
 
 _Upgrade()
-Global $sFavoritesNew = _EnumValues("Favorite")
-Global $sIgnoreNew = _EnumValues("Ignore")
+Global $asFavorites = _EnumValues("Favorite")
 
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
@@ -228,7 +227,7 @@ Global $aStreams[0][$eMax]
 Global $iStreamlinkInstalled = StringInStr(EnvGet("path"), "Streamlink") > 0
 Global $bBlobFirstRun = True
 
-Global $bFavoriteFound = False
+;~ Global $bFavoriteFound = False
 Global $sChanged
 
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
@@ -795,8 +794,7 @@ Func _TrayRefresh()
 			Local $sDisplayName = $aStreams[$iX][$eDisplayName]
 
 			If BitAND($aStreams[$iX][$eFlags], $eIsStream) Then
-				If StringInStr($sFavoritesNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[F] " & $sDisplayName
-				If StringInStr($sIgnoreNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[i] " & $sDisplayName
+				If StringInStr($asFavorites, $aStreams[$iX][$eUserID] & @LF, $STR_CASESENSE) Then $sDisplayName = $sDisplayName & " | F"
 			EndIf
 
 			Local $sTrayText = $sDisplayName
@@ -808,18 +806,18 @@ Func _TrayRefresh()
 
 			If $aStreams[$iX][$eTrayId] = 0 Then
 				$aStreams[$iX][$eTrayId] = TrayCreateItem($sTrayText, -1, 0)
-				If $aStreams[$iX][$eFlags] = $eIsStream And StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
+				If $aStreams[$iX][$eFlags] = $eIsStream Then
 					Local $NewText = $aStreams[$iX][$eDisplayName]
 					If $bBlobFirstRun <> True Then $NewText &= " - " & $aStreams[$iX][$eGame] & "@CRLF" & $aStreams[$iX][$eStatus]
 
 					If $aStreams[$iX][$eStreamID] = 404 Or $aStreams[$iX][$eStreamID] <> $aStreams[$iX][$eOldStreamID] Then
 						$aStreams[$iX][$eOldStreamID] = $aStreams[$iX][$eStreamID]
 
-						If $sIgnoreMinutes = 0 Or TimerDiff($aStreams[$iX][$eTimer]) * 1000 * 60 > $sIgnoreMinutes Then
+						If StringInStr($sDisplayName, " | F", $STR_CASESENSE) And ($sIgnoreMinutes = 0 Or TimerDiff($aStreams[$iX][$eTimer]) * 1000 * 60 > $sIgnoreMinutes) Then
 							$aStreams[$iX][$eTimer] = TimerInit()
 
 							$sNew &= $NewText & @CRLF
-							If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
+;~ 							$bFavoriteFound = True
 						EndIf
 					EndIf
 				EndIf
@@ -829,12 +827,12 @@ Func _TrayRefresh()
 
 				TrayItemSetText($aStreams[$iX][$eTrayId], $sTrayText)
 
-				If StringInStr($sDisplayName, "[i] ", $STR_CASESENSE, 1, 1, 8) = 0 Then
+				If StringInStr($sDisplayName, " | F", $STR_CASESENSE) Then
 					Local $NewText = $aStreams[$iX][$eDisplayName] & " - " & $aStreams[$iX][$eGame] & " - " & $aStreams[$iX][$eTime] & "@CRLF" & $aStreams[$iX][$eStatus]
-					$sChanged &= $NewText & @CRLF
-				EndIf
 
-				If StringInStr($sDisplayName, "[F] ", $STR_CASESENSE, 1, 1, 8) Then $bFavoriteFound = True
+					$sChanged &= $NewText & @CRLF
+;~ 					$bFavoriteFound = True
+				EndIf
 			EndIf
 		Else
 			If $aStreams[$iX][$eTrayId] <> 0 And BitAND($aStreams[$iX][$eFlags], $eIsStream) = $eIsStream Then
@@ -917,22 +915,16 @@ Func _TrayStuff()
 				ElseIf _IsPressed("11") Then
 					$sUserID = $aStreams[$iX][$eUserID]
 
-					If StringInStr($sFavoritesNew, $sUserID) Then   ; if fav then move to ignore
-						$sFavoritesNew = StringReplace($sFavoritesNew, $sUserID & @LF, "")
+					If StringInStr($asFavorites, $sUserID, $STR_CASESENSE) Then   ; if fav then remove it from fav
+						$asFavorites = StringReplace($asFavorites, $sUserID & @LF, "")
 						RegDelete("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID)
-						$sIgnoreNew &= $sUserID & @LF
-						RegWrite("HKCU\SOFTWARE\StreamHelper\Ignore\", $sUserID, "REG_SZ", "")
-					ElseIf StringInStr($sIgnoreNew, $sUserID) Then   ; if ignore then make nothing
-						$sIgnoreNew = StringReplace($sIgnoreNew, $sUserID & @LF, "")
-						RegDelete("HKCU\SOFTWARE\StreamHelper\Ignore\", $sUserID)
 					Else   ; if nothing then fav
-						$sFavoritesNew &= $sUserID & @LF
+						$asFavorites &= $sUserID & @LF
 						RegWrite("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID, "REG_SZ", "")
 					EndIf
 
 					Local $sDisplayName = $aStreams[$iX][$eDisplayName]
-					If StringInStr($sFavoritesNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[F] " & $sDisplayName
-					If StringInStr($sIgnoreNew, $aStreams[$iX][$eUserID] & @LF) Then $sDisplayName = "[i] " & $sDisplayName
+					If StringInStr($asFavorites, $aStreams[$iX][$eUserID] & @LF, $STR_CASESENSE) Then $sDisplayName = $sDisplayName & " | F"
 
 					;Shouldn't this also have an if not game then skip game display?
 					;Future me: Yes. Yes it should.
@@ -1027,10 +1019,10 @@ Func _MAIN()
 	_CW("New streamer: " & StringReplace(StringReplace($sNew, "@CRLF", " - "), @CRLF, ", "))
 	_CW("Streamer changed game: " & StringReplace(StringReplace($sChanged, "@CRLF", " - "), @CRLF, ", "))
 
-	If $bFavoriteFound = True Then
-		_WinAPI_PlaySound(@ScriptDir & "\Authentic A-10 Warthog sounds TM.wav", $SND_ASYNC)
-		$bFavoriteFound = False
-	EndIf
+;~ 	If $bFavoriteFound = True Then
+;~ 		_WinAPI_PlaySound(@ScriptDir & "\Authentic A-10 Warthog sounds TM.wav", $SND_ASYNC)
+;~ 		$bFavoriteFound = False
+;~ 	EndIf
 
 	If $sChanged <> "" Then
 		If @OSBuild >= 10240 Then
@@ -1060,7 +1052,7 @@ Func _MAIN()
 			;I'm guessing 120 is low enough to cover most situations.
 			$sReplaced = StringLeft($sReplaced, 120)
 			If StringLen($sReplaced) <> $iReplacedLength Then $sReplaced &= "..."
-			TrayTip("Now streaming", $sReplaced, 10)
+			TrayTip("Currently streaming", $sReplaced, 10)
 		ElseIf @OSBuild >= 10240 Then
 			_TrayTipThis8($sNew, "Now streaming")
 		Else

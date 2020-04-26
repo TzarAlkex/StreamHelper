@@ -14,11 +14,11 @@ Download StreamHelper from the [Microsoft Store](https://www.microsoft.com/store
 
 ## Description
 
-Add your username in the settings for the respective service, click "Get ID", and it will start looking for streams from the people you follow (also followed games on Twitch).
+Start the application then open the settings from the tray icon and login to the respective service from the tab with it's name.
 
 All functionality is by the tray icon.
 * Click a stream to play.
-* Ctrl+click a stream to mark as favorite (plays extra "alarm" sound so it's harder to miss), Ctrl+click again to mark as ignore (no notification), Ctrl+click again to go back to normal.
+* Ctrl+click a stream to mark as favorite (shows notification when they go online or change game), Ctrl+click again to go back to normal.
 * Shift+click a stream in the list to open it in the "Play from clipboard" window.
 
 I highly recommend installing [Streamlink](https://streamlink.github.io/) to get the most use of StreamHelper. Description from their website:
