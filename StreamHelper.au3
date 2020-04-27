@@ -5,8 +5,8 @@
 #AutoIt3Wrapper_Icon=Svartnos.ico
 #AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Description=StreamHelper
-#AutoIt3Wrapper_Res_Fileversion=1.4.0.0
-#AutoIt3Wrapper_Res_ProductVersion=1.4.0.0
+#AutoIt3Wrapper_Res_Fileversion=1.4.1.0
+#AutoIt3Wrapper_Res_ProductVersion=1.4.1.0
 #AutoIt3Wrapper_Res_LegalCopyright=©2015-2020 Alexander Samuelsson
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #AutoIt3Wrapper_Run_Au3Stripper=y
