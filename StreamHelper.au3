@@ -132,6 +132,7 @@ So stupid, --channel only works if Tc is not already running. And there isn't ev
 #include <GuiMenu.au3>
 #include <String.au3>
 #include "APIStuff.au3"
+#include "CentennialHelper.au3"
 
 $iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Singleton")
 _WinAPI_PostMessage($HWND_BROADCAST, $iWM, 0x1234, 0xABCD)
@@ -218,8 +219,6 @@ TrayItemSetOnEvent( -1, _TrayStuff)
 Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eChannelID, $eTimer, $eStreamID, $eOldStreamID, $eMax
 Global Enum $eTwitch, $eSmashcast, $eMixer, $eYoutube
 Global Enum Step *2 $eIsLink, $eIsText, $eIsStream
-
-Global Enum $iStartupTaskStateError = -1, $iStartupTaskStateDisabled, $iStartupTaskStateDisabledByUser, $iStartupTaskStateEnabled, $iStartupTaskStateDisabledByPolicy, $iStartupTaskStateEnabledByPolicy
 
 Global $sNew
 Global $aStreams[0][$eMax]
@@ -1364,14 +1363,14 @@ Func _SettingsCreate()
 	EndIf
 
 	If _InstallType() = $asInstallType[$eAppX] Then
-		$iStatus = RunWait(@ScriptDir & "\CentennialStartupHelper.exe /status", @ScriptDir)
-		If $iStatus <> $iStartupTaskStateError Then
+		$iStatus = _StartupTaskStatus()
+		If $iStatus <> $eStateError Then
 			$idStartup = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
 			GUICtrlSetOnEvent(-1, _CentennialStartupSet)
 			$aiPos = ControlGetPos($hGuiSettings, "", $idStartup)
 			$idStartupTooltip = GUICtrlCreateLabel("", $aiPos[0], $aiPos[1], $aiPos[2], $aiPos[3])
 
-			_CentennialStartupStatus($iStatus)
+			_CentennialStartupUI($iStatus)
 		EndIf
 	Else
 		$idStartupLegacy = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
@@ -1515,30 +1514,30 @@ Func _CentennialStartupSet()
 
 	Local $iStatus
 	If $iChecked Then
-		$iStatus = RunWait(@ScriptDir & "\CentennialStartupHelper.exe /enable", @ScriptDir)
+		$iStatus = _StartupTaskEnable()
 	Else
-		$iStatus = RunWait(@ScriptDir & "\CentennialStartupHelper.exe /disable", @ScriptDir)
+		$iStatus = _StartupTaskDisable()
 	EndIf
-	_CentennialStartupStatus($iStatus)
+	_CentennialStartupUI($iStatus)
 EndFunc
 
-Func _CentennialStartupStatus($iStatus)
-	If $iStatus = $iStartupTaskStateError Then
+Func _CentennialStartupUI($iStatus)
+	If $iStatus = $eStateError Then
 		GUICtrlSetState($idStartup, $GUI_INDETERMINATE)
 		GUICtrlSetTip($idStartupTooltip, "Error?")
-	ElseIf $iStatus = $iStartupTaskStateDisabled Then
+	ElseIf $iStatus = $eStateDisabled Then
 		GUICtrlSetState($idStartup, $GUI_UNCHECKED)
 		GUICtrlSetTip($idStartupTooltip, "")
-	ElseIf $iStatus = $iStartupTaskStateDisabledByUser Then
+	ElseIf $iStatus = $eStateDisabledByUser Then
 		GUICtrlSetState($idStartup, $GUI_DISABLE)
 		GUICtrlSetTip($idStartupTooltip, "Can't set autostart if disabled from Task Manager. Enable from there first.")
-	ElseIf $iStatus = $iStartupTaskStateEnabled Then
+	ElseIf $iStatus = $eStateEnabled Then
 		GUICtrlSetState($idStartup, $GUI_CHECKED)
 		GUICtrlSetTip($idStartupTooltip, "")
-	ElseIf $iStatus = $iStartupTaskStateDisabledByPolicy Then
+	ElseIf $iStatus = $eStateDisabledByPolicy Then
 		GUICtrlSetState($idStartup, $GUI_DISABLE)
 		GUICtrlSetTip($idStartupTooltip, "The task is disabled by the administrator or group policy.")
-	ElseIf $iStatus = $iStartupTaskStateEnabledByPolicy Then
+	ElseIf $iStatus = $eStateEnabledByPolicy Then
 		GUICtrlSetState($idStartup, $GUI_DISABLE)
 		GUICtrlSetTip($idStartupTooltip, "The task is enabled by the administrator or group policy.")
 	EndIf
