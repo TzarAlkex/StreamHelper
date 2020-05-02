@@ -227,7 +227,6 @@ Global $aStreams[0][$eMax]
 Global $iStreamlinkInstalled = StringInStr(EnvGet("path"), "Streamlink") > 0
 Global $bBlobFirstRun = True
 
-;~ Global $bFavoriteFound = False
 Global $sChanged
 
 Global Const $AUT_WM_NOTIFYICON = $WM_USER + 1 ; Application.h
@@ -819,7 +818,6 @@ Func _TrayRefresh()
 							$aStreams[$iX][$eTimer] = TimerInit()
 
 							$sNew &= $NewText & @CRLF
-;~ 							$bFavoriteFound = True
 						EndIf
 					EndIf
 				EndIf
@@ -833,7 +831,6 @@ Func _TrayRefresh()
 					Local $NewText = $aStreams[$iX][$eDisplayName] & " - " & $aStreams[$iX][$eGame] & " - " & $aStreams[$iX][$eTime] & "@CRLF" & $aStreams[$iX][$eStatus]
 
 					$sChanged &= $NewText & @CRLF
-;~ 					$bFavoriteFound = True
 				EndIf
 			EndIf
 		Else
@@ -1020,11 +1017,6 @@ Func _MAIN()
 
 	_CW("New streamer: " & StringReplace(StringReplace($sNew, "@CRLF", " - "), @CRLF, ", "))
 	_CW("Streamer changed game: " & StringReplace(StringReplace($sChanged, "@CRLF", " - "), @CRLF, ", "))
-
-;~ 	If $bFavoriteFound = True Then
-;~ 		_WinAPI_PlaySound(@ScriptDir & "\Authentic A-10 Warthog sounds TM.wav", $SND_ASYNC)
-;~ 		$bFavoriteFound = False
-;~ 	EndIf
 
 	If $sChanged <> "" Then
 		If @OSBuild >= 10240 Then
