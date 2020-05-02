@@ -7,3 +7,4 @@
 *.json
 *_stripped.au3
 .vscode/
+*.exe
