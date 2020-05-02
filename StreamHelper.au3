@@ -263,7 +263,9 @@ $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
 
 _MAIN()
 
-_WinAPI_RegisterApplicationRestart($RESTART_NO_CRASH)
+If @Compiled = 0 Then
+	_WinAPI_RegisterApplicationRestart($RESTART_NO_CRASH)
+EndIf
 
 If FileExists(@LocalAppDataDir & "\StreamHelper\arraydebug") Then
 	HotKeySet("{PAUSE}", _ArrayDebug)
