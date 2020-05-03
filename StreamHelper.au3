@@ -436,7 +436,7 @@ Func _TwitchProcessGameID()
 		If $aStreams[$iX][$eGame] <> "" Then ContinueLoop
 		If $aStreams[$iX][$eOnline] <> True Then ContinueLoop
 
-		If $aStreams[$iX][$eGameID] == "0" Then
+		If $aStreams[$iX][$eGameID] == "0" Or $aStreams[$iX][$eGameID] == "" Then
 			$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/channels/" & StringTrimLeft($aStreams[$iX][$eUserID], 1), "Accept: application/vnd.twitchtv.v5+json" & @CRLF & "Client-ID: " & $sTwitchClientID & @CRLF & "Authorization: OAuth " & $sTwitchToken)
 			If IsObj($oJSON) = False Then Return
 
