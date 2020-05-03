@@ -133,6 +133,7 @@ So stupid, --channel only works if Tc is not already running. And there isn't ev
 #include <String.au3>
 #include "APIStuff.au3"
 #include "CentennialHelper.au3"
+#include <GuiListBox.au3>
 
 $iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Singleton")
 _WinAPI_PostMessage($HWND_BROADCAST, $iWM, 0x1234, 0xABCD)
@@ -155,8 +156,6 @@ $asInstallType[$eAppX] = "AppX"
 $asInstallType[$eClassic] = "Classic"
 
 $sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
-$sTwitchFollowedGames = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchFollowedGames")
-If @error Then $sTwitchFollowedGames = "1"
 _CW("Install type: " & _InstallType())
 
 Global $sUpdateCheck
@@ -173,7 +172,7 @@ If @error Then $sRefreshMinutes = 3
 $sIgnoreMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "IgnoreMinutes")
 If @error Then $sIgnoreMinutes = 0
 
-Global $iSmashcastEnable = False, $iYoutubeEnable = False, $bTwitchFollowedGamesEnable = False
+Global $iSmashcastEnable = False, $iYoutubeEnable = False
 
 $sTwitchId = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchId")
 $sTwitchName = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchName")
@@ -191,6 +190,7 @@ EndIf
 
 _Upgrade()
 Global $asFavorites = _EnumValues("Favorite")
+Global $asTwitchGames = _EnumValues("TwitchGames")
 
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
@@ -249,7 +249,7 @@ _GuiCreate()
 _FeedbackCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchFollowedGames, $idTwitchId, $idTwitchName, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -280,7 +280,7 @@ Func _TwitchNew()
 
 	_TwitchGet()
 
-	If $bTwitchFollowedGamesEnable And BitAND(GUICtrlRead($idTwitchFollowedGames), $GUI_CHECKED) Then _TwitchGetGames()
+	_TwitchGetGames()
 
 	_TwitchProcessUserID()
 	_TwitchProcessGameID()
@@ -349,48 +349,43 @@ Func _TwitchGet()
 EndFunc
 
 Func _TwitchGetGames()
-	$sUrl = "users?id=" & $sTwitchId
+	$asGameIDs = StringSplit(StringStripWS($asTwitchGames, $STR_STRIPTRAILING), @LF)
+	If @error Then Return
+
+	Local $sGames = ""
+	For $iX = 1 To $asGameIDs[0]
+		$sGames &= "&game_id=" & $asGameIDs[$iX]
+	Next
+	$sGames = StringTrimLeft($sGames, 1)
+
+	$sUrl = "streams?" & $sGames & "&first=100"
 	$oJSON = _TwitchFetch($sUrl)
 	If IsObj($oJSON) = False Then Return
 
 	$aData = Json_ObjGet($oJSON, "data")
-	If UBound($aData) <> 1 Then Return
+	If UBound($aData) = 0 Then Return
 
-	$sUserName = Json_ObjGet($aData[0], "login")
-	If $sUserName = "" Then
-		Return
-	ElseIf $sUserName <> $sTwitchName Then
-		RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchName", "REG_SZ", $sUsername)
-		$sTwitchName = $sUsername
-	EndIf
+	$sNow = _NowCalc()
 
-	$oJSON = _WinHttpFetch("api.twitch.tv", "api/users/" & $sUsername & "/follows/games/live", "Client-ID: " & $sTwitchClientID)
-	If IsObj($oJSON) = False Then Return
+	For $iX = 0 To UBound($aData) -1
+		$sGameID = Json_ObjGet($aData[$iX], "game_id")
+		$sStreamID = Json_ObjGet($aData[$iX], "id")
+		$sTime = Json_ObjGet($aData[$iX], "started_at")
+		$sTitle = Json_ObjGet($aData[$iX], "title")
+		$sUserID = "T" & Json_ObjGet($aData[$iX], "user_id")
 
-	$avTemp = Json_ObjGet($oJSON, "follows")
-	If UBound($avTemp) = 0 Then Return
+		Local $aDate, $aTime
+		_DateTimeSplit($sTime, $aDate, $aTime)
+		Local $tSystem = _Date_Time_EncodeSystemTime($aDate[2], $aDate[3], $aDate[1], $aTime[1], $aTime[2], $aTime[3])
+		$tLocal = _Date_Time_SystemTimeToTzSpecificLocalTime($tSystem)
+		$sTimeConverted = _Date_Time_SystemTimeToDateTimeStr($tLocal, 1)
 
-	For $iX = 0 To UBound($avTemp) -1
-		$oGame = Json_ObjGet($avTemp[$iX], "game")
-		$sName = Json_ObjGet($oGame, "name")
+		$sTimeDiffHour = _DateDiff("h", $sTimeConverted, $sNow)
+		$sTimeAdded = _DateAdd("h", $sTimeDiffHour, $sTimeConverted)
+		$sTimeDiffMin = _DateDiff("n", $sTimeAdded, $sNow)
+		$sTime2 = StringFormat("%02s:%02s", $sTimeDiffHour, $sTimeDiffMin)
 
-		$oJSON = _WinHttpFetch("api.twitch.tv", "kraken/streams/?game=" & $sName, "Accept: application/vnd.twitchtv.v5+json" & @CRLF & "Client-ID: " & $sTwitchClientID)
-		If IsObj($oJSON) = False Then Return
-
-		$oStreams = Json_ObjGet($oJSON, "streams")
-
-		For $iY = 0 To UBound($oStreams) -1
-			$sStreamID = Json_ObjGet($oStreams[$iY], "_id")
-
-			$oChannel = Json_ObjGet($oStreams[$iY], "channel")
-			$sUrl = Json_ObjGet($oChannel, "url")
-			$sName = Json_ObjGet($oChannel, "display_name")
-			If StringIsASCII($sName) = 0 Then $sName = Json_ObjGet($oChannel, "name")
-			$sGame = Json_ObjGet($oChannel, "game")
-			$sUserID = "T" & Json_ObjGet($oChannel, "_id")
-
-			_StreamSet($sName, $sUrl, "", $sGame, "", "", "", $eTwitch, $sUserID, $sStreamID)
-		Next
+		_StreamSet("", "", "", "", "", $sTime2, $sTitle, $eTwitch, $sUserID, $sStreamID, Default, $sGameID)
 	Next
 EndFunc
 
@@ -1396,7 +1391,7 @@ Func _SettingsCreate()
 	GUICtrlSetOnEvent(-1, _LogFolderDelete)
 
 
-	GUICtrlCreateTabItem("Twitch")
+	GUICtrlCreateTabItem("Twitch - Followed")
 	GUICtrlCreateLabel('1. Click "Log in (Opens in browser)"' & @CRLF & "2. After login, select all the text in the textbox and copy it" & @CRLF & '3. Click "Paste login info"', 20, 40)
 
 	GUICtrlCreateButton("Log in (Opens in browser)", 20, 90, 190)
@@ -1404,17 +1399,32 @@ Func _SettingsCreate()
 	GUICtrlCreateButton("Paste login info", 220, 90, 140)
 	GUICtrlSetOnEvent(-1, _TwitchGetInfo)
 
-	If $bTwitchFollowedGamesEnable Then
-		$idTwitchFollowedGames = GUICtrlCreateCheckbox("Get followed games", 270, 40)
-		If $sTwitchFollowedGames = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
-	EndIf
-
 	GUICtrlCreateLabel("Saved ID", 20, 160)
 	$idTwitchId = GUICtrlCreateInput($sTwitchId, 20, 180, 120, Default, $ES_READONLY)
 	GUICtrlCreateLabel("Saved Username", 155, 160)
 	$idTwitchName = GUICtrlCreateInput($sTwitchName, 155, 180, 120, Default, $ES_READONLY)
 	GUICtrlCreateButton("Forget ID && Username", 290, 177)
 	GUICtrlSetOnEvent(-1, _TwitchReset)
+
+
+	GUICtrlCreateTabItem("Twitch - Games")
+
+	GUICtrlCreateLabel("1. Input game name" & @CRLF & "exactly as it shows on Twitch ", 20, 40)
+	GUICtrlCreateLabel(" ", 20, 40)
+	$idTwitchGamesName = GUICtrlCreateInput("", 20, 75, 190)
+	_GUICtrlEdit_SetCueBanner($idTwitchGamesName, "Game name")
+	GUICtrlCreateButton("2. Get ID", 20, 100)
+	GUICtrlSetOnEvent(-1, _TwitchGameID)
+	GUICtrlCreateLabel(" ", 20, 40)
+	$idTwitchGamesID = GUICtrlCreateInput("", 20, 130, 190)
+	GUICtrlSetState(-1, $GUI_DISABLE)
+	$idTwitchGamesAdd = GUICtrlCreateButton("3. Add", 20, 155)
+	GUICtrlSetOnEvent(-1, _TwitchGameAdd)
+
+	$idTwitchGamesList = GUICtrlCreateList("", 260, 40, 150, 135)
+	GUICtrlSetData(-1, StringReplace(StringStripWS($asTwitchGames, $STR_STRIPTRAILING), @LF, "|"))
+	GUICtrlCreateButton("Remove selected", 260, 175)
+	GUICtrlSetOnEvent(-1, _TwitchGameRemove)
 
 
 	GUICtrlCreateTabItem("Mixer")
@@ -1560,13 +1570,6 @@ Func _SettingsLog()
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "Log", "REG_SZ", $sLog)
 EndFunc
 
-Func _TwitchSettingFollowedGames()
-	Local $sNew = BitAND(GUICtrlRead($idTwitchFollowedGames), $GUI_CHECKED)
-	If $sNew = $sTwitchFollowedGames Then Return
-	$sTwitchFollowedGames = $sNew
-	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchFollowedGames", "REG_SZ", $sTwitchFollowedGames)
-EndFunc
-
 Func _TwitchLogIn()
 	ShellExecute("https://id.twitch.tv/oauth2/authorize?client_id=" & $sTwitchClientID & "&redirect_uri=" & $sTwitchRedirectURI & "&response_type=token")
 EndFunc
@@ -1595,6 +1598,62 @@ Func _TwitchSet($sId, $sName, $sToken)
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchToken", "REG_SZ", $sToken)
 	GUICtrlSetData($idTwitchId, $sId)
 	GUICtrlSetData($idTwitchName, $sName)
+EndFunc
+
+Func _TwitchGameID()
+	$sGameName = GUICtrlRead($idTwitchGamesName)
+	If $sGameName = "" Then Return _TwitchGameRefresh()
+
+	$oJSON = _TwitchFetch("games?name=" & $sGameName)
+	If IsObj($oJSON) = False Then Return _TwitchGameRefresh()
+
+	$aData = Json_ObjGet($oJSON, "data")
+	If UBound($aData) = 0 Then Return _TwitchGameRefresh()
+	$sGameID = Json_ObjGet($aData[0], "id")
+
+	If $sGameID <> "" Then
+		Return _TwitchGameRefresh($sGameID)
+	Else
+		Return _TwitchGameRefresh()
+	EndIf
+EndFunc
+
+Func _TwitchGameRefresh($sGameID = "")
+	GUICtrlSetData($idTwitchGamesID, $sGameID)
+
+	If $sGameID Then
+		GUICtrlSetState($idTwitchGamesAdd, $GUI_ENABLE)
+	Else
+		GUICtrlSetState($idTwitchGamesAdd, $GUI_DISABLE)
+		Return MsgBox($MB_OK, @ScriptName, "Game not found, make sure you typed it correctly and are connected to the internet", Default, $hGuiSettings)
+	EndIf
+EndFunc
+
+Func _TwitchGameAdd()
+	$sID = GUICtrlRead($idTwitchGamesID)
+
+	If StringInStr($asTwitchGames, $sID & @LF) <> 0 Then
+		Return MsgBox($MB_OK, @ScriptName, "ID already in list", Default, $hGuiSettings)
+	EndIf
+
+	If _GUICtrlListBox_GetCount($asTwitchGames) > 10 Then
+		Return MsgBox($MB_OK, @ScriptName, "10 games max currently", Default, $hGuiSettings)
+	EndIf
+
+	GUICtrlSetData($idTwitchGamesList, $sID & "|")
+	$asTwitchGames &= $sID & @LF
+	RegWrite("HKCU\SOFTWARE\StreamHelper\TwitchGames\", $sID, "REG_SZ", "")
+EndFunc
+
+Func _TwitchGameRemove()
+	$iSelected = _GUICtrlListBox_GetCurSel($idTwitchGamesList)
+	If $iSelected = -1 Then Return
+
+	$sID = _GUICtrlListBox_GetText($idTwitchGamesList, $iSelected)
+
+	_GUICtrlListBox_DeleteString($idTwitchGamesList, $iSelected)
+	$asTwitchGames = StringReplace($asTwitchGames, $sID & @LF, "")
+	RegDelete("HKCU\SOFTWARE\StreamHelper\TwitchGames\", $sID)
 EndFunc
 
 Func _MixerGetId()
@@ -1713,7 +1772,6 @@ Func _SettingsSaveAll()
 	_SettingsIgnore()
 	_SettingsUpdateCheck()
 	_SettingsLog()
-	_TwitchSettingFollowedGames()
 EndFunc
 
 Func _SettingsHide()
