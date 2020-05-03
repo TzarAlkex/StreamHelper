@@ -188,6 +188,13 @@ If $iYoutubeEnable Then
 	$sYoutubeName = RegRead("HKCU\SOFTWARE\StreamHelper\", "YoutubeName")
 EndIf
 
+Global $sInternalVersion
+If @Compiled Then
+	$sInternalVersion = FileGetVersion(@AutoItExe)
+Else
+	$sInternalVersion = IniRead(@ScriptFullPath, "FakeIniSectionName", "#AutoIt3Wrapper_Res_Fileversion", "0.0.0.0")
+EndIf
+
 _Upgrade()
 Global $asFavorites = _EnumValues("Favorite")
 Global $asTwitchGames = _EnumValues("TwitchGames")
@@ -235,13 +242,6 @@ Global Const $PBT_APMRESUMEAUTOMATIC =  0x12
 AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the second")
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 Global $avDownloads[1][2]
-
-Global $sInternalVersion
-If @Compiled Then
-	$sInternalVersion = FileGetVersion(@AutoItExe)
-Else
-	$sInternalVersion = IniRead(@ScriptFullPath, "FakeIniSectionName", "#AutoIt3Wrapper_Res_Fileversion", "0.0.0.0")
-EndIf
 
 Global $hGuiClipboard, $hGuiFeedback
 Global $idLabel, $idQuality, $idUrl
@@ -1819,27 +1819,35 @@ Func _CW($sMessage, $iReset = False)
 EndFunc
 
 Func _Upgrade()
+	If RegRead("HKCU\SOFTWARE\StreamHelper\", "Upgrade") = $sInternalVersion Then Return
 	_1200()
+	_1410()
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "Upgrade", "REG_SZ", $sInternalVersion)
 EndFunc
 
 Func _1200()
-	If RegRead("HKCU\SOFTWARE\StreamHelper\", "MigratedFavorites") = "" Then
-		Local $sFavorites = RegRead("HKCU\SOFTWARE\StreamHelper\", "Favorites")
+	Local $sFavorites = RegRead("HKCU\SOFTWARE\StreamHelper\", "Favorites")
+	If @error = 0 Then
 		Local $asFavorites = StringSplit($sFavorites, @LF)
 		For $iX = 1 To $asFavorites[0]
 			RegWrite("HKCU\SOFTWARE\StreamHelper\Favorite\", $asFavorites[$iX], "REG_SZ", "")
 		Next
 		RegDelete("HKCU\SOFTWARE\StreamHelper\", "Favorites")
+	EndIf
 
-		Local $sIgnores = RegRead("HKCU\SOFTWARE\StreamHelper\", "Ignore")
+	Local $sIgnores = RegRead("HKCU\SOFTWARE\StreamHelper\", "Ignore")
+	If @error = 0 Then
 		Local $asIgnores = StringSplit($sIgnores, @LF)
 		For $iX = 1 To $asIgnores[0]
 			RegWrite("HKCU\SOFTWARE\StreamHelper\Ignore\", $asIgnores[$iX], "REG_SZ", "")
 		Next
 		RegDelete("HKCU\SOFTWARE\StreamHelper\", "Ignore")
-
-		RegWrite("HKCU\SOFTWARE\StreamHelper\", "MigratedFavorites", "REG_SZ", "1")
 	EndIf
+EndFunc
+
+Func _1410()
+	RegDelete("HKCU\SOFTWARE\StreamHelper\", "TwitchFollowedGames")
+	RegDelete("HKCU\SOFTWARE\StreamHelper\", "MigratedFavorites")
 EndFunc
 
 Func _EnumValues($sKey)
