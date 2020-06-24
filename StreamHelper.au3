@@ -259,7 +259,9 @@ $hBitmap = _WinAPI_CreateSolidBitmap(0, 0xFFFFFF, 16, 16)
 $hImage = _GDIPlus_BitmapCreateFromHBITMAP($hBitmap)
 $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
 
-_MAIN()
+; https://www.autoitscript.com/forum/topic/199786-making-your-compiled-application-dpi-aware/
+Global Const $DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED = -5
+If @OSVersion = 'WIN_10' Then DllCall("User32.dll", "bool", "SetProcessDpiAwarenessContext" , "HWND", $DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)
 
 If @Compiled = 0 Then
 	_WinAPI_RegisterApplicationRestart($RESTART_NO_CRASH)
@@ -268,6 +270,8 @@ EndIf
 If FileExists(@LocalAppDataDir & "\StreamHelper\arraydebug") Then
 	HotKeySet("{PAUSE}", _ArrayDebug)
 EndIf
+
+_MAIN()
 
 While 1
 	Sleep(3600000)
