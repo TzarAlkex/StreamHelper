@@ -10,7 +10,9 @@
 
 ## Install
 
-Download StreamHelper from the [Microsoft Store](https://www.microsoft.com/store/apps/9P776V8N7B5B) or [GitHub](https://github.com/TzarAlkex/StreamHelper/releases/latest)
+Download StreamHelper from the [Microsoft Store](https://www.microsoft.com/store/apps/9P776V8N7B5B) or [GitHub](https://github.com/TzarAlkex/StreamHelper/releases/latest).
+
+Note that while it is an .exe file on the GitHub that you can just download to any folder and run, it is not portable. Settings are saved in the registry, and logs if enabled are saved in appdata.
 
 ## Description
 
