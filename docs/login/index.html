@@ -38,6 +38,8 @@
 						userID = data.id;
 						username = data.login;
 
+						edit.style.width = 600
+						edit.style.height = 100
 						edit.textContent = userID + ';' + username + ';' + access_token;
 					})
 					.catch(err => {
