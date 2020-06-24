@@ -155,8 +155,10 @@ Global $asInstallType[2]
 $asInstallType[$eAppX] = "AppX"
 $asInstallType[$eClassic] = "Classic"
 
-$sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
+Global $sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
 _CW("Install type: " & _InstallType())
+
+Global $iStreamlinkInstalled = StringInStr(EnvGet("path"), "Streamlink") > 0
 
 Global $sUpdateCheck
 If _InstallType() = $asInstallType[$eAppX] Then
@@ -230,7 +232,6 @@ Global Enum Step *2 $eIsLink, $eIsText, $eIsStream
 Global $sNew
 Global $aStreams[0][$eMax]
 
-Global $iStreamlinkInstalled = StringInStr(EnvGet("path"), "Streamlink") > 0
 Global $bBlobFirstRun = True
 
 Global $sChanged
