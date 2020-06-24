@@ -206,24 +206,24 @@ Opt("TrayOnEventMode", 1)
 Opt("GUIOnEventMode", 1)
 
 TrayCreateItem("")
-Local $idRefresh = TrayCreateItem("Refresh")
-TrayItemSetOnEvent( -1, _TrayStuff)
+TrayCreateItem("Refresh")
+TrayItemSetOnEvent(-1, _MAIN)
 
-Local $idClipboard = TrayCreateItem("Play from clipboard")
-TrayItemSetOnEvent( -1, _TrayStuff)
+TrayCreateItem("Play from clipboard")
+TrayItemSetOnEvent(-1, _GuiShow)
 
 TrayCreateItem("")
-Local $idSettings = TrayCreateItem("Settings")
-TrayItemSetOnEvent( -1, _TrayStuff)
+TrayCreateItem("Settings")
+TrayItemSetOnEvent(-1, _SettingsShow)
 
-Local $idFeedback = TrayCreateItem("Send feedback")
-TrayItemSetOnEvent( -1, _TrayStuff)
+TrayCreateItem("Send feedback")
+TrayItemSetOnEvent(-1, _FeedbackShow)
 
-Local $idAbout = TrayCreateItem("About")
-TrayItemSetOnEvent( -1, _TrayStuff)
+TrayCreateItem("About")
+TrayItemSetOnEvent(-1, _About)
 
-Local $idExit = TrayCreateItem("Exit")
-TrayItemSetOnEvent( -1, _TrayStuff)
+TrayCreateItem("Exit")
+TrayItemSetOnEvent(-1, _Exit)
 
 Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eChannelID, $eTimer, $eStreamID, $eOldStreamID, $eMax
 Global Enum $eTwitch, $eSmashcast, $eMixer, $eYoutube
@@ -843,99 +843,45 @@ Func _TrayRefresh()
 EndFunc
 
 Func _TrayStuff()
-	Switch @TRAY_ID
-		Case $idRefresh
-			_MAIN()
-		Case $idClipboard
-			Local $sClipboard = ClipGet()
-			Local $asStream[] = [$sClipboard]
+	For $iX = 0 To UBound($aStreams) -1
+		If $aStreams[$iX][$eTrayId] = @TRAY_ID Then
+			ExitLoop
+		EndIf
+	Next
+
+	If BitAND($aStreams[$iX][$eFlags], $eIsLink) = $eIsLink Then
+		ShellExecute($aStreams[$iX][$eUrl])
+	ElseIf BitAND($aStreams[$iX][$eFlags], $eIsText) = $eIsText Then
+		Return
+	ElseIf BitAND($aStreams[$iX][$eFlags], $eIsStream) = $eIsStream Then
+		If _IsPressed("10") Then
+			Local $asStream[] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
 			_ClipboardGo($asStream)
-		Case $idSettings
-			GUICtrlSetData($idLogDelete, "Delete logs (" & _LogSize() & " MB)")
-			If Not GUISetState(@SW_SHOW, $hGuiSettings) Then WinActivate($hGuiSettings)
-		Case $idFeedback
-			If Not GUISetState(@SW_SHOW, $hGuiFeedback) Then WinActivate($hGuiFeedback)
-		Case $idAbout
-			Local $asText[] = ["I am unfinished", _
-			"Ouch", _
-			"Quit poking me!", _
-			"Bewbs", _
-			"Pizza", _
-			"25W lightbulb (broken)", _
-			"Estrellas Salt & Vin" & Chr(0xE4) & 'ger chips ' & Chr(0xE4) & "r godast", _
-			"Vote Pewdiepie for King of Sweden", _
-			"Vote Robbaz for King of Sweden", _
-			"Vote Anderz for King of Sweden", _
-			"I'm sorry trancexx", _
-			"Vote Knugen for King of Sweden", _
-			'"Is it creepy that I follow you, should I stop doing it?" - Xandy', _
-			'"I can''t be expected to perform under pressure!" - jaberwacky', _
-			'"The square root of 76 is brown" - One F Jef', _
-			"42", _
-			'"THERE... ARE... FOUR LIGHTS!" - Picard', _
-			'"A. I was jogging, B. your cousin''s a liar, and C. some peacocks are poisonous" - Dennis Finch', _
-			'"If you ever take advice from a duck, remember: Don''t. Ducks can''t talk. You''re probably on drugs" - Pewdiepie', _
-			'"There''s always a story" - Richard Castle', _
-			'"It''s my pony. You can''t pet it" - Richard Castle', _
-			'"You kids get off my spawn!" - Generikb', _
-			'"I prefer tentacles" - TheRPGMinx', _
-			'"Learn to fall!" - Generikb''s dad to Generikb after he fell and broke his arm', _
-			'"Get out of the way planet, I''m gonna punch you in the dick!" - One F Jef', _
-			'"Everything on the internet is a lie" - Abraham Lincoln... (One F Jef)', _
-			'"If someone''s breathing fire on your eyes you should tell an adult immediately" - MattShea', _
-			'"I didn''t realize who I was until I stopped being who I wasn''t" - Unknown', _
-			'"I don''t have time to get lucky" - Scetchlink', _
-			'"It''s coming and so am I" - Scetchlink', _
-			'"Thanks for playing with me, I appreciate it" - Scetchlink', _
-			'"Go Flamesh*t with an Apethrower" - One F Jef 2016', _
-			'"Som tur va hade jag en s' & Chr(0xE5) & ' v' & Chr(0xE4) & 'lbakad prilla, s' & Chr(0xE5) & ' den fungerade som airbag" - Ragge', _
-			@CRLF & @CRLF & "Hej d" & Chr(0xE5) & " Svartnos." & @CRLF & "Du var min b" & Chr(0xE4) & "sta v" & Chr(0xE4) & "n i 19 " & Chr(0xE5) & "r." & @CRLF & "Jag saknar dig." & @CRLF & "Du kommer alltid att ha en plats i mitt hj" & Chr(0xE4) & "rta." & @CRLF & "RIP Svartnos - 4 Juli 2016."]
+		ElseIf _IsPressed("11") Then
+			$sUserID = $aStreams[$iX][$eUserID]
 
-			$iRandom = Random(0, UBound($asText) -1, 1)
-			MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
-		Case $idExit
-			Exit
-		Case Else
-			For $iX = 0 To UBound($aStreams) -1
-				If $aStreams[$iX][$eTrayId] = @TRAY_ID Then
-					ExitLoop
-				EndIf
-			Next
-
-			If BitAND($aStreams[$iX][$eFlags], $eIsLink) = $eIsLink Then
-				ShellExecute($aStreams[$iX][$eUrl])
-			ElseIf BitAND($aStreams[$iX][$eFlags], $eIsText) = $eIsText Then
-				Return
-			ElseIf BitAND($aStreams[$iX][$eFlags], $eIsStream) = $eIsStream Then
-				If _IsPressed("10") Then
-					Local $asStream[] = [$aStreams[$iX][$eUrl], $aStreams[$iX][$eDisplayName]]
-					_ClipboardGo($asStream)
-				ElseIf _IsPressed("11") Then
-					$sUserID = $aStreams[$iX][$eUserID]
-
-					If StringInStr($asFavorites, $sUserID, $STR_CASESENSE) Then   ; if fav then remove it from fav
-						$asFavorites = StringReplace($asFavorites, $sUserID & @LF, "")
-						RegDelete("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID)
-					Else   ; if nothing then fav
-						$asFavorites &= $sUserID & @LF
-						RegWrite("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID, "REG_SZ", "")
-					EndIf
-
-					Local $sDisplayName = $aStreams[$iX][$eDisplayName]
-					If StringInStr($asFavorites, $aStreams[$iX][$eUserID] & @LF, $STR_CASESENSE) Then $sDisplayName = $sDisplayName & " | F"
-
-					;Shouldn't this also have an if not game then skip game display?
-					;Future me: Yes. Yes it should.
-					Local $NewText = $sDisplayName
-					If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
-					TrayItemSetText($aStreams[$iX][$eTrayId], $NewText)
-				ElseIf $iStreamlinkInstalled Then
-					_StreamlinkPlay($aStreams[$iX][$eUrl])
-				Else
-					ShellExecute($aStreams[$iX][$eUrl])
-				EndIf
+			If StringInStr($asFavorites, $sUserID, $STR_CASESENSE) Then   ; if fav then remove it from fav
+				$asFavorites = StringReplace($asFavorites, $sUserID & @LF, "")
+				RegDelete("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID)
+			Else   ; if nothing then fav
+				$asFavorites &= $sUserID & @LF
+				RegWrite("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID, "REG_SZ", "")
 			EndIf
-	EndSwitch
+
+			Local $sDisplayName = $aStreams[$iX][$eDisplayName]
+			If StringInStr($asFavorites, $aStreams[$iX][$eUserID] & @LF, $STR_CASESENSE) Then $sDisplayName = $sDisplayName & " | F"
+
+			;Shouldn't this also have an if not game then skip game display?
+			;Future me: Yes. Yes it should.
+			Local $NewText = $sDisplayName
+			If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
+			TrayItemSetText($aStreams[$iX][$eTrayId], $NewText)
+		ElseIf $sStreamlinkEnabled Then
+			_StreamlinkPlay($aStreams[$iX][$eUrl])
+		Else
+			ShellExecute($aStreams[$iX][$eUrl])
+		EndIf
+	EndIf
 EndFunc
 
 Func _StreamlinkPlay($sUrl, $sQuality = "")
@@ -1194,7 +1140,7 @@ Func _GuiCreate()
 	GUICtrlSetOnEvent(-1, _GuiBrowser)
 	$idUrl = GUICtrlCreateDummy()
 
-	GUISetOnEvent($GUI_EVENT_CLOSE, _Hide)
+	GUISetOnEvent($GUI_EVENT_CLOSE, _GuiHide)
 EndFunc
 
 Func _GuiPlay()
@@ -1261,6 +1207,12 @@ Func _GuiBrowser()
 	ShellExecute($sUrl)
 EndFunc
 
+Func _GuiShow()
+	Local $sClipboard = ClipGet()
+	Local $asStream[] = [$sClipboard]
+	_ClipboardGo($asStream)
+EndFunc
+
 Func _ClipboardGo($asStream)
 	Local $sTitle
 	Local $sUrl = $asStream[0]
@@ -1303,8 +1255,52 @@ Func _ClipboardGo($asStream)
 	GUICtrlSetState($idQuality, $GUI_SHOW)
 EndFunc
 
-Func _Hide()
+Func _GuiHide()
 	GUISetState(@SW_HIDE, $hGuiClipboard)
+EndFunc
+
+Func _About()
+	Local $asText[] = ["I am unfinished", _
+		"Ouch", _
+		"Quit poking me!", _
+		"Bewbs", _
+		"Pizza", _
+		"25W lightbulb (broken)", _
+		"Estrellas Salt & Vin" & Chr(0xE4) & 'ger chips ' & Chr(0xE4) & "r godast", _
+		"Vote Pewdiepie for King of Sweden", _
+		"Vote Robbaz for King of Sweden", _
+		"Vote Anderz for King of Sweden", _
+		"I'm sorry trancexx", _
+		"Vote Knugen for King of Sweden", _
+		'"Is it creepy that I follow you, should I stop doing it?" - Xandy', _
+		'"I can''t be expected to perform under pressure!" - jaberwacky', _
+		'"The square root of 76 is brown" - One F Jef', _
+		"42", _
+		'"THERE... ARE... FOUR LIGHTS!" - Picard', _
+		'"A. I was jogging, B. your cousin''s a liar, and C. some peacocks are poisonous" - Dennis Finch', _
+		'"If you ever take advice from a duck, remember: Don''t. Ducks can''t talk. You''re probably on drugs" - Pewdiepie', _
+		'"There''s always a story" - Richard Castle', _
+		'"It''s my pony. You can''t pet it" - Richard Castle', _
+		'"You kids get off my spawn!" - Generikb', _
+		'"I prefer tentacles" - TheRPGMinx', _
+		'"Learn to fall!" - Generikb''s dad to Generikb after he fell and broke his arm', _
+		'"Get out of the way planet, I''m gonna punch you in the dick!" - One F Jef', _
+		'"Everything on the internet is a lie" - Abraham Lincoln... (One F Jef)', _
+		'"If someone''s breathing fire on your eyes you should tell an adult immediately" - MattShea', _
+		'"I didn''t realize who I was until I stopped being who I wasn''t" - Unknown', _
+		'"I don''t have time to get lucky" - Scetchlink', _
+		'"It''s coming and so am I" - Scetchlink', _
+		'"Thanks for playing with me, I appreciate it" - Scetchlink', _
+		'"Go Flamesh*t with an Apethrower" - One F Jef 2016', _
+		'"Som tur va hade jag en s' & Chr(0xE5) & ' v' & Chr(0xE4) & 'lbakad prilla, s' & Chr(0xE5) & ' den fungerade som airbag" - Ragge', _
+		@CRLF & @CRLF & "Hej d" & Chr(0xE5) & " Svartnos." & @CRLF & "Du var min b" & Chr(0xE4) & "sta v" & Chr(0xE4) & "n i 19 " & Chr(0xE5) & "r." & @CRLF & "Jag saknar dig." & @CRLF & "Du kommer alltid att ha en plats i mitt hj" & Chr(0xE4) & "rta." & @CRLF & "RIP Svartnos - 4 Juli 2016."]
+
+	$iRandom = Random(0, UBound($asText) -1, 1)
+	MsgBox(0, @ScriptName, "Add text here" & @CRLF & @CRLF & "Created by Alexander Samuelsson AKA AdmiralAlkex" & @CRLF & @CRLF & "[" & $iRandom +1 & "/" & UBound($asText) & "] " & $asText[$iRandom])
+EndFunc
+
+Func _Exit()
+	Exit
 EndFunc
 #EndRegion GUI
 
@@ -1326,6 +1322,10 @@ EndFunc
 
 Func _FeedbackGithub()
 	ShellExecute("https://github.com/TzarAlkex/StreamHelper/issues")
+EndFunc
+
+Func _FeedbackShow()
+	If Not GUISetState(@SW_SHOW, $hGuiFeedback) Then WinActivate($hGuiFeedback)
 EndFunc
 
 Func _FeedbackHide()
@@ -1777,6 +1777,11 @@ Func _SettingsSaveAll()
 	_SettingsIgnore()
 	_SettingsUpdateCheck()
 	_SettingsLog()
+EndFunc
+
+Func _SettingsShow()
+	GUICtrlSetData($idLogDelete, "Delete logs (" & _LogSize() & " MB)")
+	If Not GUISetState(@SW_SHOW, $hGuiSettings) Then WinActivate($hGuiSettings)
 EndFunc
 
 Func _SettingsHide()
