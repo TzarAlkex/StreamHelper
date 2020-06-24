@@ -110,6 +110,8 @@ So stupid, --channel only works if Tc is not already running. And there isn't ev
 
 *add >:( to random places
 
+*Use for refresh button? https://stackoverflow.com/a/54006960
+
 #ce ----------------------------------------------------------------------------
 
 #include <AutoItConstants.au3>
@@ -134,6 +136,10 @@ So stupid, --channel only works if Tc is not already running. And there isn't ev
 #include "APIStuff.au3"
 #include "CentennialHelper.au3"
 #include <GuiListBox.au3>
+#include <TrayConstants.au3>
+#include <IE.au3>
+#include "IE_EmbeddedVersioning.au3"
+#include <Math.au3>
 
 $iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Singleton")
 _WinAPI_PostMessage($HWND_BROADCAST, $iWM, 0x1234, 0xABCD)
@@ -173,6 +179,9 @@ $sRefreshMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "RefreshMinutes")
 If @error Then $sRefreshMinutes = 3
 $sIgnoreMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "IgnoreMinutes")
 If @error Then $sIgnoreMinutes = 0
+
+Global $sNewUI = RegRead("HKCU\SOFTWARE\StreamHelper\", "NewUI")
+Global $sNewUIMultipleThumbnails = _MultipleThumbnails()
 
 $sStreamlinkEnabled = RegRead("HKCU\SOFTWARE\StreamHelper\", "StreamlinkEnabled")
 If @error Then $sStreamlinkEnabled = $iStreamlinkInstalled
@@ -232,7 +241,7 @@ TrayItemSetOnEvent(-1, _About)
 TrayCreateItem("Exit")
 TrayItemSetOnEvent(-1, _Exit)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eChannelID, $eTimer, $eStreamID, $eOldStreamID, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eChannelID, $eTimer, $eStreamID, $eOldStreamID, $eViewers, $eMax
 Global Enum $eTwitch, $eSmashcast, $eMixer, $eYoutube
 Global Enum Step *2 $eIsLink, $eIsText, $eIsStream
 
@@ -251,13 +260,13 @@ AutoItWinSetTitle("AutoIt window with hopefully a unique title|Ketchup the secon
 Global $TRAY_ICON_GUI = WinGetHandle(AutoItWinGetTitle()) ; Internal AutoIt GUI
 Global $avDownloads[1][2]
 
-Global $hGuiClipboard, $hGuiFeedback
+Global $hGuiClipboard, $hGuiFeedback, $hGuiIEUI
 Global $idLabel, $idQuality, $idUrl
 _GuiCreate()
 _FeedbackCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName, $idStreamlinkEnabled, $idStreamlinkPath, $idStreamlinkPathCheck, $idStreamlinkQuality, $idStreamlinkCommandLine
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName, $idNewUI, $idNewUIMultipleThumbnails, $idStreamlinkEnabled, $idStreamlinkPath, $idStreamlinkPathCheck, $idStreamlinkQuality, $idStreamlinkCommandLine
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -275,6 +284,10 @@ If @Compiled = 1 Then
 	_WinAPI_RegisterApplicationRestart($RESTART_NO_REBOOT)
 EndIf
 
+If $sNewUI = 1 Then
+	TraySetClick($TRAY_CLICK_SECONDARYDOWN)
+	TraySetOnEvent($TRAY_EVENT_PRIMARYUP, _IEUI)
+EndIf
 If FileExists(@LocalAppDataDir & "\StreamHelper\arraydebug") Then
 	HotKeySet("{PAUSE}", _ArrayDebug)
 EndIf
@@ -340,6 +353,8 @@ Func _TwitchGet()
 
 			$sTime = Json_ObjGet($aData2[$iX], "started_at")
 			$sTitle = Json_ObjGet($aData2[$iX], "title")
+			$sThumbnail = Json_ObjGet($aData2[$iX], "thumbnail_url")
+			$sViewerCount = Json_ObjGet($aData2[$iX], "viewer_count")
 
 			Local $aDate, $aTime
 			_DateTimeSplit($sTime, $aDate, $aTime)
@@ -352,7 +367,7 @@ Func _TwitchGet()
 			$sTimeDiffMin = _DateDiff("n", $sTimeAdded, $sNow)
 			$sTime2 = StringFormat("%02s:%02s", $sTimeDiffHour, $sTimeDiffMin)
 
-			_StreamSet("", "", "", "", "", $sTime2, $sTitle, $eTwitch, $sUserID, $sStreamID, Default, $sGameID)
+			_StreamSet("", "", $sThumbnail, "", "", $sTime2, $sTitle, $eTwitch, $sUserID, $sStreamID, Default, $sGameID, $sViewerCount)
 		Next
 		If UBound($aData) <> 100 Then Return "Potato on a Stick"
 	WEnd
@@ -386,6 +401,8 @@ Func _TwitchGetGames()
 		$sTime = Json_ObjGet($aData[$iX], "started_at")
 		$sTitle = Json_ObjGet($aData[$iX], "title")
 		$sUserID = "T" & Json_ObjGet($aData[$iX], "user_id")
+		$sThumbnail = Json_ObjGet($aData[$iX], "thumbnail_url")
+		$sViewerCount = Json_ObjGet($aData[$iX], "viewer_count")
 
 		Local $aDate, $aTime
 		_DateTimeSplit($sTime, $aDate, $aTime)
@@ -398,7 +415,7 @@ Func _TwitchGetGames()
 		$sTimeDiffMin = _DateDiff("n", $sTimeAdded, $sNow)
 		$sTime2 = StringFormat("%02s:%02s", $sTimeDiffHour, $sTimeDiffMin)
 
-		_StreamSet("", "", "", "", "", $sTime2, $sTitle, $eTwitch, $sUserID, $sStreamID, Default, $sGameID)
+		_StreamSet("", "", $sThumbnail, "", "", $sTime2, $sTitle, $eTwitch, $sUserID, $sStreamID, Default, $sGameID)
 	Next
 EndFunc
 
@@ -593,7 +610,7 @@ Func _MixerGet()
 	$iOffset = 0
 
 	While 1
-		Local $sUrl = "users/" & $sMixerId & "/follows?page=" & $iOffset & "&limit=100&where=online:eq:1&fields=id,token,name,type,user&noCount=1"
+		Local $sUrl = "users/" & $sMixerId & "/follows?page=" & $iOffset & "&limit=100&where=online:eq:1&fields=id,token,name,viewersCurrent,type,user&noCount=1"
 		$oFollows = _MixerFetch($sUrl)
 		If UBound($oFollows) = 0 Then Return
 
@@ -602,6 +619,7 @@ Func _MixerGet()
 
 			$sUrl = "https://mixer.com/" & Json_ObjGet($oFollows[$iX], "token")
 			$sTitle = Json_ObjGet($oFollows[$iX], "name")
+			$sViewerCount = Json_ObjGet($oFollows[$iX], "viewersCurrent")
 
 			$oType = Json_ObjGet($oFollows[$iX], "type")
 			If IsObj($oType) Then
@@ -614,7 +632,9 @@ Func _MixerGet()
 			$sDisplayName = Json_ObjGet($oUser, "username")
 			$sUserID = "M" & Json_ObjGet($oUser, "id")
 
-			_StreamSet($sDisplayName, $sUrl, "", $sGame, "", "", $sTitle, $eMixer, $sUserID, Default, Default, Default, $sChannelID)
+			$sThumbnail = "https://thumbs.mixer.com/channel/" & $sChannelID & ".small.jpg"
+
+			_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, "", "", $sTitle, $eMixer, $sUserID, Default, Default, Default, $sViewerCount, $sChannelID)
 		Next
 		If UBound($oFollows) <> 100 Then Return "Potato on a Stick"
 		$iOffset += 1
@@ -967,6 +987,7 @@ Func _MAIN()
 
 	_CW("Getters done")
 	_TrayRefresh()
+	_IEUIRefresh()
 
 	;https://www.autoitscript.com/forum/topic/146955-solved-remove-crlf-at-the-end-of-text-file/?do=findComment&comment=1041088
 	If StringRight($sNew, 2) = @CRLF Then $sNew = StringTrimRight($sNew, 2)
@@ -1514,6 +1535,16 @@ Func _SettingsCreate()
 	EndIf
 
 
+	GUICtrlCreateTabItem("New UI (beta)")
+
+	GUICtrlCreateLabel("Consider this beta." & @CRLF & "Features might be missing and there might be bugs!" & @CRLF & @CRLF & "After you enable:" & @CRLF & "Left-click tray icon to show the New UI, right-click to show the old one.", 20, 40)
+	$idNewUI = GUICtrlCreateCheckbox("Activate New UI (beta)", 20, 155)
+	If $sNewUI = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
+	$idNewUIMultipleThumbnails = GUICtrlCreateCheckbox("Faster thumbnail download", 20, 180)
+	If $sNewUIMultipleThumbnails = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
+	GUICtrlSetTip(-1, "Needs a restart to apply")
+
+
 	GUICtrlCreateTabItem("Streamlink")
 
 	If $iStreamlinkInstalled Then
@@ -1824,6 +1855,61 @@ Func _YoutubeSet($sId, $sName)
 	GUICtrlSetData($idYoutubeName, $sName)
 EndFunc
 
+Func _NewUI()
+	Local $sNew = BitAND(GUICtrlRead($idNewUI), $GUI_CHECKED)
+	If $sNew = $sNewUI Then Return
+	$sNewUI = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "NewUI", "REG_SZ", $sNewUI)
+
+	If $sNewUI = 1 Then
+		TraySetClick($TRAY_CLICK_SECONDARYDOWN)
+		TraySetOnEvent($TRAY_EVENT_PRIMARYUP, _IEUI)
+	Else
+		TraySetClick($TRAY_CLICK_PRIMARYDOWN + $TRAY_CLICK_SECONDARYDOWN)
+		If StringReplace(@AutoItVersion, ".", "") > 33150 Then
+			TraySetOnEvent($TRAY_EVENT_PRIMARYUP, "")
+		Else
+			TraySetOnEvent($TRAY_EVENT_PRIMARYUP, _TraySetOnEventHack)
+		EndIf
+	EndIf
+EndFunc
+
+Func _TraySetOnEventHack()
+	Return
+EndFunc
+
+Func _GetExecutable()
+	Local Static $sFileName = "", $sExtension = ""
+	If $sFileName <> "" Then Return $sFileName & $sExtension
+
+	Local $sDrive = "", $sDir = ""
+	_PathSplit(@AutoItExe, $sDrive, $sDir, $sFileName, $sExtension)
+
+	Return $sFileName & $sExtension
+EndFunc
+
+Func _MultipleThumbnails()
+	Local $sExe = _GetExecutable()
+	Local $HTTP1 = RegRead("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER\", $sExe)
+	Local $HTTP11 = RegRead("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER\", $sExe)
+
+	If $HTTP1 > 2 And $HTTP11 > 2 Then
+		Return 1
+	Else
+		Return 0
+	EndIf
+EndFunc
+
+Func _NewUIMultipleThumbnails()
+	Local $sNew = BitAND(GUICtrlRead($idNewUIMultipleThumbnails), $GUI_CHECKED)
+	If $sNew = $sNewUIMultipleThumbnails Then Return
+	$sNewUIMultipleThumbnails = $sNew
+
+	Local $sExe = _GetExecutable()
+	RegWrite("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER\", $sExe, "REG_DWORD", $sNewUIMultipleThumbnails ? 6 : 2)
+	RegWrite("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER\", $sExe, "REG_DWORD", $sNewUIMultipleThumbnails ? 6 : 2)
+EndFunc
+
 Func _StreamlinkEnabled()
 	Local $sNew = GUICtrlRead($idStreamlinkEnabled)
 	If $sNew = $sStreamlinkEnabled Then Return
@@ -1881,6 +1967,8 @@ Func _SettingsSaveAll()
 	_SettingsIgnore()
 	_SettingsUpdateCheck()
 	_SettingsLog()
+	_NewUI()
+	_NewUIMultipleThumbnails()
 	_StreamlinkEnabled()
 	_StreamlinkPath()
 	_StreamlinkQuality()
@@ -1896,6 +1984,277 @@ Func _SettingsHide()
 	_SettingsSaveAll()
 	GUISetState(@SW_HIDE, $hGuiSettings)
 EndFunc
+#EndRegion
+
+#Region IE UI - INTERFACE2
+Func _IEUI()
+	Static Local $oIE
+	Local $iMaximized = False
+
+	_CW("VarGetType($oIE): " & VarGetType($oIE))
+	_CW("IsObj($oIE): " & IsObj($oIE))
+
+	If IsObj($oIE) = False Or $hGuiIEUI = "" Then
+		_IE_EmbeddedSetBrowserEmulation()
+
+		$oIE = _IECreateEmbedded()
+		If @error Then
+			; TODO show error msgbox and auto disable _IEUI
+			Return
+		EndIf
+
+		; based on https://stackoverflow.com/a/32561014
+		Local $iWidth = 800, $iHeight = 600, $iX = -1, $iY = -1
+		If RegRead("HKCU\SOFTWARE\StreamHelper\", "IEUI_IsMaximized") = 1 Then
+			$iMaximized = True
+		Else
+			Local $sPosition = RegRead("HKCU\SOFTWARE\StreamHelper\", "IEUI_WindowPosition")
+			If @error Then
+				$sPosition = @DesktopWidth / 2 - $iWidth / 2 & "|" & @DesktopHeight / 2 - $iHeight / 2 & "|" & $iWidth  & "|" & $iHeight
+			EndIf
+
+			$asSplit = StringSplit($sPosition, "|")
+			$tRECT = _WinAPI_CreateRectEx($asSplit[1], $asSplit[2], $asSplit[3], $asSplit[4])
+			$hMonitor = _WinAPI_MonitorFromRect($tRECT, $MONITOR_DEFAULTTONULL)
+
+			If $hMonitor <> 0 Then
+				$iWidth = $asSplit[3]
+				$iHeight = $asSplit[4]
+				$iX = $asSplit[1]
+				$iY = $asSplit[2]
+			EndIf
+		EndIf
+
+		$hGuiIEUI = GUICreate("StreamHelper - Interface2", $iWidth, $iHeight, $iX, $iY, BitOR($WS_OVERLAPPEDWINDOW, $WS_CLIPSIBLINGS, $WS_CLIPCHILDREN))
+		GUISetBkColor(0x1E1E1E)
+		If @Compiled = False Then GUISetIcon(@ScriptDir & "\Svartnos.ico")
+
+		GUICtrlCreateButton("Refresh", 20, 10, 100, 30)
+		GUICtrlSetResizing(-1, $GUI_DOCKALL)
+		GUICtrlSetOnEvent(-1, _MAIN)
+		GUICtrlCreateButton("Play from clipboard", 140, 10, 100, 30)
+		GUICtrlSetResizing(-1, $GUI_DOCKALL)
+		GUICtrlSetOnEvent(-1, _GuiShow)
+
+		GUICtrlCreateButton("Settings", 330, 10, 100, 30)
+		GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKSIZE)
+		GUICtrlSetOnEvent(-1, _SettingsShow)
+		GUICtrlCreateButton("Send feedback", 450, 10, 100, 30)
+		GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKSIZE)
+		GUICtrlSetOnEvent(-1, _FeedbackShow)
+		GUICtrlCreateButton("About", 570, 10, 100, 30)
+		GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKSIZE)
+		GUICtrlSetOnEvent(-1, _About)
+		GUICtrlCreateButton("Exit", 690, 10, 100, 30)
+		GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKSIZE)
+		GUICtrlSetOnEvent(-1, _Exit)
+
+		GUICtrlCreateObj($oIE, 0, 50, 800, 550)
+		GUICtrlSetResizing(-1, $GUI_DOCKBORDERS)
+
+		_IENavigate($oIE, "about:blank")
+
+		Local $sBODY =	'<!DOCTYPE html>' & _
+						'<!-- saved from url=(0014)about:internet -->' & _
+						'<head>' & _
+							'<meta http-equiv="X-UA-Compatible" content="IE=edge">' & _
+							'<meta charset="utf-8">' & _
+							'<link rel="stylesheet" href="' & @ScriptDir & '\interface2\interface2.css">' & _
+						'</head>' & _
+						'<body class="direction-ltr" style="overflow: hidden;">' & _
+						'</body>' & _
+						'</html>'
+		_IEDocWriteHTML($oIE, $sBODY)
+
+		GUISetOnEvent($GUI_EVENT_CLOSE, _IEUIHide)
+		GUISetOnEvent($GUI_EVENT_RESIZED, _IEUIRefreshNoParam)
+		GUISetOnEvent($GUI_EVENT_MAXIMIZE, _IEUIRefreshNoParam)
+		GUISetOnEvent($GUI_EVENT_RESTORE, _IEUIRefreshNoParam)
+	EndIf
+
+	If Not GUISetState($iMaximized ? @SW_MAXIMIZE : @SW_SHOW, $hGuiIEUI) Then WinActivate($hGuiIEUI)
+	_IEUIRefresh($oIE)
+EndFunc
+
+Func _ObjDescription(ByRef $oObj, $msg = "") ; for debug purpose
+	ConsoleWrite("--Debug:----------------------------------------------------------------------------" & @CRLF & _
+			"[" & $msg & "]" & @CRLF)
+	If IsObj($oObj) Then
+		ConsoleWrite( _
+			"The name of the Object:......................." & ObjName($oObj, $OBJ_NAME) & @CRLF & _
+			"Description string of the Object:............." & ObjName($oObj, $OBJ_STRING) & @CRLF & _
+			"The ProgID of the Object:....................." & ObjName($oObj, $OBJ_PROGID) & @CRLF & _
+			"file associated with the obj in the Registry:." & ObjName($oObj, $OBJ_FILE) & @CRLF & _
+			"Module name in which the object runs:........." & ObjName($oObj, $OBJ_MODULE) & @CRLF & _
+			"CLSID of the object's coclass:................" & ObjName($oObj, $OBJ_CLSID) & @CRLF & _
+			"IID of the object's interface:................" & ObjName($oObj, $OBJ_IID) & @CRLF)
+	Else
+		ConsoleWrite("Is not an object" & @CRLF)
+	EndIf
+EndFunc   ;==>_ObjDescription
+
+Func _IEUIHide()
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "IEUI_IsMaximized", "REG_SZ", Number(BitAND(WinGetState($hGuiIEUI), $WIN_STATE_MAXIMIZED) = $WIN_STATE_MAXIMIZED))
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "IEUI_WindowPosition", "REG_SZ", _ArrayToString(WinGetPos($hGuiIEUI)))
+
+	GUIDelete($hGuiIEUI)
+	$hGuiIEUI = ""
+EndFunc
+
+Func _IEUIRefreshNoParam()   ; workaround because GUISetOnEvent calls functions without params (even default ones)
+	If $sNewUI Then _IEUIRefresh()
+EndFunc
+
+Func _IEUIRefresh($oObject = "")
+	Static Local $oIE, $iCompleteRefreshTimer = TimerInit()
+	If IsObj($oObject) Then $oIE = $oObject
+
+	_CW("_IEUIRefresh early return 1: " & String($oIE = "" Or $hGuiIEUI = ""))
+	If $oIE = "" Or $hGuiIEUI = "" Then Return
+
+	_CW("current state is: " & WinGetState($hGuiIEUI))
+	_CW("_IEUIRefresh early return 2: " & String(BitAND(WinGetState($hGuiIEUI), $WIN_STATE_VISIBLE) <> $WIN_STATE_VISIBLE))
+	If BitAND(WinGetState($hGuiIEUI), $WIN_STATE_VISIBLE) <> $WIN_STATE_VISIBLE Then Return
+	_CW("generating IEUI")
+
+	_CW("IEUI winhandle: " & String($hGuiIEUI))
+
+	Local $oBody = _IETagNameGetCollection($oIE, "body", 0)
+	Local $iWidth = _IEPropertyGet($oBody, "width")
+	Local $iNewWidth = Floor($iWidth / 460) * 460
+	Local $sBody =		'<div id="outer">' & _
+						'<div id="inner" style="width: ' & $iNewWidth & 'px">'
+
+	If TimerDiff($iCompleteRefreshTimer) > _Max($sRefreshMinutes * 60000, 5 * 60000) Then
+		$iCompleteRefreshTimer = TimerInit()
+		_IEAction($oIE, "refresh")
+	EndIf
+
+	For $iX = UBound($aStreams) -1 To 0 Step -1
+		If $aStreams[$iX][$eTrayId] = 0 Then ContinueLoop
+		$sBody &=		'<div class="stream" data-index="' & $iX & '">'
+
+		If $aStreams[$iX][$eFlags] = $eIsStream Then
+			$sBody &=	'<div class="extra-buttons">'
+
+			If StringInStr($asFavorites, $aStreams[$iX][$eUserID], $STR_CASESENSE) Then
+				$sBody &=	'<button class="favorite" title="Remove favorite">♡</button>'
+			Else
+				$sBody &=	'<button class="favorite" title="Add to favorites">❤</button>'
+			EndIf
+
+			If $sStreamlinkEnabled Then
+				$sBody &=	'<button class="streamlink" title="Open Streamlink window">Sl</button>'
+			EndIf
+
+			$sBody &=	'</div>'   ;close extra-buttons
+		EndIf
+
+		If $aStreams[$iX][$ePreview] <> "" Then
+			$sBody &=	'<div class="item-image-container stream-preview">' & _
+							'<img class="" alt="thumbnail of stream" src="' & StringReplace(StringReplace($aStreams[$iX][$ePreview], "{width}", 103), "{height}", 58) & '">' & _
+						'</div>'
+		EndIf
+
+		$sBody &=		'<span class="stream-info stream-title">' & _
+						$aStreams[$iX][$eDisplayName] & _
+						'</span>' & _
+						'<span class="stream-info">' & _
+							$aStreams[$iX][$eGame] & _
+						'</span>' & _
+						'<span class="stream-info" title="' & $aStreams[$iX][$eStatus] & '">' & _
+							$aStreams[$iX][$eStatus] & _
+						'</span>'
+
+
+		$sBody &=		'<div class="services">'
+		If $aStreams[$iX][$eFlags] = $eIsStream And $aStreams[$iX][$eService] = $eTwitch Then
+			$sBody &=		'<img src="' & @ScriptDir & '\interface2\TwitchGlitchPurple.png' & '"/>'
+		ElseIf $aStreams[$iX][$eService] = $eMixer Then
+			$sBody &=		'<img src="' & @ScriptDir & '\interface2\MixerMerge_Dark.png' & '"/>'
+		ElseIf $aStreams[$iX][$eFlags] = $eIsLink Then
+			$sBody &=		'<img src="' & @ScriptDir & '\interface2\GitHub-Mark-Light-120px-plus.png' & '"/>'
+		EndIf
+		If $aStreams[$iX][$eFlags] = $eIsStream Then
+			$sBody &=		'<span class="stream-info">' & _
+							' Live for ' & $aStreams[$iX][$eTime] & ' with ' & $aStreams[$iX][$eViewers] & ' viewers' & _
+							'</span>'
+		EndIf
+		$sBody &=		'</div>'
+
+		$sBody &=		'</div>'
+	Next
+	$sBody &=			'</div>' & _
+						'</div>'
+
+	_IEBodyWriteHTML($oIE, $sBody)
+
+	Local $oElements = _IETagNameGetCollection($oIE, "DIV"), $iError = @error, $iExtended = @extended
+	_CW("_IETagNameGetCollection @error: " & $iError)
+	_CW("_IETagNameGetCollection @extended: " & $iExtended)
+
+	Global $aoEvents[0]
+	For $oElement In $oElements
+		If $oElement.innerText And $oElement.className Then
+			ReDim $aoEvents[UBound($aoEvents) +1]
+			$aoEvents[UBound($aoEvents) -1] = ObjEvent($oElement, "_IEEvent2_", "HTMLElementEvents2")
+		EndIf
+	Next
+EndFunc
+
+Volatile Func _IEEvent2_onClick($oEvent)
+	Local $oElement = $oEvent.srcElement
+
+	While 1
+		If $oElement.className = "stream" Then
+			Local $sIndex = $oElement.getAttribute('data-index'), $sUrl = $aStreams[$sIndex][$eUrl]
+
+			If BitAND($aStreams[$sIndex][$eFlags], $eIsLink) = $eIsLink Then
+				ShellExecute($aStreams[$sIndex][$eUrl])
+			ElseIf BitAND($aStreams[$sIndex][$eFlags], $eIsText) = $eIsText Then
+				Return
+			ElseIf BitAND($aStreams[$sIndex][$eFlags], $eIsStream) = $eIsStream Then
+				If $sStreamlinkEnabled Then
+					_StreamlinkPlay($sUrl)
+				Else
+					ShellExecute($sUrl)
+				EndIf
+			EndIf
+
+			$oEvent.cancelBubble = True
+			Return
+		ElseIf $oElement.className = "favorite" Then
+			Local $sIndex = $oElement.parentElement.parentElement.getAttribute('data-index')
+
+			Local $sUserID = $aStreams[$sIndex][$eUserID]
+
+			If StringInStr($asFavorites, $sUserID, $STR_CASESENSE) Then   ; if fav then remove it from fav
+				$asFavorites = StringReplace($asFavorites, $sUserID & @LF, "")
+				RegDelete("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID)
+				$oElement.innerText = "❤"
+				$oElement.setAttribute("title", "Add to favorites")
+			Else   ; if nothing then fav
+				$asFavorites &= $sUserID & @LF
+				RegWrite("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID, "REG_SZ", "")
+				$oElement.innerText = "♡"
+				$oElement.setAttribute("title", "Remove favorite")
+			EndIf
+
+			$oEvent.cancelBubble = True
+			Return
+		ElseIf $sStreamlinkEnabled And $oElement.className = "streamlink" Then
+			Local $sIndex = $oElement.parentElement.parentElement.getAttribute('data-index')
+
+			Local $asStream[] = [$aStreams[$sIndex][$eUrl], $aStreams[$sIndex][$eDisplayName]]
+			_ClipboardGo($asStream)
+
+			$oEvent.cancelBubble = True
+			Return
+		EndIf
+
+		$oElement = $oElement.parentElement
+	WEnd
+EndFunc   ;==>_IEEvent2_onClick
 #EndRegion
 
 #Region INTENRAL INTERLECT
@@ -2023,7 +2382,7 @@ Func _LogFolderDelete()
 	_CW("Deleted all(?) logs", True)
 EndFunc
 
-Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID, $sStreamID = 404, $iFlags = $eIsStream, $iGameID = "", $iChannelID = "")
+Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID, $sStreamID = 404, $iFlags = $eIsStream, $iGameID = "", $iViewers = Default, $iChannelID = "")
 	If $sDisplayName <> "" Then
 		_CW("Found streamer: " & $sDisplayName)
 	Else
@@ -2033,6 +2392,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	If $sStreamID = Default Then $sStreamID = 404
 	If $iFlags = Default Then $iFlags = $eIsStream
 	If $iGameID = Default Then $iGameID = ""
+	If $iViewers = Default Then $iViewers = "?"
 	If $iChannelID = Default Then $iChannelID = ""
 
 	For $iIndex = 0 To UBound($aStreams) -1
@@ -2062,6 +2422,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eGameID] = $iGameID
 	$aStreams[$iIndex][$eStreamID] = $sStreamID
 	$aStreams[$iIndex][$eChannelID] = $iChannelID
+	$aStreams[$iIndex][$eViewers] = $iViewers
 
 	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
 ;~ 		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
@@ -2163,7 +2524,7 @@ Func _WaitForInternet()
 	EndIf
 EndFunc
 
-Func _OtherSet($sText, $iFlags, $sUrl = "")
+Func _OtherSet($sText, $iFlags, $sUrl = "", $sGame = "", $sTitle = "")
 	$hTray = TrayItemGetHandle(0)
 	$iCount = _GUICtrlMenu_GetItemCount($hTray)
 	ReDim $aStreams[UBound($aStreams) +1][$eMax]
@@ -2171,6 +2532,8 @@ Func _OtherSet($sText, $iFlags, $sUrl = "")
 	$aStreams[UBound($aStreams) -1][$eTrayId] = TrayCreateItem($sText, -1, $iCount -3)
 	$aStreams[UBound($aStreams) -1][$eFlags] = $iFlags
 	If $sUrl <> "" Then $aStreams[UBound($aStreams) -1][$eUrl] = $sUrl
+	If $sGame <> "" Then $aStreams[UBound($aStreams) -1][$eGame] = $sGame
+	If $sTitle <> "" Then $aStreams[UBound($aStreams) -1][$eStatus] = $sTitle
 EndFunc
 
 Func _ShouldSkipUpdate($sUpdateCheck, $iTime)
@@ -2212,7 +2575,7 @@ Func _CheckUpdates($iForce = False)
 	If StringIsDigit(StringLeft($sTag, 1)) = False Then $sTag = StringTrimLeft($sTag, 1)   ;remove the "v" in front of versions
 
 	If _VersionCompare($sInternalVersion, $sTag) = -1 Then   ;if github is greater
-		_OtherSet("Update found! Click to open website", $eIsLink, "https://github.com/TzarAlkex/StreamHelper/releases")
+		_OtherSet("Update found! Click to open website", $eIsLink, "https://github.com/TzarAlkex/StreamHelper/releases", "Newest version is " & $sTag, "You are running " & $sInternalVersion)
 		TrayItemSetOnEvent(-1, _TrayStuff)
 		Return
 	EndIf
