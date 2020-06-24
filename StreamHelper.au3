@@ -361,8 +361,9 @@ Func _TwitchGet()
 EndFunc
 
 Func _TwitchGetGames()
+	If $asTwitchGames = "" Then Return
+
 	$asGameIDs = StringSplit(StringStripWS($asTwitchGames, $STR_STRIPTRAILING), @LF)
-	If @error Then Return
 
 	Local $sGames = ""
 	For $iX = 1 To $asGameIDs[0]
