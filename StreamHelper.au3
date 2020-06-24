@@ -174,6 +174,13 @@ If @error Then $sRefreshMinutes = 3
 $sIgnoreMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "IgnoreMinutes")
 If @error Then $sIgnoreMinutes = 0
 
+$sStreamlinkEnabled = RegRead("HKCU\SOFTWARE\StreamHelper\", "StreamlinkEnabled")
+If @error Then $sStreamlinkEnabled = $iStreamlinkInstalled
+$sStreamlinkPath = RegRead("HKCU\SOFTWARE\StreamHelper\", "StreamlinkPath")
+$sStreamlinkQuality = RegRead("HKCU\SOFTWARE\StreamHelper\", "StreamlinkQuality")
+If @error Then $sStreamlinkQuality = "best"
+$sStreamlinkCommandLine = RegRead("HKCU\SOFTWARE\StreamHelper\", "StreamlinkCommandLine")
+
 Global $iSmashcastEnable = False, $iYoutubeEnable = False
 
 $sTwitchId = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchId")
@@ -250,7 +257,7 @@ _GuiCreate()
 _FeedbackCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName, $idStreamlinkEnabled, $idStreamlinkPath, $idStreamlinkPathCheck, $idStreamlinkQuality, $idStreamlinkCommandLine
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -888,7 +895,7 @@ Func _StreamlinkPlay($sUrl, $sQuality = "")
 	Static Local $iPID = 0
 
 	;_GuiPlay can send empty $sQuality so conversion has to be done
-	If $sQuality = "" Then $sQuality = "best"
+	If $sQuality = "" Then $sQuality = $sStreamlinkQuality
 
 	If $iClosePreviousBeforePlaying Then
 		If _WinAPI_GetProcessName($iPID) = "streamlink.exe" Then
@@ -897,7 +904,16 @@ Func _StreamlinkPlay($sUrl, $sQuality = "")
 		EndIf
 	EndIf
 
-	$iPID = Run("streamlink.exe --twitch-disable-hosting " & $sUrl & " " & $sQuality, "", @SW_HIDE)
+	Local $sProgram = "streamlink.exe"
+	If $sStreamlinkPath Then
+		$sProgram = '"' & $sStreamlinkPath & '"'
+	EndIf
+	$sProgram &= " " & $sStreamlinkCommandLine
+	$sProgram &= " --twitch-disable-hosting"
+	$sProgram &= " " & $sUrl
+	$sProgram &= " " & $sQuality
+
+	$iPID = Run($sProgram, "", @SW_HIDE)
 EndFunc
 
 ;Based on https://www.autoitscript.com/forum/topic/115222-set-the-tray-icon-as-a-hicon/
@@ -1155,11 +1171,21 @@ Func _GuiDownload()
 	If @error Then Return
 
 	$sQuality = GUICtrlRead($idQuality)
-	If $sQuality = "" Then $sQuality = "best"
+	If $sQuality = "" Then $sQuality = $sStreamlinkQuality
 
 	Local $sUrl = GUICtrlRead($idUrl)
 
-	$iPid = Run('streamlink.exe --twitch-disable-hosting --output "' & $sPathToFile & """ " & $sUrl & " " & $sQuality, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
+	Local $sProgram = "streamlink.exe"
+	If $sStreamlinkPath Then
+		$sProgram = '"' & $sStreamlinkPath & '"'
+	EndIf
+	$sProgram &= " " & $sStreamlinkCommandLine
+	$sProgram &= " --twitch-disable-hosting"
+	$sProgram &= ' --output "' & $sPathToFile & '"'
+	$sProgram &= " " & $sUrl
+	$sProgram &= " " & $sQuality
+
+	$iPid = Run($sProgram, "", @SW_HIDE, BitOR($STDOUT_CHILD, $STDERR_CHILD))
 	$sFile = StringTrimLeft($sPathToFile, StringInStr($sPathToFile, "\", Default, -1))
 
 	$hGui = GUICreate($sFile, 500, 1, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_VISIBLE, $WS_SIZEBOX))
@@ -1217,8 +1243,8 @@ Func _ClipboardGo($asStream)
 	Local $sTitle
 	Local $sUrl = $asStream[0]
 
-	If $iStreamlinkInstalled = False Then
-		If MsgBox($MB_YESNO, @ScriptName, "Streamlink not found, open url in browser instead?") = $IDYES Then
+	If $sStreamlinkEnabled = False Then
+		If MsgBox($MB_YESNO, @ScriptName, "Streamlink not found or disabled, open url in browser instead?") = $IDYES Then
 			ShellExecute($sUrl)
 		EndIf
 		Return
@@ -1485,6 +1511,35 @@ Func _SettingsCreate()
 		GUICtrlCreateLabel("Saved Username", 155, 160)
 		$idYoutubeName = GUICtrlCreateInput($sYoutubeName, 155, 180, 120, Default, $ES_READONLY)
 	EndIf
+
+
+	GUICtrlCreateTabItem("Streamlink")
+
+	If $iStreamlinkInstalled Then
+		GUICtrlCreateLabel("Streamlink installation found in PATH", 20, 40)
+	Else
+		GUICtrlCreateLabel("Streamlink not found", 20, 40)
+	EndIf
+
+	$idStreamlinkEnabled = GUICtrlCreateCheckbox("Enabled", 20, 60)
+	If $sStreamlinkEnabled = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
+
+	GUICtrlCreateLabel("Custom path to executable", 20, 105)
+	$idStreamlinkPath = GUICtrlCreateInput($sStreamlinkPath, 20, 125, 160)
+	_GUICtrlEdit_SetCueBanner(-1, "C:\example\streamlink.exe")
+	GUICtrlSetTip(-1, "Not needed if in PATH")
+	GUICtrlSetOnEvent(-1, _StreamlinkPathCheck)
+
+	$idStreamlinkPathCheck = GUICtrlCreateLabel(" ", 190, 125)
+
+	GUICtrlCreateLabel("Default quality", 250, 105)
+	$idStreamlinkQuality = GUICtrlCreateCombo("", 250, 125, 160)
+	Local $sQualities = "best|worst|audio_only"
+	If StringInStr($sQualities, $sStreamlinkQuality) = 0 Then $sQualities &= "|" & $sStreamlinkQuality
+	GUICtrlSetData(-1, $sQualities, $sStreamlinkQuality)
+
+	GUICtrlCreateLabel("Extra command line parameters", 20, 155)
+	$idStreamlinkCommandLine = GUICtrlCreateInput($sStreamlinkCommandLine, 20, 175, 390)
 
 
 	GUICtrlCreateTabItem("")
@@ -1768,6 +1823,54 @@ Func _YoutubeSet($sId, $sName)
 	GUICtrlSetData($idYoutubeName, $sName)
 EndFunc
 
+Func _StreamlinkEnabled()
+	Local $sNew = GUICtrlRead($idStreamlinkEnabled)
+	If $sNew = $sStreamlinkEnabled Then Return
+	$sStreamlinkEnabled = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "StreamlinkEnabled", "REG_SZ", $sStreamlinkEnabled)
+EndFunc
+
+Func _StreamlinkPath()
+	Local $sNew = GUICtrlRead($idStreamlinkPath)
+	If $sNew = $sStreamlinkPath Then Return
+	$sStreamlinkPath = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "StreamlinkPath", "REG_SZ", $sStreamlinkPath)
+EndFunc
+
+Func _StreamlinkQuality()
+	Local $sNew = GUICtrlRead($idStreamlinkQuality)
+	If $sNew = $sStreamlinkQuality Then Return
+	$sStreamlinkQuality = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "StreamlinkQuality", "REG_SZ", $sStreamlinkQuality)
+EndFunc
+
+Func _StreamlinkCommandLine()
+	Local $sNew = GUICtrlRead($idStreamlinkCommandLine)
+	If $sNew = $sStreamlinkCommandLine Then Return
+	$sStreamlinkCommandLine = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "StreamlinkCommandLine", "REG_SZ", $sStreamlinkCommandLine)
+EndFunc
+
+Func _StreamlinkPathCheck()
+	GUICtrlSetData($idStreamlinkPathCheck, "⏳")
+
+	Local $sProgram = GUICtrlRead($idStreamlinkPath)
+	If $sProgram = "" Then $sProgram = "streamlink.exe"
+	$sProgram &= " --version"
+
+	Local $iPID = Run($sProgram, "", @SW_HIDE, $STDOUT_CHILD)
+	ProcessWaitClose($iPID)
+	Local $sOutput = StdoutRead($iPID)
+
+	_CW("PathCheck: " & $sOutput)
+
+	If StringInStr($sOutput, "streamlink") Then
+		GUICtrlSetData($idStreamlinkPathCheck, "✔")
+	Else
+		GUICtrlSetData($idStreamlinkPathCheck, "❌")
+	EndIf
+EndFunc
+
 Func _GetErrored()
 	MsgBox($MB_OK, @ScriptName, "ID not found, make sure you typed your username correctly and are connected to the internet", Default, $hGuiSettings)
 EndFunc
@@ -1777,6 +1880,10 @@ Func _SettingsSaveAll()
 	_SettingsIgnore()
 	_SettingsUpdateCheck()
 	_SettingsLog()
+	_StreamlinkEnabled()
+	_StreamlinkPath()
+	_StreamlinkQuality()
+	_StreamlinkCommandLine()
 EndFunc
 
 Func _SettingsShow()
@@ -1968,11 +2075,19 @@ EndFunc
 Func _GetQualities($sUrl)
 	Local $asError[] = ["Error"]
 
-	If $iStreamlinkInstalled = False Then Return $asError
+	If $sStreamlinkEnabled = False Then Return $asError
 
 	If Not _CanHandleURL($sUrl) Then Return $asError
 
-	$iPID = Run("streamlink.exe --twitch-disable-hosting --json " & $sUrl, "", @SW_HIDE, $STDOUT_CHILD)
+	Local $sProgram = "streamlink.exe"
+	If $sStreamlinkPath Then
+		$sProgram = '"' & $sStreamlinkPath & '"'
+	EndIf
+	$sProgram &= " --twitch-disable-hosting"
+	$sProgram &= " --json"
+	$sProgram &= " " & $sUrl
+
+	$iPID = Run($sProgram, "", @SW_HIDE, $STDOUT_CHILD)
 	ProcessWaitClose($iPID)
 	Local $sOutput = StdoutRead($iPID)
 
@@ -1986,7 +2101,6 @@ Func _GetQualities($sUrl)
 
 	Local $asQualities[0]
 	For $vItem In $aoStreams
-		If $vItem = "best" Or $vItem = "worst" Then ContinueLoop
 		_ArrayAdd($asQualities, $vItem)
 	Next
 
