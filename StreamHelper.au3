@@ -263,8 +263,8 @@ $hGraphic = _GDIPlus_ImageGetGraphicsContext($hImage)
 Global Const $DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED = -5
 If @OSVersion = 'WIN_10' Then DllCall("User32.dll", "bool", "SetProcessDpiAwarenessContext" , "HWND", $DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)
 
-If @Compiled = 0 Then
-	_WinAPI_RegisterApplicationRestart($RESTART_NO_CRASH)
+If @Compiled = 1 Then
+	_WinAPI_RegisterApplicationRestart($RESTART_NO_REBOOT)
 EndIf
 
 If FileExists(@LocalAppDataDir & "\StreamHelper\arraydebug") Then
