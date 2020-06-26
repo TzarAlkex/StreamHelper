@@ -267,6 +267,7 @@ _FeedbackCreate()
 
 Global $hGuiSettings
 Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName, $idNewUI, $idNewUIMultipleThumbnails, $idStreamlinkEnabled, $idStreamlinkPath, $idStreamlinkPathCheck, $idStreamlinkQuality, $idStreamlinkCommandLine
+
 _SettingsCreate()
 
 _GDIPlus_Startup()
@@ -1999,7 +2000,10 @@ Func _IEUI()
 
 		$oIE = _IECreateEmbedded()
 		If @error Then
-			; TODO show error msgbox and auto disable _IEUI
+			GUICtrlSetState($idNewUI, $GUI_UNCHECKED)
+			_NewUI()
+			MsgBox($MB_ICONERROR, @ScriptName, "New UI (beta) failed to initialize." & @CRLF & @CRLF & "You have been reverted back to the normal UI.")
+
 			Return
 		EndIf
 
