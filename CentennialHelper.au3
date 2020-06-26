@@ -108,6 +108,17 @@ Func _StartupTaskEnable()
 	Return DllCall($hDLL, "INT:cdecl", "StartupTaskEnable")
 EndFunc
 
-Func _StartupTaskStatus()
-	Return DllCall($hDLL, "INT:cdecl", "StartupTaskStatus")
+;~ Func _StartupTaskStatus()
+;~ 	ConsoleWrite("not working" & @CRLF)
+;~ 	MsgBox()
+;~ 	Exit
+;~ 	Return DllCall($hDLL, "INT:cdecl", "StartupTaskStatus")
+;~ EndFunc
+
+Func _StartupTaskStatusByID($sTaskID)
+	Return DllCall($hDLL, "INT:cdecl", "StartupTaskStatusByID", "WSTR", $sTaskID)
+EndFunc
+
+Func _StartupTaskStatusByIndex($iTaskIndex)
+	Return DllCall($hDLL, "INT:cdecl", "StartupTaskStatusByIndex", "INT", $iTaskIndex)
 EndFunc

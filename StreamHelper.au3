@@ -1412,14 +1412,16 @@ Func _SettingsCreate()
 	EndIf
 
 	If _InstallType() = $asInstallType[$eAppX] Then
-		$iStatus = _StartupTaskStatus()
-		If $iStatus <> $eStateError Then
+		$avStatus = _StartupTaskStatusByID("MainStartupTask")
+;~ 		$avStatus = _StartupTaskStatusByIndex(0)
+		_CW("_StartupTaskStatus(): " & $avStatus[0])
+		If $avStatus[0] <> $eStateError Then
 			$idStartup = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
 			GUICtrlSetOnEvent(-1, _CentennialStartupSet)
 			$aiPos = ControlGetPos($hGuiSettings, "", $idStartup)
 			$idStartupTooltip = GUICtrlCreateLabel("", $aiPos[0], $aiPos[1], $aiPos[2], $aiPos[3])
 
-			_CentennialStartupUI($iStatus)
+			_CentennialStartupUI($avStatus[0])
 		EndIf
 	Else
 		$idStartupLegacy = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
@@ -1615,13 +1617,13 @@ EndFunc
 Func _CentennialStartupSet()
 	Local $iChecked = BitAND(GUICtrlRead($idStartup), $GUI_CHECKED)
 
-	Local $iStatus
+	Local $avStatus
 	If $iChecked Then
-		$iStatus = _StartupTaskEnable()
+		$avStatus = _StartupTaskEnable()
 	Else
-		$iStatus = _StartupTaskDisable()
+		$avStatus = _StartupTaskDisable()
 	EndIf
-	_CentennialStartupUI($iStatus)
+	_CentennialStartupUI($avStatus[0])
 EndFunc
 
 Func _CentennialStartupUI($iStatus)
