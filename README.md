@@ -59,3 +59,5 @@ SmOke_N - https://www.autoitscript.com/forum/topic/95383-sorting-numbers/?do=fin
 jchd - https://www.autoitscript.com/forum/topic/195291-datetime-conversion-issue/?do=findComment&comment=1400353
 
 Shark007 - https://www.autoitscript.com/forum/topic/199786-making-your-compiled-application-dpi-aware/
+
+willichan - https://www.autoitscript.com/forum/topic/122188-simple-form-resize-based-on-client-size/

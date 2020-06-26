@@ -2010,28 +2010,11 @@ Func _IEUI()
 		EndIf
 
 		; based on https://stackoverflow.com/a/32561014
-		Local $iWidth = 800, $iHeight = 600, $iX = -1, $iY = -1
 		If RegRead("HKCU\SOFTWARE\StreamHelper\", "IEUI_IsMaximized") = 1 Then
 			$iMaximized = True
-		Else
-			Local $sPosition = RegRead("HKCU\SOFTWARE\StreamHelper\", "IEUI_WindowPosition")
-			If @error Then
-				$sPosition = @DesktopWidth / 2 - $iWidth / 2 & "|" & @DesktopHeight / 2 - $iHeight / 2 & "|" & $iWidth  & "|" & $iHeight
-			EndIf
-
-			$asSplit = StringSplit($sPosition, "|")
-			$tRECT = _WinAPI_CreateRectEx($asSplit[1], $asSplit[2], $asSplit[3], $asSplit[4])
-			$hMonitor = _WinAPI_MonitorFromRect($tRECT, $MONITOR_DEFAULTTONULL)
-
-			If $hMonitor <> 0 Then
-				$iWidth = $asSplit[3]
-				$iHeight = $asSplit[4]
-				$iX = $asSplit[1]
-				$iY = $asSplit[2]
-			EndIf
 		EndIf
 
-		$hGuiIEUI = GUICreate("StreamHelper - Interface2", $iWidth, $iHeight, $iX, $iY, BitOR($WS_OVERLAPPEDWINDOW, $WS_CLIPSIBLINGS, $WS_CLIPCHILDREN))
+		$hGuiIEUI = GUICreate("StreamHelper - Interface2", 800, 600, -1, -1, BitOR($WS_OVERLAPPEDWINDOW, $WS_CLIPSIBLINGS, $WS_CLIPCHILDREN))
 		GUISetBkColor(0x1E1E1E)
 		If @Compiled = False Then GUISetIcon(@ScriptDir & "\Svartnos.ico")
 
@@ -2076,10 +2059,42 @@ Func _IEUI()
 		GUISetOnEvent($GUI_EVENT_RESIZED, _IEUIRefreshNoParam)
 		GUISetOnEvent($GUI_EVENT_MAXIMIZE, _IEUIRefreshNoParam)
 		GUISetOnEvent($GUI_EVENT_RESTORE, _IEUIRefreshNoParam)
+
+		; based on https://stackoverflow.com/a/32561014
+		If $iMaximized Then
+			GUISetState(@SW_MAXIMIZE, $hGuiIEUI)
+		Else
+			GUISetState(@SW_SHOW, $hGuiIEUI)
+			Local $sPosition = RegRead("HKCU\SOFTWARE\StreamHelper\", "IEUI_WindowPosition")
+			If @error = 0 Then
+				$asSplit = StringSplit($sPosition, "|")
+				$tRECT = _WinAPI_CreateRectEx($asSplit[1], $asSplit[2], $asSplit[3], $asSplit[4])
+				$hMonitor = _WinAPI_MonitorFromRect($tRECT, $MONITOR_DEFAULTTONULL)
+
+				If $hMonitor <> 0 Then
+					_GUIResizeClient($hGuiIEUI, $asSplit[1], $asSplit[2], $asSplit[3], $asSplit[4])
+				EndIf
+			EndIf
+		EndIf
+	Else
+		GUISetState(@SW_SHOW, $hGuiIEUI)
 	EndIf
 
-	If Not GUISetState($iMaximized ? @SW_MAXIMIZE : @SW_SHOW, $hGuiIEUI) Then WinActivate($hGuiIEUI)
+	WinActivate($hGuiIEUI)
 	_IEUIRefresh($oIE)
+EndFunc
+
+; based on https://www.autoitscript.com/forum/topic/122188-simple-form-resize-based-on-client-size/
+Func _GUIResizeClient($hWnd, $iX, $iY, $iWidth, $iHeight)
+	;$hWnd = Handle for the form to be resized
+	;$iWidth = Desired X size for the client area
+	;$iHeight = Desired Y size for the client area
+	Local $winpos = WinGetPos($hWnd)
+	Local $wincli = WinGetClientSize($hWnd)
+	ConsoleWrite($iWidth & @CRLF)
+	ConsoleWrite($winpos[2] & @CRLF)
+	ConsoleWrite($wincli[0] & @CRLF)
+	WinMove($hWnd, "", $iX, $iY, $iWidth + ($winpos[2]-$wincli[0]), $iHeight + ($winpos[3]-$wincli[1]))
 EndFunc
 
 Func _ObjDescription(ByRef $oObj, $msg = "") ; for debug purpose
@@ -2101,7 +2116,16 @@ EndFunc   ;==>_ObjDescription
 
 Func _IEUIHide()
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "IEUI_IsMaximized", "REG_SZ", Number(BitAND(WinGetState($hGuiIEUI), $WIN_STATE_MAXIMIZED) = $WIN_STATE_MAXIMIZED))
-	RegWrite("HKCU\SOFTWARE\StreamHelper\", "IEUI_WindowPosition", "REG_SZ", _ArrayToString(WinGetPos($hGuiIEUI)))
+
+	$aiPos = WinGetPos($hGuiIEUI)
+	ReDim $aiPos[2]
+	$aiSize = WinGetClientSize($hGuiIEUI)
+
+	Local $aiCombined[0]
+	_ArrayConcatenate($aiCombined, $aiPos)
+	_ArrayConcatenate($aiCombined, $aiSize)
+
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "IEUI_WindowPosition", "REG_SZ", _ArrayToString($aiCombined))
 
 	GUIDelete($hGuiIEUI)
 	$hGuiIEUI = ""
