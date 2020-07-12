@@ -2190,12 +2190,12 @@ Func _IEUIRefresh($oObject = "")
 		EndIf
 
 		$sBody &=		'<span class="stream-info stream-title">' & _
-						$aStreams[$iX][$eDisplayName] & _
+							$aStreams[$iX][$eDisplayName] & _
 						'</span>' & _
 						'<span class="stream-info">' & _
 							$aStreams[$iX][$eGame] & _
 						'</span>' & _
-						'<span class="stream-info" title="' & $aStreams[$iX][$eStatus] & '">' & _
+						'<span class="stream-info" title="' & __WinHttpHTMLEncode($aStreams[$iX][$eStatus]) & '">' & _
 							$aStreams[$iX][$eStatus] & _
 						'</span>'
 
@@ -2208,8 +2208,8 @@ Func _IEUIRefresh($oObject = "")
 			$sBody &=		'<img src="' & @ScriptDir & '\interface2\GitHub-Mark-Light-120px-plus.png' & '"/>'
 		EndIf
 		If $aStreams[$iX][$eFlags] = $eIsStream Then
-			$sBody &=		'<span class="stream-info">' & _
-							' Live for ' & $aStreams[$iX][$eTime] & ' with ' & $aStreams[$iX][$eViewers] & ' viewers' & _
+			$sBody &=		'<span class="stream-info stats">' & _
+								'Started ' & $aStreams[$iX][$eTime] & ' ago, ' & $aStreams[$iX][$eViewers] & ' viewers' & _
 							'</span>'
 		EndIf
 		$sBody &=		'</div>'
@@ -2238,6 +2238,11 @@ Func _IEUIRefresh($oObject = "")
 			$aoEvents[UBound($aoEvents) -1] = ObjEvent($oElement, "_IEEvent2_", "HTMLElementEvents2")
 		EndIf
 	Next
+EndFunc
+
+; based on __WinHttpHTMLDecode from WinHttp.au3
+Func __WinHttpHTMLEncode($vData)
+	Return StringReplace(StringReplace(StringReplace(StringReplace($vData, "&", "&amp;"), "<", "&lt;"), ">", "&gt;"), '"', "&quot;")
 EndFunc
 
 Volatile Func _IEEvent2_onClick($oEvent)
