@@ -2136,7 +2136,7 @@ Func _IEUIRefreshNoParam()   ; workaround because GUISetOnEvent calls functions 
 EndFunc
 
 Func _IEUIRefresh($oObject = "")
-	Static Local $oIE, $iCompleteRefreshTimer = TimerInit()
+	Static Local $oIE, $hThumbnailTimer = TimerInit(), $iCacheBuster = 0
 	If IsObj($oObject) Then $oIE = $oObject
 
 	_CW("_IEUIRefresh early return 1: " & String($oIE = "" Or $hGuiIEUI = ""))
@@ -2155,10 +2155,12 @@ Func _IEUIRefresh($oObject = "")
 	Local $sBody =		'<div id="outer">' & _
 						'<div id="inner" style="width: ' & $iNewWidth & 'px">'
 
-	If TimerDiff($iCompleteRefreshTimer) > _Max($sRefreshMinutes * 60000, 5 * 60000) Then
-		$iCompleteRefreshTimer = TimerInit()
-		_IEAction($oIE, "refresh")
+	; Twitch caches thumbnails for 5 minutes, so we wait at least 5 min 1 sec
+	If TimerDiff($hThumbnailTimer) > _Max($sRefreshMinutes * 60000, 301 * 1000) Then
+		$hThumbnailTimer = TimerInit()
+		$iCacheBuster += 1
 	EndIf
+	_CW("$iCacheBuster: " & $iCacheBuster)
 
 	For $iX = UBound($aStreams) -1 To 0 Step -1
 		If $aStreams[$iX][$eTrayId] = 0 Then ContinueLoop
@@ -2182,7 +2184,7 @@ Func _IEUIRefresh($oObject = "")
 
 		If $aStreams[$iX][$ePreview] <> "" Then
 			$sBody &=	'<div class="item-image-container stream-preview">' & _
-							'<img class="" alt="thumbnail of stream" src="' & StringReplace(StringReplace($aStreams[$iX][$ePreview], "{width}", 103), "{height}", 58) & '">' & _
+							'<img class="" alt="" src="' & StringReplace(StringReplace($aStreams[$iX][$ePreview], "{width}", 103), "{height}", 58) & "#" & $iCacheBuster & '">' & _
 						'</div>'
 		EndIf
 
