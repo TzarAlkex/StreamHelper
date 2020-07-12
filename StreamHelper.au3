@@ -285,6 +285,7 @@ If @Compiled = 1 Then
 	_WinAPI_RegisterApplicationRestart($RESTART_NO_REBOOT)
 EndIf
 
+Global $aoEvents[0]
 If $sNewUI = 1 Then
 	TraySetClick($TRAY_CLICK_SECONDARYDOWN)
 	TraySetOnEvent($TRAY_EVENT_PRIMARYUP, _IEUI)
@@ -2198,7 +2199,6 @@ Func _IEUIRefresh($oObject = "")
 							$aStreams[$iX][$eStatus] & _
 						'</span>'
 
-
 		$sBody &=		'<div class="services">'
 		If $aStreams[$iX][$eFlags] = $eIsStream And $aStreams[$iX][$eService] = $eTwitch Then
 			$sBody &=		'<img src="' & @ScriptDir & '\interface2\TwitchGlitchPurple.png' & '"/>'
@@ -2225,9 +2225,15 @@ Func _IEUIRefresh($oObject = "")
 	_CW("_IETagNameGetCollection @error: " & $iError)
 	_CW("_IETagNameGetCollection @extended: " & $iExtended)
 
+	; I was hoping that cleaning up the events would stop the slowly creeping memory usage but no...
+	For $iX = 0 To UBound($aoEvents) -1
+		$aoEvents[$iX].stop
+		$aoEvents[$iX] = 0
+	Next
+
 	Global $aoEvents[0]
 	For $oElement In $oElements
-		If $oElement.innerText And $oElement.className Then
+		If $oElement.className = "stream" Then
 			ReDim $aoEvents[UBound($aoEvents) +1]
 			$aoEvents[UBound($aoEvents) -1] = ObjEvent($oElement, "_IEEvent2_", "HTMLElementEvents2")
 		EndIf
