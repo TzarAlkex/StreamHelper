@@ -1293,14 +1293,16 @@ Func _ClipboardGo($asStream)
 	$asQualities = _GetQualities($sUrl)
 	$sQualities = _ArrayToString($asQualities)
 
-	Local $sDefault = "no default"
+	Local $sQuality = "no default"
 	If StringInStr($sQualities, "Error") Then
-		$sDefault = "Error"
-	ElseIf $sDefault = "no default" Then
-		$sDefault = $asQualities[UBound($asQualities) -1]
+		$sQuality = "Error"
+	ElseIf StringInStr($sQualities, $sStreamlinkQuality) Then
+		$sQuality = $sStreamlinkQuality
+	ElseIf $sQuality = "no default" Then
+		$sQuality = $asQualities[UBound($asQualities) -1]
 	EndIf
 
-	GUICtrlSetData($idQuality, $sQualities, $sDefault)
+	GUICtrlSetData($idQuality, $sQualities, $sQuality)
 
 	GUICtrlSetState($idQuality, $GUI_SHOW)
 EndFunc
