@@ -140,6 +140,7 @@ So stupid, --channel only works if Tc is not already running. And there isn't ev
 #include <IE.au3>
 #include "IE_EmbeddedVersioning.au3"
 #include <Math.au3>
+#include <StaticConstants.au3>
 
 $iWM = _WinAPI_RegisterWindowMessage("AutoIt window with hopefully a unique title|Singleton")
 _WinAPI_PostMessage($HWND_BROADCAST, $iWM, 0x1234, 0xABCD)
@@ -1557,9 +1558,20 @@ Func _SettingsCreate()
 	GUICtrlCreateLabel("Consider this beta." & @CRLF & "Features might be missing and there might be bugs!" & @CRLF & @CRLF & "After you enable:" & @CRLF & "Left-click tray icon to show the New UI, right-click to show the old one.", 20, 40)
 	$idNewUI = GUICtrlCreateCheckbox("Activate New UI (beta)", 20, 155)
 	If $sNewUI = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
-	$idNewUIMultipleThumbnails = GUICtrlCreateCheckbox("Faster thumbnail download", 20, 180)
-	If $sNewUIMultipleThumbnails = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
+
+	GUICtrlCreateLabel("Number of simultaneous thumbnail downloads:", 20, 180, 230, Default, $SS_CENTERIMAGE)
 	GUICtrlSetTip(-1, "Needs a restart to apply")
+
+	$idNewUIMultipleThumbnails = GUICtrlCreateCombo("", 250, 180, 80)
+	Local $sMultipleThumbnails = "2|6"
+	If StringInStr($sMultipleThumbnails, $sNewUIMultipleThumbnails) = 0 Then $sMultipleThumbnails &= "|" & $sNewUIMultipleThumbnails
+	GUICtrlSetData(-1, $sMultipleThumbnails, $sNewUIMultipleThumbnails)
+	GUICtrlSetTip(-1, "Needs a restart to apply")
+	Local $tInfo
+	_GUICtrlComboBox_GetComboBoxInfo($idNewUIMultipleThumbnails, $tInfo)
+	$hEdit = DllStructGetData($tInfo, "hEdit") ; Handle to the Edit Box
+	$iStyle   = _WinAPI_GetWindowLong($hEdit, $GWL_STYLE) ; Get current style
+	_WinAPI_SetWindowLong($hEdit, $GWL_STYLE, BitOr($iStyle, $ES_NUMBER)) ; Add number only style
 
 
 	GUICtrlCreateTabItem("Streamlink")
@@ -1922,21 +1934,17 @@ Func _MultipleThumbnails()
 	Local $HTTP1 = RegRead("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER\", $sExe)
 	Local $HTTP11 = RegRead("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER\", $sExe)
 
-	If $HTTP1 > 2 And $HTTP11 > 2 Then
-		Return 1
-	Else
-		Return 0
-	EndIf
+	Return _Max(Number($HTTP1), Number($HTTP11))
 EndFunc
 
 Func _NewUIMultipleThumbnails()
-	Local $sNew = BitAND(GUICtrlRead($idNewUIMultipleThumbnails), $GUI_CHECKED)
+	Local $sNew = GUICtrlRead($idNewUIMultipleThumbnails)
 	If $sNew = $sNewUIMultipleThumbnails Then Return
 	$sNewUIMultipleThumbnails = $sNew
 
 	Local $sExe = _GetExecutable()
-	RegWrite("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER\", $sExe, "REG_DWORD", $sNewUIMultipleThumbnails ? 6 : 2)
-	RegWrite("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER\", $sExe, "REG_DWORD", $sNewUIMultipleThumbnails ? 6 : 2)
+	RegWrite("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER\", $sExe, "REG_DWORD", _Max(1, Number($sNewUIMultipleThumbnails)))
+	RegWrite("HKCU\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER\", $sExe, "REG_DWORD", _Max(1, Number($sNewUIMultipleThumbnails)))
 EndFunc
 
 Func _StreamlinkEnabled()
