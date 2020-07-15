@@ -197,6 +197,8 @@ Global $iSmashcastEnable = False, $iYoutubeEnable = False
 $sTwitchId = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchId")
 $sTwitchName = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchName")
 $sTwitchToken = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchToken")
+$sTwitchGamesMax = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchGamesMax")
+If @error Then $sTwitchGamesMax = 20
 $sMixerId = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerId")
 $sMixerName = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerName")
 If $iSmashcastEnable Then
@@ -268,7 +270,7 @@ _GuiCreate()
 _FeedbackCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName, $idNewUI, $idNewUIMultipleThumbnails, $idStreamlinkEnabled, $idStreamlinkPath, $idStreamlinkPathCheck, $idStreamlinkQuality, $idStreamlinkCommandLine
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idTwitchGamesMax, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName, $idNewUI, $idNewUIMultipleThumbnails, $idStreamlinkEnabled, $idStreamlinkPath, $idStreamlinkPathCheck, $idStreamlinkQuality, $idStreamlinkCommandLine
 
 _SettingsCreate()
 
@@ -390,7 +392,7 @@ Func _TwitchGetGames()
 	Next
 	$sGames = StringTrimLeft($sGames, 1)
 
-	$sUrl = "streams?" & $sGames & "&first=100"
+	$sUrl = "streams?" & $sGames & "&first=" & $sTwitchGamesMax
 	$oJSON = _TwitchFetch($sUrl)
 	If IsObj($oJSON) = False Then Return
 
@@ -1482,10 +1484,16 @@ Func _SettingsCreate()
 	$idTwitchGamesAdd = GUICtrlCreateButton("3. Add", 20, 155)
 	GUICtrlSetOnEvent(-1, _TwitchGameAdd)
 
-	$idTwitchGamesList = GUICtrlCreateList("", 260, 40, 150, 135)
+	$idTwitchGamesList = GUICtrlCreateList("", 260, 40, 150, 85)
 	GUICtrlSetData(-1, StringReplace(StringStripWS($asTwitchGames, $STR_STRIPTRAILING), @LF, "|"))
-	GUICtrlCreateButton("Remove selected", 260, 175)
+
+	GUICtrlCreateButton("Remove selected", 260, 125)
 	GUICtrlSetOnEvent(-1, _TwitchGameRemove)
+
+	GUICtrlCreateLabel("Max streams to get", 260, 160)
+	$idTwitchGamesMax = GUICtrlCreateInput($sTwitchGamesMax, 260, 180, 60)
+	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
+	GUICtrlSetLimit(-1, 100, 1)
 
 
 	GUICtrlCreateTabItem("Mixer")
@@ -1756,6 +1764,13 @@ Func _TwitchGameRemove()
 	RegDelete("HKCU\SOFTWARE\StreamHelper\TwitchGames\", $sID)
 EndFunc
 
+Func _TwitchGamesMax()
+	Local $sNew = GUICtrlRead($idTwitchGamesMax)
+	If $sNew = $sTwitchGamesMax Then Return
+	$sTwitchGamesMax = $sNew
+	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchGamesMax", "REG_SZ", $sTwitchGamesMax)
+EndFunc
+
 Func _MixerGetId()
 	$sUsername = GUICtrlRead($idMixerInput)
 	If $sUsername = "" Then Return _GetErrored()
@@ -1975,6 +1990,7 @@ Func _SettingsSaveAll()
 	_SettingsIgnore()
 	_SettingsUpdateCheck()
 	_SettingsLog()
+	_TwitchGamesMax()
 	_NewUI()
 	_NewUIMultipleThumbnails()
 	_StreamlinkEnabled()
