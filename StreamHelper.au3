@@ -165,6 +165,7 @@ Global $sLog = RegRead("HKCU\SOFTWARE\StreamHelper\", "Log")
 _CW("Install type: " & _InstallType())
 
 Global $iStreamlinkInstalled = StringInStr(EnvGet("path"), "Streamlink") > 0
+_CW("Streamlink found: " & $iStreamlinkInstalled)
 
 Global $sUpdateCheck
 If _InstallType() = $asInstallType[$eAppX] Then
@@ -184,7 +185,8 @@ Global $sNewUI = RegRead("HKCU\SOFTWARE\StreamHelper\", "NewUI")
 Global $sNewUIMultipleThumbnails = _MultipleThumbnails()
 
 $sStreamlinkEnabled = RegRead("HKCU\SOFTWARE\StreamHelper\", "StreamlinkEnabled")
-If @error Then $sStreamlinkEnabled = $iStreamlinkInstalled
+If @error Then $sStreamlinkEnabled = String(Number($iStreamlinkInstalled))
+_CW("Streamlink enabled: " & $sStreamlinkEnabled)
 $sStreamlinkPath = RegRead("HKCU\SOFTWARE\StreamHelper\", "StreamlinkPath")
 $sStreamlinkQuality = RegRead("HKCU\SOFTWARE\StreamHelper\", "StreamlinkQuality")
 If @error Then $sStreamlinkQuality = "best"
@@ -906,7 +908,7 @@ Func _TrayStuff()
 			Local $NewText = $sDisplayName
 			If $aStreams[$iX][$eGame] <> "" Then $NewText &= " | " & $aStreams[$iX][$eGame]
 			TrayItemSetText($aStreams[$iX][$eTrayId], $NewText)
-		ElseIf $sStreamlinkEnabled Then
+		ElseIf $sStreamlinkEnabled = "1" Then
 			_StreamlinkPlay($aStreams[$iX][$eUrl])
 		Else
 			ShellExecute($aStreams[$iX][$eUrl])
@@ -1267,7 +1269,7 @@ Func _ClipboardGo($asStream)
 	Local $sTitle
 	Local $sUrl = $asStream[0]
 
-	If $sStreamlinkEnabled = False Then
+	If $sStreamlinkEnabled = "0" Then
 		If MsgBox($MB_YESNO, @ScriptName, "Streamlink not found or disabled, open url in browser instead?") = $IDYES Then
 			ShellExecute($sUrl)
 		EndIf
@@ -1560,7 +1562,7 @@ Func _SettingsCreate()
 	EndIf
 
 	$idStreamlinkEnabled = GUICtrlCreateCheckbox("Enabled", 20, 60)
-	If $sStreamlinkEnabled = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
+	If $sStreamlinkEnabled = "1" Then GUICtrlSetState(-1, $GUI_CHECKED)
 
 	GUICtrlCreateLabel("Custom path to executable", 20, 105)
 	$idStreamlinkPath = GUICtrlCreateInput($sStreamlinkPath, 20, 125, 160)
@@ -2178,7 +2180,7 @@ Func _IEUIRefresh($oObject = "")
 				$sBody &=	'<button class="favorite" title="Add to favorites">❤</button>'
 			EndIf
 
-			If $sStreamlinkEnabled Then
+			If $sStreamlinkEnabled = "1" Then
 				$sBody &=	'<button class="streamlink" title="Open Streamlink window">Sl</button>'
 			EndIf
 
@@ -2259,7 +2261,7 @@ Volatile Func _IEEvent2_onClick($oEvent)
 			ElseIf BitAND($aStreams[$sIndex][$eFlags], $eIsText) = $eIsText Then
 				Return
 			ElseIf BitAND($aStreams[$sIndex][$eFlags], $eIsStream) = $eIsStream Then
-				If $sStreamlinkEnabled Then
+				If $sStreamlinkEnabled = "1" Then
 					_StreamlinkPlay($sUrl)
 				Else
 					ShellExecute($sUrl)
@@ -2287,7 +2289,7 @@ Volatile Func _IEEvent2_onClick($oEvent)
 
 			$oEvent.cancelBubble = True
 			Return
-		ElseIf $sStreamlinkEnabled And $oElement.className = "streamlink" Then
+		ElseIf $sStreamlinkEnabled = "1" And $oElement.className = "streamlink" Then
 			Local $sIndex = $oElement.parentElement.parentElement.getAttribute('data-index')
 
 			Local $asStream[] = [$aStreams[$sIndex][$eUrl], $aStreams[$sIndex][$eDisplayName]]
@@ -2482,7 +2484,7 @@ EndFunc
 Func _GetQualities($sUrl)
 	Local $asError[] = ["Error"]
 
-	If $sStreamlinkEnabled = False Then Return $asError
+	If $sStreamlinkEnabled = "0" Then Return $asError
 
 	If Not _CanHandleURL($sUrl) Then Return $asError
 
