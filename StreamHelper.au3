@@ -1483,6 +1483,7 @@ Func _SettingsCreate()
 	GUICtrlSetState(-1, $GUI_DISABLE)
 	$idTwitchGamesAdd = GUICtrlCreateButton("3. Add", 20, 155)
 	GUICtrlSetOnEvent(-1, _TwitchGameAdd)
+	GUICtrlSetState(-1, $GUI_DISABLE)
 
 	$idTwitchGamesList = GUICtrlCreateList("", 260, 40, 150, 85)
 	GUICtrlSetData(-1, StringReplace(StringStripWS($asTwitchGames, $STR_STRIPTRAILING), @LF, "|"))
@@ -1709,6 +1710,11 @@ Func _TwitchSet($sId, $sName, $sToken)
 EndFunc
 
 Func _TwitchGameID()
+	If $sTwitchId = "" Then
+		MsgBox($MB_ICONERROR, @ScriptName, 'Log in on the "Twitch - Followed" tab first', Default, $hGuiSettings)
+		Return
+	EndIf
+
 	$sGameName = GUICtrlRead($idTwitchGamesName)
 	If $sGameName = "" Then Return _TwitchGameRefresh()
 
