@@ -2354,10 +2354,10 @@ Func _CW($sMessage, $iReset = False)
 	If $sLog = 1 Then
 		_DeleteOldLogs()
 
-		Static Local $hLog = FileOpen(@LocalAppDataDir & "\StreamHelper\logs\log" & @WDAY & ".txt", $FO_APPEND + $FO_CREATEPATH)
+		Static Local $hLog = FileOpen(@LocalAppDataDir & "\StreamHelper\logs\log" & @YDAY & ".txt", $FO_APPEND + $FO_CREATEPATH)
 		If $iReset Then
 			FileClose($hLog)
-			$hLog = FileOpen(@LocalAppDataDir & "\StreamHelper\logs\log" & @WDAY & ".txt", $FO_APPEND + $FO_CREATEPATH)
+			$hLog = FileOpen(@LocalAppDataDir & "\StreamHelper\logs\log" & @YDAY & ".txt", $FO_APPEND + $FO_CREATEPATH)
 		EndIf
 
 		If $hLog Then _FileWriteLog($hLog, $sMessage)
