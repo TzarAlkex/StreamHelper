@@ -246,7 +246,7 @@ TrayItemSetOnEvent(-1, _About)
 TrayCreateItem("Exit")
 TrayItemSetOnEvent(-1, _Exit)
 
-Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eChannelID, $eTimer, $eStreamID, $eOldStreamID, $eViewers, $eMax
+Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eChannelID, $eTimer, $eStreamID, $eOldStreamID, $eViewers, $eName, $eMax
 Global Enum $eTwitch, $eSmashcast, $eMixer, $eYoutube
 Global Enum Step *2 $eIsLink, $eIsText, $eIsStream
 
@@ -449,16 +449,25 @@ Func _TwitchProcessUserID()
 	If UBound($aData) = 0 Then Return
 
 	For $iX = 0 To UBound($aData) -1
+		Local $sName = ""
+
 		$sDisplayName = Json_ObjGet($aData[$iX], "display_name")
 		$sLogin = Json_ObjGet($aData[$iX], "login")
 		$sID = Json_ObjGet($aData[$iX], "id")
-		If StringIsASCII($sDisplayName) = 0 Then $sDisplayName = $sLogin
+		If StringIsASCII($sDisplayName) = 0 Then
+			$sName = $sDisplayName
+			$sDisplayName = $sLogin
+		EndIf
 		$sUrl = "https://www.twitch.tv/" & $sLogin
 
 		For $iIndex = 0 To UBound($aStreams) -1
 			If $aStreams[$iIndex][$eUserID] = "T" & $sID Then
 				$aStreams[$iIndex][$eDisplayName] = $sDisplayName
 				$aStreams[$iIndex][$eUrl] = $sUrl
+
+				If $sName <> "" Then
+					$aStreams[$iIndex][$eName] = $sName
+				EndIf
 
 				ExitLoop
 			EndIf
@@ -2229,10 +2238,17 @@ Func _IEUIRefresh($oObject = "")
 						'</div>'
 		EndIf
 
-		$sBody &=		'<span class="stream-info stream-title">' & _
+		If $aStreams[$iX][$eName] <> "" Then
+			$sBody &=	'<span class="stream-info stream-title">' & _
+							$aStreams[$iX][$eName] & " (" & $aStreams[$iX][$eDisplayName] & ")" & _
+						'</span>'
+		Else
+			$sBody &=	'<span class="stream-info stream-title">' & _
 							$aStreams[$iX][$eDisplayName] & _
-						'</span>' & _
-						'<span class="stream-info">' & _
+						'</span>'
+		EndIf
+
+		$sBody &=		'<span class="stream-info">' & _
 							$aStreams[$iX][$eGame] & _
 						'</span>' & _
 						'<span class="stream-info" title="' & __WinHttpHTMLEncode($aStreams[$iX][$eStatus]) & '">' & _
@@ -2465,7 +2481,7 @@ Func _LogFolderDelete()
 	_CW("Deleted all(?) logs", True)
 EndFunc
 
-Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID, $sStreamID = 404, $iFlags = $eIsStream, $iGameID = "", $iViewers = Default, $iChannelID = "")
+Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $sStatus, $iService, $iUserID, $sStreamID = 404, $iFlags = $eIsStream, $iGameID = "", $iViewers = Default, $iChannelID = "", $sName = Default)
 	If $sDisplayName <> "" Then
 		_CW("Found streamer: " & $sDisplayName)
 	Else
@@ -2477,6 +2493,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	If $iGameID = Default Then $iGameID = ""
 	If $iViewers = Default Then $iViewers = "?"
 	If $iChannelID = Default Then $iChannelID = ""
+	If $sName = Default Then $sName = ""
 
 	For $iIndex = 0 To UBound($aStreams) -1
 		If $aStreams[$iIndex][$eUserID] = $iUserID Then ExitLoop
@@ -2488,6 +2505,10 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	If $iService = $eTwitch Then
 		If $aStreams[$iIndex][$eGameID] <> $iGameID Then
 			$aStreams[$iIndex][$eGame] = ""
+		EndIf
+
+		If $aStreams[$iIndex][$eName] <> "" Then
+			$sName = $aStreams[$iIndex][$eName]
 		EndIf
 	EndIf
 
@@ -2506,6 +2527,7 @@ Func _StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, $sCreated, $sTime, $s
 	$aStreams[$iIndex][$eStreamID] = $sStreamID
 	$aStreams[$iIndex][$eChannelID] = $iChannelID
 	$aStreams[$iIndex][$eViewers] = $iViewers
+	$aStreams[$iIndex][$eName] = $sName
 
 	If Not IsArray($aStreams[$iIndex][$eQualities]) Then
 ;~ 		$aStreams[$iIndex][$eQualities] = _GetQualities($sUrl)
