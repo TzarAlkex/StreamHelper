@@ -1402,12 +1402,12 @@ Func _SettingsCreate()
 	GUICtrlCreateTabItem("Settings")
 
 	GUICtrlCreateLabel("Minutes between refresh", 20, 40)
-	$idRefreshMinutes = GUICtrlCreateInput($sRefreshMinutes, 20, 60, 80)
+	$idRefreshMinutes = GUICtrlCreateInput($sRefreshMinutes, 20, 60, 80, 20, BitOR($GUI_SS_DEFAULT_INPUT, $ES_NUMBER))
 	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
 	GUICtrlSetLimit(-1, 120, 3)
 
 	GUICtrlCreateLabel("Minutes to ignore repeat notifications", 155, 40)
-	$idIgnoreMinutes = GUICtrlCreateInput($sIgnoreMinutes, 155, 60, 80)
+	$idIgnoreMinutes = GUICtrlCreateInput($sIgnoreMinutes, 155, 60, 80, 20, BitOR($GUI_SS_DEFAULT_INPUT, $ES_NUMBER))
 	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
 	GUICtrlSetLimit(-1, 120, 3)
 
@@ -1493,7 +1493,7 @@ Func _SettingsCreate()
 	GUICtrlSetOnEvent(-1, _TwitchGameRemove)
 
 	GUICtrlCreateLabel("Max streams to get", 260, 160)
-	$idTwitchGamesMax = GUICtrlCreateInput($sTwitchGamesMax, 260, 180, 60)
+	$idTwitchGamesMax = GUICtrlCreateInput($sTwitchGamesMax, 260, 180, 60, 20, BitOR($GUI_SS_DEFAULT_INPUT, $ES_NUMBER))
 	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
 	GUICtrlSetLimit(-1, 100, 1)
 
