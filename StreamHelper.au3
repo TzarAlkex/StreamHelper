@@ -1454,7 +1454,7 @@ Func _SettingsCreate()
 	$idLog = GUICtrlCreateCheckbox("Save log to file (don't enable unless asked)", 20, 170)
 	If $sLog = 1 Then GUICtrlSetState(-1, $GUI_CHECKED)
 
-	GUICtrlCreateButton("Open log folder", $iGuiWidth - 100, 140)
+	GUICtrlCreateButton("Open log folder", $iGuiWidth - 105, 135)
 	GUICtrlSetOnEvent(-1, _LogFolderOpen)
 
 	$idLogDelete = GUICtrlCreateButton("Delete logs (XXX MB)", $iGuiWidth - 135, 170)
