@@ -181,6 +181,7 @@ $sRefreshMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "RefreshMinutes")
 If @error Then $sRefreshMinutes = 3
 $sIgnoreMinutes = RegRead("HKCU\SOFTWARE\StreamHelper\", "IgnoreMinutes")
 If @error Then $sIgnoreMinutes = 0
+$sIgnoreMinutes = 0
 
 Global $sNewUI = RegRead("HKCU\SOFTWARE\StreamHelper\", "NewUI")
 Global $sNewUIMultipleThumbnails = _MultipleThumbnails()
@@ -1421,10 +1422,12 @@ Func _SettingsCreate()
 	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
 	GUICtrlSetLimit(-1, 120, 3)
 
-	GUICtrlCreateLabel("Minutes to ignore repeat notifications", 155, 40)
-	$idIgnoreMinutes = GUICtrlCreateInput($sIgnoreMinutes, 155, 60, 80, 20, BitOR($GUI_SS_DEFAULT_INPUT, $ES_NUMBER))
-	GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
-	GUICtrlSetLimit(-1, 120, 3)
+	If False Then
+		GUICtrlCreateLabel("Minutes to ignore repeat notifications", 155, 40)
+		$idIgnoreMinutes = GUICtrlCreateInput($sIgnoreMinutes, 155, 60, 80, 20, BitOR($GUI_SS_DEFAULT_INPUT, $ES_NUMBER))
+		GUICtrlCreateUpdown(-1, $UDS_ARROWKEYS)
+		GUICtrlSetLimit(-1, 120, 3)
+	EndIf
 
 	If _InstallType() <> $asInstallType[$eAppX] Then
 		GUICtrlCreateLabel("Check for updates", 20, 90)
