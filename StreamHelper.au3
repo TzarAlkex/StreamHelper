@@ -1174,6 +1174,7 @@ Func _GuiCreate()
 	Local $iGuiWidth = 510, $iGuiHeight = 70
 
 	$hGuiClipboard = GUICreate("Copy Streamlink compatible link to clipboard", $iGuiWidth, $iGuiHeight, -1, -1, -1)
+	If @Compiled = False Then GUISetIcon(@ScriptDir & "\Svartnos.ico")
 
 	$idLabel = GUICtrlCreateLabel("I am word", 70, 10, 350, 20)
 	$idQuality = GUICtrlCreateCombo("", 70, 40, 160, 20)
@@ -1363,7 +1364,8 @@ EndFunc
 
 #Region FEEDBACK-GUI
 Func _FeedbackCreate()
-	$hGuiFeedback = GUICreate("Feedback", 320, 50, -1, -1, -1)
+	$hGuiFeedback = GUICreate(StringTrimRight(@ScriptName, 4) & " - Feedback", 320, 50, -1, -1, -1)
+	If @Compiled = False Then GUISetIcon(@ScriptDir & "\Svartnos.ico")
 
 	GUICtrlCreateButton("Open Feedback Hub", 10, 10, 145, 30)
 	GUICtrlSetOnEvent(-1, _FeedbackFeedbackHub)
