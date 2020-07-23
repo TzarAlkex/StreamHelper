@@ -1645,9 +1645,9 @@ Func _CentennialStartupSet()
 
 	Local $avStatus
 	If $iChecked Then
-		$avStatus = _StartupTaskEnable()
+		$avStatus = _StartupTaskEnableByID("MainStartupTask")
 	Else
-		$avStatus = _StartupTaskDisable()
+		$avStatus = _StartupTaskDisableByID("MainStartupTask")
 	EndIf
 	_CentennialStartupUI($avStatus[0])
 EndFunc

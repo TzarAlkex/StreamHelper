@@ -100,13 +100,13 @@ Func _TemporaryFolder()
 EndFunc
 
 
-Func _StartupTaskDisable()
-	Return DllCall($hDLL, "INT:cdecl", "StartupTaskDisable")
-EndFunc
+;~ Func _StartupTaskDisable()
+;~ 	Return DllCall($hDLL, "INT:cdecl", "StartupTaskDisable")
+;~ EndFunc
 
-Func _StartupTaskEnable()
-	Return DllCall($hDLL, "INT:cdecl", "StartupTaskEnable")
-EndFunc
+;~ Func _StartupTaskEnable()
+;~ 	Return DllCall($hDLL, "INT:cdecl", "StartupTaskEnable")
+;~ EndFunc
 
 ;~ Func _StartupTaskStatus()
 ;~ 	ConsoleWrite("not working" & @CRLF)
@@ -115,10 +115,31 @@ EndFunc
 ;~ 	Return DllCall($hDLL, "INT:cdecl", "StartupTaskStatus")
 ;~ EndFunc
 
+Func _StartupTaskDisableByID($sTaskID)
+	Return DllCall($hDLL, "INT:cdecl", "StartupTaskDisableByID", "WSTR", $sTaskID)
+EndFunc
+
+Func _StartupTaskDisableByIndex($iTaskIndex)
+	Return DllCall($hDLL, "INT:cdecl", "StartupTaskDisableByIndex", "INT", $iTaskIndex)
+EndFunc
+
+Func _StartupTaskEnableByID($sTaskID)
+	Return DllCall($hDLL, "INT:cdecl", "StartupTaskEnableByID", "WSTR", $sTaskID)
+EndFunc
+
+Func _StartupTaskEnableByIndex($iTaskIndex)
+	Return DllCall($hDLL, "INT:cdecl", "StartupTaskEnableByIndex", "INT", $iTaskIndex)
+EndFunc
+
 Func _StartupTaskStatusByID($sTaskID)
 	Return DllCall($hDLL, "INT:cdecl", "StartupTaskStatusByID", "WSTR", $sTaskID)
 EndFunc
 
 Func _StartupTaskStatusByIndex($iTaskIndex)
 	Return DllCall($hDLL, "INT:cdecl", "StartupTaskStatusByIndex", "INT", $iTaskIndex)
+EndFunc
+
+
+Func _ToastTest($sTitle, $sContent, $sArg)
+	Return DllCall($hDLL, "NONE:cdecl", "ToastTest", "WSTR", $sTitle, "WSTR", $sContent, "WSTR", $sArg)
 EndFunc
