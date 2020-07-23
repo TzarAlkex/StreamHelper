@@ -422,7 +422,7 @@ Func _TwitchGetGames()
 		$sTimeDiffMin = _DateDiff("n", $sTimeAdded, $sNow)
 		$sTime2 = StringFormat("%02s:%02s", $sTimeDiffHour, $sTimeDiffMin)
 
-		_StreamSet("", "", $sThumbnail, "", "", $sTime2, $sTitle, $eTwitch, $sUserID, $sStreamID, Default, $sGameID)
+		_StreamSet("", "", $sThumbnail, "", "", $sTime2, $sTitle, $eTwitch, $sUserID, $sStreamID, Default, $sGameID, $sViewerCount)
 	Next
 EndFunc
 
