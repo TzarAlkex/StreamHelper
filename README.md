@@ -1,6 +1,6 @@
 # StreamHelper
 
-### A desktop notifier for Twitch and Mixer
+### A desktop notifier for Twitch
 
 ![Screenshot #3](./Screenshot3.png?raw=true "Screenshot #3")
 ![Screenshot #4](./Screenshot4.png?raw=true "Screenshot #4")
@@ -55,8 +55,6 @@ KaFu - https://www.autoitscript.com/forum/topic/95850-url-encoding/?do=findComme
 Mat - https://www.autoitscript.com/forum/topic/115222-set-the-tray-icon-as-a-hicon/
 
 SmOke_N - https://www.autoitscript.com/forum/topic/95383-sorting-numbers/?do=findComment&comment=685701
-
-jchd - https://www.autoitscript.com/forum/topic/195291-datetime-conversion-issue/?do=findComment&comment=1400353
 
 Shark007 - https://www.autoitscript.com/forum/topic/199786-making-your-compiled-application-dpi-aware/
 

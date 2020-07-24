@@ -201,8 +201,6 @@ $sTwitchName = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchName")
 $sTwitchToken = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchToken")
 $sTwitchGamesMax = RegRead("HKCU\SOFTWARE\StreamHelper\", "TwitchGamesMax")
 If @error Then $sTwitchGamesMax = 20
-$sMixerId = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerId")
-$sMixerName = RegRead("HKCU\SOFTWARE\StreamHelper\", "MixerName")
 If $iSmashcastEnable Then
 	$sSmashcastId = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastId")
 	$sSmashcastName = RegRead("HKCU\SOFTWARE\StreamHelper\", "SmashcastName")
@@ -248,7 +246,7 @@ TrayCreateItem("Exit")
 TrayItemSetOnEvent(-1, _Exit)
 
 Global Enum $eDisplayName, $eUrl, $ePreview, $eGame, $eCreated, $eTrayId, $eStatus, $eTime, $eOnline, $eService, $eQualities, $eFlags, $eUserID, $eGameID, $eChannelID, $eTimer, $eStreamID, $eOldStreamID, $eViewers, $eName, $eMax
-Global Enum $eTwitch, $eSmashcast, $eMixer, $eYoutube
+Global Enum $eTwitch, $eSmashcast, $eYoutube
 Global Enum Step *2 $eIsLink, $eIsText, $eIsStream
 
 Global $sNew
@@ -272,7 +270,7 @@ _GuiCreate()
 _FeedbackCreate()
 
 Global $hGuiSettings
-Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idTwitchGamesMax, $idMixerInput, $idMixerId, $idMixerName, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName, $idNewUI, $idNewUIMultipleThumbnails, $idStreamlinkEnabled, $idStreamlinkPath, $idStreamlinkPathCheck, $idStreamlinkQuality, $idStreamlinkCommandLine
+Global $idRefreshMinutes, $idIgnoreMinutes, $idUpdates, $idStartup, $idStartupTooltip, $idStartupLegacy, $idLog, $idLogDelete, $idTwitchId, $idTwitchName, $idTwitchGamesName, $idTwitchGamesID, $idTwitchGamesAdd, $idTwitchGamesList, $idTwitchGamesMax, $idSmashcastInput, $idSmashcastId, $idSmashcastName, $idYoutubeInput, $idYoutubeId, $idYoutubeName, $idNewUI, $idNewUIMultipleThumbnails, $idStreamlinkEnabled, $idStreamlinkPath, $idStreamlinkPathCheck, $idStreamlinkQuality, $idStreamlinkCommandLine
 
 _SettingsCreate()
 
@@ -611,98 +609,6 @@ Func _SmashcastFetch($sUrl)
 EndFunc
 #EndRegion
 
-#Region MIXER
-Func _Mixer()
-	_CW("Mixering")
-	_ProgressSpecific("M")
-
-	_MixerGet()
-
-	_MixerProcessStreams()
-
-	$iTrayRefresh = True
-EndFunc
-
-Func _MixerGet()
-	$iOffset = 0
-
-	While 1
-		Local $sUrl = "users/" & $sMixerId & "/follows?page=" & $iOffset & "&limit=100&where=online:eq:1&fields=id,token,name,viewersCurrent,type,user&noCount=1"
-		$oFollows = _MixerFetch($sUrl)
-		If UBound($oFollows) = 0 Then Return
-
-		For $iX = 0 To UBound($oFollows) -1
-			$sChannelID = Json_ObjGet($oFollows[$iX], "id")
-
-			$sUrl = "https://mixer.com/" & Json_ObjGet($oFollows[$iX], "token")
-			$sTitle = Json_ObjGet($oFollows[$iX], "name")
-			$sViewerCount = Json_ObjGet($oFollows[$iX], "viewersCurrent")
-
-			$oType = Json_ObjGet($oFollows[$iX], "type")
-			If IsObj($oType) Then
-				$sGame = Json_ObjGet($oType, "name")
-			Else
-				$sGame = "No game selected"
-			EndIf
-
-			$oUser = Json_ObjGet($oFollows[$iX], "user")
-			$sDisplayName = Json_ObjGet($oUser, "username")
-			$sUserID = "M" & Json_ObjGet($oUser, "id")
-
-			$sThumbnail = "https://thumbs.mixer.com/channel/" & $sChannelID & ".small.jpg"
-
-			_StreamSet($sDisplayName, $sUrl, $sThumbnail, $sGame, "", "", $sTitle, $eMixer, $sUserID, Default, Default, Default, $sViewerCount, $sChannelID)
-		Next
-		If UBound($oFollows) <> 100 Then Return "Potato on a Stick"
-		$iOffset += 1
-	WEnd
-
-	Return "Potato on a Stick"
-EndFunc
-
-Func _MixerProcessStreams()
-	Local $sNow = _NowCalc()
-
-	For $iX = 0 To UBound($aStreams) -1
-		If $aStreams[$iX][$eService] <> $eMixer Then ContinueLoop
-		If $aStreams[$iX][$eTime] <> "" Then ContinueLoop
-		If $aStreams[$iX][$eOnline] <> True Then ContinueLoop
-
-		$oBroadcast = _MixerFetch("channels/" & $aStreams[$iX][$eChannelID] & "/broadcast")   ; ?fields=id,startedAt doesn't work here
-		$sTime = Json_ObjGet($oBroadcast, "startedAt")
-
-		$sTime = StringRegExpReplace($sTime, "\.\d*", "", 1)   ; remove decimals
-		$sTimeIso = _IsoDateTimeToZulu($sTime)
-
-		Local $aDate, $aTime
-		_DateTimeSplit($sTimeIso, $aDate, $aTime)
-		Local $tSystem = _Date_Time_EncodeSystemTime($aDate[2], $aDate[3], $aDate[1], $aTime[1], $aTime[2], $aTime[3])
-		$tLocal = _Date_Time_SystemTimeToTzSpecificLocalTime($tSystem)
-		$sTimeConverted = _Date_Time_SystemTimeToDateTimeStr($tLocal, 1)
-
-		$sTimeDiffHour = _DateDiff("h", $sTimeConverted, $sNow)
-		$sTimeAdded = _DateAdd("h", $sTimeDiffHour, $sTimeConverted)
-		$sTimeDiffMin = _DateDiff("n", $sTimeAdded, $sNow)
-		$sTime2 = StringFormat("%02s:%02s", $sTimeDiffHour, $sTimeDiffMin)
-
-		$aStreams[$iX][$eTime] = $sTime2
-	Next
-EndFunc
-
-;Based on https://www.autoitscript.com/forum/topic/195291-datetime-conversion-issue/?do=findComment&comment=1400353
-Func _IsoDateTimeToZulu($s)
-    Local $sDT = StringLeft($s, 19)
-    $sDT = StringRegExpReplace($sDT, '(\d{4}).(\d\d).(\d\d).(.{8})', '$1/$2/$3 $4')
-    Local $iH = -Int(StringMid($s, 20, 3))
-    Local $iM = Int(($iH < 0 ? '-' : '') & StringMid($s, 24, 2))
-    Return StringRegExpReplace(_DateAdd('h', $iH, _DateAdd('n', $iM, $sDT)), '(\d{4})(/\d\d/)(\d\d)(.{9})', '$1$2$3$4')
-EndFunc
-
-Func _MixerFetch($sUrl)
-	Return _WinHttpFetch("mixer.com", "api/v1/" & $sUrl, "Client-ID: " & $sMixerClientID)
-EndFunc
-#EndRegion
-
 #Region YOUTUBE
 Func _Youtube()
 	_CW("Youtubeing")
@@ -998,7 +904,6 @@ Func _MAIN()
 	_CheckUpdates()
 
 	If $sTwitchId <> "" Then _TwitchNew()
-	If $sMixerId <> "" Then _Mixer()
 	If $iSmashcastEnable And $sSmashcastId <> "" Then _Smashcast()
 	If $iYoutubeEnable And $sYoutubeId <> "" Then _Youtube()
 
@@ -1515,23 +1420,6 @@ Func _SettingsCreate()
 	GUICtrlSetLimit(-1, 100, 1)
 
 
-	GUICtrlCreateTabItem("Mixer")
-	GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
-
-	GUICtrlCreateLabel(" ", 20, 70)
-	$idMixerInput = GUICtrlCreateInput("", 20, 90, 190)
-	_GUICtrlEdit_SetCueBanner($idMixerInput, "Username")
-	GUICtrlCreateButton("Get ID", 220, 87)
-	GUICtrlSetOnEvent(-1, _MixerGetId)
-
-	GUICtrlCreateLabel("Saved ID", 20, 160)
-	$idMixerId = GUICtrlCreateInput($sMixerId, 20, 180, 120, Default, $ES_READONLY)
-	GUICtrlCreateLabel("Saved Username", 155, 160)
-	$idMixerName = GUICtrlCreateInput($sMixerName, 155, 180, 120, Default, $ES_READONLY)
-	GUICtrlCreateButton("Forget ID && Username", 290, 177)
-	GUICtrlSetOnEvent(-1, _MixerReset)
-
-
 	If $iSmashcastEnable Then
 		GUICtrlCreateTabItem("Smashcast")
 		GUICtrlCreateLabel("1. Input username" & @CRLF & "2. Click Get ID", 20, 40)
@@ -1804,36 +1692,6 @@ Func _TwitchGamesMax()
 	If $sNew = $sTwitchGamesMax Then Return
 	$sTwitchGamesMax = $sNew
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "TwitchGamesMax", "REG_SZ", $sTwitchGamesMax)
-EndFunc
-
-Func _MixerGetId()
-	$sUsername = GUICtrlRead($idMixerInput)
-	If $sUsername = "" Then Return _GetErrored()
-	$sUsername = StringStripWS($sUsername, $STR_STRIPALL)
-	$sQuotedUsername = URLEncode($sUsername)
-
-	$oJSON = _MixerFetch("channels/" & $sQuotedUsername & "?fields=userId")
-	If IsObj($oJSON) = False Then Return _GetErrored()
-	$iUserID = Json_ObjGet($oJSON, "userId")
-
-	If $iUserID <> "" Then
-		_MixerSet($iUserID, $sUsername)
-	Else
-		Return _GetErrored()
-	EndIf
-EndFunc
-
-Func _MixerReset()
-	_MixerSet("", "")
-EndFunc
-
-Func _MixerSet($sId, $sName)
-	$sMixerId = $sId
-	$sMixerName = $sName
-	RegWrite("HKCU\SOFTWARE\StreamHelper\", "MixerId", "REG_SZ", $sId)
-	RegWrite("HKCU\SOFTWARE\StreamHelper\", "MixerName", "REG_SZ", $sName)
-	GUICtrlSetData($idMixerId, $sId)
-	GUICtrlSetData($idMixerName, $sName)
 EndFunc
 
 Func _SmashcastGetId()
@@ -2260,8 +2118,6 @@ Func _IEUIRefresh($oObject = "")
 		$sBody &=		'<div class="services">'
 		If $aStreams[$iX][$eFlags] = $eIsStream And $aStreams[$iX][$eService] = $eTwitch Then
 			$sBody &=		'<img src="' & @ScriptDir & '\interface2\TwitchGlitchPurple.png' & '"/>'
-		ElseIf $aStreams[$iX][$eService] = $eMixer Then
-			$sBody &=		'<img src="' & @ScriptDir & '\interface2\MixerMerge_Dark.png' & '"/>'
 		ElseIf $aStreams[$iX][$eFlags] = $eIsLink Then
 			$sBody &=		'<img src="' & @ScriptDir & '\interface2\GitHub-Mark-Light-120px-plus.png' & '"/>'
 		EndIf
@@ -2400,6 +2256,7 @@ Func _Upgrade()
 	If RegRead("HKCU\SOFTWARE\StreamHelper\", "Upgrade") = $sInternalVersion Then Return
 	_1200()
 	_1410()
+	_1520()
 	RegWrite("HKCU\SOFTWARE\StreamHelper\", "Upgrade", "REG_SZ", $sInternalVersion)
 EndFunc
 
@@ -2426,6 +2283,11 @@ EndFunc
 Func _1410()
 	RegDelete("HKCU\SOFTWARE\StreamHelper\", "TwitchFollowedGames")
 	RegDelete("HKCU\SOFTWARE\StreamHelper\", "MigratedFavorites")
+EndFunc
+
+Func _1520()
+	RegDelete("HKCU\SOFTWARE\StreamHelper\", "MixerId")
+	RegDelete("HKCU\SOFTWARE\StreamHelper\", "MixerName")
 EndFunc
 
 Func _EnumValues($sKey)
