@@ -2080,9 +2080,13 @@ Func _IEUIRefresh($oObject = "")
 			$sBody &=	'<div class="extra-buttons">'
 
 			If StringInStr($asFavorites, $aStreams[$iX][$eUserID], $STR_CASESENSE) Then
-				$sBody &=	'<button class="favorite" title="Remove favorite">♡</button>'
+				$sBody &=	'<label class="favorite" title="Notifications are enabled"><input type="checkbox" checked="checked">🔔</label>'
+;~ 				$sBody &=	'<input type="checkbox" id="check' & $iX & '" class="favorite" title="Notifications are enabled" checked="checked">' & _
+;~ 							'<label for="check' & $iX & '">🔔</label>'
 			Else
-				$sBody &=	'<button class="favorite" title="Add to favorites">❤</button>'
+				$sBody &=	'<label class="favorite" title="Notifications are off"><input type="checkbox">🔔</label>'
+;~ 				$sBody &=	'<input type="checkbox" id="check' & $iX & '" class="favorite" title="Notifications are off">' & _
+;~ 							'<label for="check' & $iX & '">🔔</label>'
 			EndIf
 
 			If $sStreamlinkEnabled = "1" Then
@@ -2181,6 +2185,8 @@ Volatile Func _IEEvent2_onClick($oEvent)
 			$oEvent.cancelBubble = True
 			Return
 		ElseIf $oElement.className = "favorite" Then
+			If $oEvent.srcElement.tagName = "LABEL" Then Return
+
 			Local $sIndex = $oElement.parentElement.parentElement.getAttribute('data-index')
 
 			Local $sUserID = $aStreams[$sIndex][$eUserID]
@@ -2188,13 +2194,11 @@ Volatile Func _IEEvent2_onClick($oEvent)
 			If StringInStr($asFavorites, $sUserID, $STR_CASESENSE) Then   ; if fav then remove it from fav
 				$asFavorites = StringReplace($asFavorites, $sUserID & @LF, "")
 				RegDelete("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID)
-				$oElement.innerText = "❤"
-				$oElement.setAttribute("title", "Add to favorites")
+				$oElement.setAttribute("title", "Notifications are off")
 			Else   ; if nothing then fav
 				$asFavorites &= $sUserID & @LF
 				RegWrite("HKCU\SOFTWARE\StreamHelper\Favorite\", $sUserID, "REG_SZ", "")
-				$oElement.innerText = "♡"
-				$oElement.setAttribute("title", "Remove favorite")
+				$oElement.setAttribute("title", "Notifications are enabled")
 			EndIf
 
 			$oEvent.cancelBubble = True

@@ -80,6 +80,10 @@ body {
     font-family: "Segoe UI Emoji";
 }
 
+.stream .favorite input {
+    vertical-align: top;
+}
+
 .stream .stream-preview {
     width: 103px;
     height: 58px;
