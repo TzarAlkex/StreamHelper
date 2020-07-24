@@ -1439,7 +1439,6 @@ Func _SettingsCreate()
 
 	If _InstallType() = $asInstallType[$eAppX] Then
 		$avStatus = _StartupTaskStatusByID("MainStartupTask")
-;~ 		$avStatus = _StartupTaskStatusByIndex(0)
 		_CW("_StartupTaskStatus(): " & $avStatus[0])
 		If $avStatus[0] <> $eStateError Then
 			$idStartup = GUICtrlCreateCheckbox("Start automatically on user login", 20, 140)
