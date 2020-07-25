@@ -11,7 +11,6 @@
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #AutoIt3Wrapper_Run_Au3Stripper=y
 #AutoIt3Wrapper_Au3Stripper_OnError=ForceUse
-#Au3Stripper_Parameters=/so /mi=100
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #cs ----------------------------------------------------------------------------
